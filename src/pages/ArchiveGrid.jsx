@@ -27,8 +27,8 @@ const STATIC_UP_TO = 3
 const CELL_PX = [0, 1, 4, 16, 64, 256, 1024, 3413, 4096]
 
 const LAYER_LABELS = {
-  1: '1px · Overview',   2: '4px · Region',   3: '16px · Sector',
-  4: '64px · Zone',      5: '256px · Summary', 6: '1024px · Detail',
+  1: '1px · Overview', 2: '4px · Region', 3: '16px · Sector',
+  4: '64px · Zone', 5: '256px · Summary', 6: '1024px · Detail',
   7: '3413px · Intermediate', 8: '4096px · Full',
 }
 
@@ -90,20 +90,20 @@ const L6Content = memo(function L6Content({ x, y, data, col, isDark }) {
   return (
     <div style={{ width: 1024, height: 1024, display: 'flex', flexDirection: 'column', border: `1px solid ${col}22`, background: isDark ? 'rgba(4,2,12,0.98)' : 'rgba(255,255,255,0.98)' }}>
       <div style={{ display: 'flex', height: 260, borderBottom: `1px solid ${col}22` }}>
-         <div style={{ width: 220, padding: 22, borderRight: `1px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(240,248,255,0.5)' }}>
-            <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: col, marginBottom: 16 }}>STORAGE UNIT INF-6</div>
-            <MetaPanel label="X COORD" value={pad4(x)} color={col} isDark={isDark} />
-            <div style={{ height: 8 }} />
-            <MetaPanel label="Y COORD" value={pad4(y)} color={col} isDark={isDark} />
-         </div>
-         <div style={{ flex: 1, padding: 26 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: col, marginBottom: 12, letterSpacing: '0.1em' }}>ARCHIVE OVERVIEW</div>
-            <div style={{ fontSize: 13, color: isDark ? '#94a3b8' : '#475569', lineHeight: 1.8 }}>{data?.shortSummary || placeholderText(400, x+y)}</div>
-         </div>
+        <div style={{ width: 220, padding: 22, borderRight: `1px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(240,248,255,0.5)' }}>
+          <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: col, marginBottom: 16 }}>STORAGE UNIT INF-6</div>
+          <MetaPanel label="X COORD" value={pad4(x)} color={col} isDark={isDark} />
+          <div style={{ height: 8 }} />
+          <MetaPanel label="Y COORD" value={pad4(y)} color={col} isDark={isDark} />
+        </div>
+        <div style={{ flex: 1, padding: 26 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: col, marginBottom: 12, letterSpacing: '0.1em' }}>ARCHIVE OVERVIEW</div>
+          <div style={{ fontSize: 13, color: isDark ? '#94a3b8' : '#475569', lineHeight: 1.8 }}>{data?.shortSummary || placeholderText(400, x + y)}</div>
+        </div>
       </div>
       <div style={{ flex: 1, display: 'flex' }}>
-         <div style={{ flex: 1, padding: 28, borderRight: `1px solid ${col}11`, fontSize: 12, lineHeight: 1.8, color: isDark ? '#94a3b8' : '#475569' }}>{placeholderText(1200, x)}</div>
-         <div style={{ flex: 1, padding: 28, fontSize: 12, lineHeight: 1.8, color: isDark ? '#94a3b8' : '#475569' }}>{placeholderText(1200, y)}</div>
+        <div style={{ flex: 1, padding: 28, borderRight: `1px solid ${col}11`, fontSize: 12, lineHeight: 1.8, color: isDark ? '#94a3b8' : '#475569' }}>{data?.content ? data.content.slice(0, Math.ceil(data.content.length/2)) : placeholderText(1200, x)}</div>
+        <div style={{ flex: 1, padding: 28, fontSize: 12, lineHeight: 1.8, color: isDark ? '#94a3b8' : '#475569' }}>{data?.content ? data.content.slice(Math.ceil(data.content.length/2)) : placeholderText(1200, y)}</div>
       </div>
     </div>
   )
@@ -113,20 +113,20 @@ const L6Content = memo(function L6Content({ x, y, data, col, isDark }) {
 const L7Content = memo(function L7Content({ x, y, data, col, isDark }) {
   return (
     <div style={{ width: 3413, height: 3413, display: 'flex', flexDirection: 'column', background: isDark ? '#050412' : '#f8fafc', padding: 80 }}>
-       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 30, marginBottom: 80 }}>
-          <MetaPanel label="PRIMARY SCALE" value="3,413 PX" icon={Database} color={col} isDark={isDark} />
-          <MetaPanel label="DATA INTEGRITY" value="NOMINAL (99.8%)" icon={Shield} color={col} isDark={isDark} />
-          <MetaPanel label="LATENCY" value="2.4 MS" icon={Zap} color={col} isDark={isDark} />
-          <MetaPanel label="X,Y ORIGIN" value={`${pad4(x)},${pad4(y)}`} icon={Target} color={col} isDark={isDark} />
-       </div>
-       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 40, borderTop: `1px solid ${col}33`, paddingTop: 60 }}>
-          {Array.from({ length: 16 }).map((_, i) => (
-             <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-                <div style={{ fontSize: 10, fontWeight: 900, color: col }}>SEGMENT {i+1}</div>
-                <div style={{ fontSize: 11, color: isDark ? '#64748b' : '#94a3b8', lineHeight: 1.8 }}>{placeholderText(3000, i+x)}</div>
-             </div>
-          ))}
-       </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 30, marginBottom: 80 }}>
+        <MetaPanel label="PRIMARY SCALE" value="3,413 PX" icon={Database} color={col} isDark={isDark} />
+        <MetaPanel label="DATA INTEGRITY" value="NOMINAL (99.8%)" icon={Shield} color={col} isDark={isDark} />
+        <MetaPanel label="LATENCY" value="2.4 MS" icon={Zap} color={col} isDark={isDark} />
+        <MetaPanel label="X,Y ORIGIN" value={`${pad4(x)},${pad4(y)}`} icon={Target} color={col} isDark={isDark} />
+      </div>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 40, borderTop: `1px solid ${col}33`, paddingTop: 60 }}>
+        {Array.from({ length: 16 }).map((_, i) => (
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+            <div style={{ fontSize: 10, fontWeight: 900, color: col }}>SEGMENT {i + 1}</div>
+            <div style={{ fontSize: 11, color: isDark ? '#64748b' : '#94a3b8', lineHeight: 1.8 }}>{data?.segments && data.segments.length > 0 ? data.segments[i % data.segments.length] : placeholderText(3000, i + x)}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 })
@@ -135,17 +135,17 @@ const L7Content = memo(function L7Content({ x, y, data, col, isDark }) {
 const L8Content = memo(function L8Content({ x, y, data, col, isDark }) {
   return (
     <div style={{ width: 4096, height: 4096, display: 'flex', flexDirection: 'column', background: isDark ? '#020208' : '#ffffff', padding: 140 }}>
-       <div style={{ height: 400, borderBottom: `2px solid ${col}44`, display: 'flex', gap: 60, marginBottom: 85 }}>
-          <div style={{ width: 1000, fontSize: 44, fontWeight: 900, color: col }}>DEEP ARCHIVE NODE {pad4(x)}-{pad4(y)}</div>
-          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
-             {Array.from({ length: 8 }).map((_, i) => <MetaPanel key={i} label={`TELEMETRY ${i+1}`} value={`${(Math.random()*100).toFixed(2)}`} icon={Radio} color={col} isDark={isDark} />)}
-          </div>
-       </div>
-       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 60 }}>
-          {Array.from({ length: 24 }).map((_, i) => (
-             <div key={i} style={{ fontSize: 11, lineHeight: 1.8, color: isDark ? '#475569' : '#94a3b8' }}>{placeholderText(4000, i+y)}</div>
-          ))}
-       </div>
+      <div style={{ height: 400, borderBottom: `2px solid ${col}44`, display: 'flex', gap: 60, marginBottom: 85 }}>
+        <div style={{ width: 1000, fontSize: 44, fontWeight: 900, color: col }}>DEEP ARCHIVE NODE {pad4(x)}-{pad4(y)}</div>
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+          {Array.from({ length: 8 }).map((_, i) => <MetaPanel key={i} label={`TELEMETRY ${i + 1}`} value={`${(Math.random() * 100).toFixed(2)}`} icon={Radio} color={col} isDark={isDark} />)}
+        </div>
+      </div>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 60 }}>
+        {Array.from({ length: 24 }).map((_, i) => (
+          <div key={i} style={{ fontSize: 11, lineHeight: 1.8, color: isDark ? '#475569' : '#94a3b8' }}>{data?.segments && data.segments.length > 0 ? data.segments[i % data.segments.length] : placeholderText(4000, i + y)}</div>
+        ))}
+      </div>
     </div>
   )
 })
@@ -245,41 +245,122 @@ function PlanetIntro({ planet, isDark, onEnter }) {
 function StaticBg({ layer, viewX, viewY, isDark, color, zoom, planetId }) {
   const cp = CELL_PX[layer] * zoom, trX = -viewX * cp, trY = -viewY * cp
   const hasImage = ['earth', 'mars', 'venus', 'jupiter', 'saturn', 'uranus'].includes(planetId);
-  
+
   // Center of the 3840 x 2160 Grid
   const planetCenterPx = { x: (GRID_W / 2) * cp, y: (GRID_H / 2) * cp };
   // Planet radius = 300 cells wide
-  const planetRadiusCells = 300; 
+  const planetRadiusCells = 300;
   const planetPx = planetRadiusCells * cp;
 
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', background: layer === 1 ? '#000' : 'transparent' }}>
       <div style={{ position: 'absolute', left: trX, top: trY, width: GRID_W * cp, height: GRID_H * cp, background: layer === 1 ? 'transparent' : (isDark ? '#070512' : '#f4f7fa'), backgroundImage: layer === 1 ? 'none' : (isDark ? `linear-gradient(rgba(79,195,247,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(79,195,247,0.2) 1px, transparent 1px)` : `linear-gradient(rgba(2,132,199,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(2,132,199,0.15) 1px, transparent 1px)`), backgroundSize: `${cp}px ${cp}px` }}>
         <div style={{ position: 'absolute', inset: 0, border: layer === 1 ? 'none' : `${cp * 0.5}px solid ${color}2a`, boxSizing: 'border-box', boxShadow: layer === 1 ? 'none' : `inset 0 0 60px ${color}14` }} />
-        
+
         {/* Layer 1 Planet Feature */}
         <div style={{
-            position: 'absolute',
-            left: planetCenterPx.x - planetPx,
-            top: planetCenterPx.y - planetPx,
-            width: planetPx * 2,
-            height: planetPx * 2,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: hasImage ? `0 0 ${120*zoom}px ${color}44` : `0 0 ${120*zoom}px ${color}88, inset 0 0 ${80*zoom}px rgba(0,0,0,0.5)`,
-            background: hasImage ? 'transparent' : `radial-gradient(circle at 30% 30%, ${color}, #000)`,
-            transition: 'opacity 0.3s, transform 0.3s',
-            opacity: layer === 1 ? 1 : 0, // Fades out if we zoom to L2+
-            pointerEvents: 'none'
+          position: 'absolute',
+          left: planetCenterPx.x - planetPx,
+          top: planetCenterPx.y - planetPx,
+          width: planetPx * 2,
+          height: planetPx * 2,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: hasImage ? `0 0 ${120 * zoom}px ${color}44` : `0 0 ${120 * zoom}px ${color}88, inset 0 0 ${80 * zoom}px rgba(0,0,0,0.5)`,
+          background: hasImage ? 'transparent' : `radial-gradient(circle at 30% 30%, ${color}, #000)`,
+          transition: 'opacity 0.3s, transform 0.3s',
+          opacity: layer === 1 ? 1 : 0, // Fades out if we zoom to L2+
+          pointerEvents: 'none'
         }}>
-            {hasImage && <img src={`/planets/${planetId}.png`} style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%'}} alt={planetId} />}
-            {/* Minimal atmospheric glow */}
-            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', boxShadow: `inset 0 0 ${40*zoom}px ${color}aa`, pointerEvents: 'none' }}></div>
+          {hasImage && <img src={`/planets/${planetId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} alt={planetId} />}
+          {/* Minimal atmospheric glow */}
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', boxShadow: `inset 0 0 ${40 * zoom}px ${color}aa`, pointerEvents: 'none' }}></div>
         </div>
 
       </div>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   SEARCH BAR
+══════════════════════════════════════════════ */
+function SearchBar({ col, isDark, planet, sectionEntries, setViewX, setViewY, setLayer, setZoom, vpSize, setFocusedCell }) {
+  const [term, setTerm] = useState('')
+  const [isOpen, setIsOpen] = useState(false)
+  const [results, setResults] = useState([])
+
+  useEffect(() => {
+    if (!term.trim()) { setResults([]); return }
+    const lw = term.toLowerCase()
+    const res = []
+    planet.sections?.forEach((s, i) => {
+      const x = i % 3, y = Math.floor(i / 3)
+      if (s.title.toLowerCase().includes(lw) || `${pad4(x)},${pad4(y)}`.includes(lw) || s.shortSummary?.toLowerCase().includes(lw)) {
+        res.push({ x, y, title: s.title })
+      }
+    })
+    setResults(res)
+  }, [term, planet])
+
+  const handleSelect = (r) => {
+    // Navigate straight to Layer 8 (full info detail) and anchor viewport precisely to the top-left of the cell
+    setLayer(8)
+    setZoom(1.0)
+    setViewX(r.x)
+    setViewY(r.y)
+    setFocusedCell({ x: r.x, y: r.y })
+    setTerm('')
+    setIsOpen(false)
+  }
+
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginLeft: 'auto', marginRight: 16 }}>
+      <Search size={14} style={{ color: isDark ? '#94a3b8' : '#475569', position: 'absolute', left: 8, pointerEvents: 'none' }} />
+      <input 
+        value={term}
+        onChange={(e) => { setTerm(e.target.value); setIsOpen(true) }}
+        onFocus={() => setIsOpen(true)}
+        onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+        placeholder="Search regions..."
+        style={{
+          background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.5)',
+          border: `1px solid ${col}44`,
+          color: isDark ? '#e2e8f0' : '#0f172a',
+          padding: '4px 8px 4px 28px',
+          fontSize: 11,
+          fontFamily: '"JetBrains Mono", monospace',
+          borderRadius: 4,
+          outline: 'none',
+          width: 200,
+          transition: 'all 0.2s ease'
+        }}
+      />
+      {isOpen && results.length > 0 && (
+        <div style={{
+          position: 'absolute', top: '100%', right: 0, marginTop: 4,
+          background: isDark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.95)',
+          border: `1px solid ${col}33`, borderRadius: 6,
+          maxHeight: 300, overflowY: 'auto', zIndex: 100,
+          boxShadow: `0 8px 32px rgba(0,0,0,0.2)`,
+          backdropFilter: 'blur(12px)',
+          width: 280,
+          display: 'flex', flexDirection: 'column'
+        }} onMouseDown={(e) => e.preventDefault()}>
+          {results.map((r, i) => (
+            <div key={i} onClick={() => handleSelect(r)} style={{
+              padding: '10px 12px', cursor: 'pointer',
+              borderBottom: i < results.length - 1 ? `1px solid ${col}11` : 'none',
+              transition: 'background 0.2s ease'
+            }} onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+              <div style={{ fontSize: 10, fontFamily: '"JetBrains Mono", monospace', color: col, fontWeight: 800, marginBottom: 2 }}>{pad4(r.x)},{pad4(r.y)}</div>
+              <div style={{ fontSize: 11, color: isDark ? '#e2e8f0' : '#0f172a', lineHeight: 1.4 }}>{r.title}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -290,6 +371,7 @@ function StaticBg({ layer, viewX, viewY, isDark, color, zoom, planetId }) {
 export default function ArchiveGrid() {
   const { planetId } = useParams(), { theme } = useTheme(), isDark = theme === 'dark', navigate = useNavigate(), vpRef = useRef(null)
   const [showGrid, setShowGrid] = useState(false), [layer, setLayer] = useState(1), [zoom, setZoom] = useState(1.0), [viewX, setViewX] = useState(0), [viewY, setViewY] = useState(0)
+  const [focusedCell, setFocusedCell] = useState(null)
   const [vpSize, setVpSize] = useState({ w: window.innerWidth, h: window.innerHeight - 92 })
   const drag = useRef({ active: false, sx: 0, sy: 0, svx: 0, svy: 0 })
 
@@ -300,20 +382,30 @@ export default function ArchiveGrid() {
 
   const sectionEntries = useMemo(() => {
     const m = {}
-    planet.sections?.forEach((s, i) => { m[`${i % 3},${Math.floor(i / 3)}`] = { title: s.title, content: s.content, shortSummary: s.shortSummary || s.content?.slice(0, 400) } })
+    planet.sections?.forEach((s, i) => { 
+      const fullText = s.content || s.fullDepth || s.detailedSummary || s.shortSummary || ''
+      let segments = fullText.match(/[^.!?]+[.!?]*/g) || [fullText]
+      segments = segments.map(sg => sg.trim()).filter(sg => sg.length > 0)
+      m[`${i % 3},${Math.floor(i / 3)}`] = { 
+        title: s.title, 
+        content: fullText, 
+        shortSummary: s.shortSummary || fullText.slice(0, 400),
+        segments: segments 
+      } 
+    })
     return m
   }, [planet])
 
   // Center initial view on the planet (1920, 1080)
-  useEffect(() => { 
-    setLayer(1); 
-    setZoom(1.0); 
+  useEffect(() => {
+    setLayer(1);
+    setZoom(1.0);
     // Wait for vpSize to map the center properly
     const vx = (GRID_W / 2) - ((window.innerWidth) / 2);
     const vy = (GRID_H / 2) - ((window.innerHeight - 92) / 2);
-    setViewX(vx); 
-    setViewY(vy); 
-    setShowGrid(false) 
+    setViewX(vx);
+    setViewY(vy);
+    setShowGrid(false)
   }, [planetId])
 
   useEffect(() => {
@@ -327,16 +419,24 @@ export default function ArchiveGrid() {
   }, [vpSize])
 
   const move = useCallback((dx, dy) => {
+    setFocusedCell(null)
     setViewX(vx => { const { x } = clamp(vx + dx, viewY, layer, zoom); return x })
     setViewY(vy => { const { y } = clamp(viewX, vy + dy, layer, zoom); return y })
   }, [viewX, viewY, layer, zoom, clamp])
 
   const switchLayer = useCallback((nl) => {
     nl = Math.max(1, Math.min(TOTAL_LAYERS, nl)); setLayer(nl); setZoom(1.0)
+    
+    if (focusedCell) {
+        setViewX(focusedCell.x);
+        setViewY(focusedCell.y);
+        return;
+    }
+
     // When switching layers, attempt to keep the center of the screen stable
     const cpPrev = CELL_PX[layer] * zoom;
     const cpNext = CELL_PX[nl] * 1.0;
-    
+
     // Center point in grid coordinates
     const centerX = viewX + (vpSize.w / 2) / cpPrev;
     const centerY = viewY + (vpSize.h / 2) / cpPrev;
@@ -344,10 +444,10 @@ export default function ArchiveGrid() {
     const nVx = centerX - (vpSize.w / 2) / cpNext;
     const nVy = centerY - (vpSize.h / 2) / cpNext;
 
-    const { x, y } = clamp(nVx, nVy, nl, 1.0); 
-    setViewX(x); 
+    const { x, y } = clamp(nVx, nVy, nl, 1.0);
+    setViewX(x);
     setViewY(y)
-  }, [viewX, viewY, clamp, TOTAL_LAYERS, layer, zoom, vpSize])
+  }, [viewX, viewY, clamp, TOTAL_LAYERS, layer, zoom, vpSize, focusedCell])
 
   useEffect(() => {
     if (!showGrid) return
@@ -357,9 +457,10 @@ export default function ArchiveGrid() {
       e.preventDefault()
       const isPinch = e.ctrlKey, factor = isPinch ? 0.05 : 0.2, delta = e.deltaY < 0 ? factor : -factor
       if (isPinch || Math.abs(e.deltaY) > 40) {
+        setFocusedCell(null)
         setZoom(prev => {
           const nZ = Math.max(0.15, Math.min(10.0, prev + delta))
-          
+
           // Zoom towards center of viewport
           const cpX = viewX + (vpSize.w / 2) / (CELL_PX[layer] * prev);
           const cpY = viewY + (vpSize.h / 2) / (CELL_PX[layer] * prev);
@@ -367,12 +468,13 @@ export default function ArchiveGrid() {
           const nVx = cpX - (vpSize.w / 2) / (CELL_PX[layer] * nZ);
           const nVy = cpY - (vpSize.h / 2) / (CELL_PX[layer] * nZ);
 
-          const { x, y } = clamp(nVx, nVy, layer, nZ); 
-          setViewX(x); 
-          setViewY(y); 
+          const { x, y } = clamp(nVx, nVy, layer, nZ);
+          setViewX(x);
+          setViewY(y);
           return nZ
         })
       } else {
+        setFocusedCell(null)
         const cp = CELL_PX[layer] * zoom; move(e.deltaX / cp, e.deltaY / cp)
       }
     }
@@ -385,6 +487,7 @@ export default function ArchiveGrid() {
     const onDown = (e) => { if (e.button !== 0) return; drag.current = { active: true, sx: e.clientX, sy: e.clientY, svx: viewX, svy: viewY }; el.style.cursor = 'grabbing' }
     const onMove = (e) => {
       if (!drag.current.active) return
+      setFocusedCell(null)
       const cp = CELL_PX[layer] * zoom, dx = (drag.current.sx - e.clientX) / cp, dy = (drag.current.sy - e.clientY) / cp
       const { x, y } = clamp(drag.current.svx + dx, drag.current.svy + dy, layer, zoom); setViewX(x); setViewY(y)
     }
@@ -430,12 +533,13 @@ export default function ArchiveGrid() {
             ))}
           </div>
         </div>
-        <div className="archive-layer-tabs" style={{ borderBottom: `1px solid ${col}11` }}>
+        <div className="archive-layer-tabs" style={{ borderBottom: `1px solid ${col}11`, display: 'flex', alignItems: 'center' }}>
           {Array.from({ length: TOTAL_LAYERS }, (_, i) => i + 1).map(l => (
             <button key={l} className={`archive-layer-tab ${layer === l ? 'archive-layer-tab--active' : ''}`} onClick={() => switchLayer(l)} style={{ background: layer === l ? `${col}15` : 'transparent', color: layer === l ? (isDark ? '#4fc3f7' : '#0284c7') : (isDark ? '#475569' : '#94a3b8'), borderColor: layer === l ? `${col}33` : 'transparent' }}>
               <Layers size={11} /> <span>L{l}</span>
             </button>
           ))}
+          <SearchBar col={col} isDark={isDark} planet={planet} sectionEntries={sectionEntries} setViewX={setViewX} setViewY={setViewY} setLayer={setLayer} setZoom={setZoom} vpSize={vpSize} setFocusedCell={setFocusedCell} />
           <div style={{ marginLeft: 'auto', fontSize: 10, color: isDark ? '#475569' : '#94a3b8', fontFamily: '"JetBrains Mono", monospace', paddingRight: 10 }}>{LAYER_LABELS[layer]}</div>
         </div>
         <div className="archive-viewport" ref={vpRef} style={{ cursor: 'grab' }}>
@@ -454,7 +558,7 @@ export default function ArchiveGrid() {
             <button className="archive-zoom-btn" onClick={() => setZoom(z => Math.min(10, z + 0.2))}><ZoomIn size={16} /></button>
           </div>
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}><div className="archive-zoom-bar" style={{ width: 140 }}><div className="archive-zoom-fill" style={{ width: `${(zoom / 8) * 100}%`, background: col }} /></div></div>
-          <button className="archive-recenter-btn" onClick={() => { setLayer(1); setZoom(1.0); setViewX((GRID_W/2)-(vpSize.w/2)); setViewY((GRID_H/2)-(vpSize.h/2)) }}><Target size={16} /> <span>Reset</span></button>
+          <button className="archive-recenter-btn" onClick={() => { setLayer(1); setZoom(1.0); setViewX((GRID_W / 2) - (vpSize.w / 2)); setViewY((GRID_H / 2) - (vpSize.h / 2)) }}><Target size={16} /> <span>Reset</span></button>
         </div>
       </div>
       <style>{`@keyframes pulseOrb { 0%, 100% { box-shadow: 0 0 40px ${col}, 0 0 80px ${col}55, inset 0 0 24px rgba(0,0,0,0.4); } 50% { box-shadow: 0 0 60px ${col}, 0 0 120px ${col}44, inset 0 0 24px rgba(0,0,0,0.4); } }`}</style>
