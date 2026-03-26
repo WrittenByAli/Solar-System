@@ -1,0 +1,337 @@
+{
+    "planets": [
+        {
+            "id": "sun",
+            "planet": "Sun",
+            "domain": "Energy Research & Production",
+            "shortDomain": "Energy",
+            "color": "#ff6b35",
+            "glowColor": "rgba(255,107,53,0.6)",
+            "chapter": 2,
+            "intro": "The Sun hub provides all the energy for S.O.L.A.R. It uses solar panels, geothermal energy, hydrogen, batteries, and fusion research to make sure every hub has reliable power. The Sun hub also develops smart grids, thermal management, and new materials to keep energy flowing efficiently and safely.",
+            "description": "The Sun hub is the energetic heart of S.O.L.A.R. In both name and function, it mirrors the role of our nearest star: providing the fundamental energy upon which all other systems depend. Without it, no food can be grown, no water purified, no data processed, and no community sustained. Energy is the master resource, the one input that makes all other outputs possible.\n\nWithin S.O.L.A.R., the Sun hub is responsible for the research, development, and deployment of every energy technology the project relies upon. This includes solar photovoltaic and solar thermal systems, geothermal extraction, hydrogen production and storage, advanced battery chemistry, fusion energy research, smart grid management, and thermal regulation. Each of these technologies addresses a different dimension of the energy challenge: generation, storage, distribution, and efficiency.",
+            "sections": [
+                {
+                    "title": "Geothermal Energy",
+                    "shortSummary": "Under the ground of each planet or hub is heat. The Sun hub studies how to use this heat for energy. This includes drilling deep to reach hot areas and using systems that store heat for later use.\nBy combining geothermal energy with solar power, the hubs can have constant energy. For example, Mars uses geothermal heat to keep habitats warm, and Earth can use it to reduce fossil fuel use. This energy is steady, reliable, and always available.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Solar Power",
+                    "shortSummary": "The Sun hub uses solar panels and mirrors to collect sunlight. Some panels are built into windows or rooftops. Others use large mirrors to focus sunlight and store it in molten salts, which hold heat for hours.\nThis energy is shared with other hubs. Venus’s greenhouses use thin-film solar panels, while Neptune uses sunlight to help clean water. Mars has panels designed to survive dust storms. This shows how solar energy can be adapted to different conditions.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Hydrogen Energy",
+                    "shortSummary": "Hydrogen is a way to store and move energy. The Sun hub produces hydrogen from electricity using water. Hydrogen can then be stored safely and used to create electricity when needed.\nHubs like Jupiter manage hydrogen flows, making sure that energy moves where it is most needed. Earth uses hydrogen to reduce pollution, and Saturn uses it to keep nutrient cycles running in farms. Hydrogen acts like a battery for the whole system.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Sodium-Based Batteries",
+                    "shortSummary": "Lithium is limited, so the Sun hub researches sodium-based batteries. Sodium is cheap and plentiful. These batteries store energy from solar panels or geothermal plants and release it when needed.\nMars uses sodium batteries for cold environments, and Earth can scale them to cities. Venus integrates these batteries in animal systems to ensure uninterrupted power. These batteries are key for making energy reliable across all hubs.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Smart Energy Distribution",
+                    "shortSummary": "Energy is only useful if it reaches the places that need it. The Sun hub builds smart grids and microgrids that can operate independently.\nAI helps balance energy use, making sure no hub runs out. If a disaster happens, the grid can reroute power automatically. This means all hubs, from Mars to Saturn, can rely on constant energy without human intervention.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Heat Management",
+                    "shortSummary": "Energy is not just about creating power; it’s also about using it wisely. The Sun hub develops heat pumps, insulation, and radiative cooling to keep buildings and systems efficient.\nVenus uses these systems in greenhouses, Mars in habitat domes, and Neptune in water treatment facilities. Proper heat management saves energy and keeps the hubs comfortable and safe.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Fusion Research",
+                    "shortSummary": "Fusion is the long-term energy solution. The Sun hub tests tokamaks, stellarators, and laser-based fusion methods.\nSuccess in fusion would provide almost limitless clean energy. Mars, Jupiter, and Earth all use lessons from fusion experiments to power other systems. Fusion could eventually make the entire S.O.L.A.R. system almost independent from solar panels or batteries.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Materials for Energy Systems",
+                    "shortSummary": "Energy systems need special materials. The Sun hub develops strong metals, heat-resistant ceramics, and lightweight composites.\nThese materials are used in turbines, solar panels, batteries, and fusion reactors. Mars tests them under harsh conditions, Mercury uses them in production, and Neptune applies them in water systems. Good materials make energy systems last longer and work better.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                }
+            ]
+        },
+        {
+            "id": "mercury",
+            "planet": "Mercury",
+            "domain": "Industrial Production & Materials",
+            "shortDomain": "Industry",
+            "color": "#9ca3af",
+            "glowColor": "rgba(156,163,175,0.5)",
+            "chapter": 3,
+            "intro": "Mercury is the industrial heart of S.O.L.A.R. It produces metals, ceramics, nanomaterials, and modular construction systems. Its factories are efficient, zero-waste, and highly automated. Mercury makes sure every hub has the tools and structures it needs while keeping production safe and sustainable.",
+            "description": "Mercury is the forge of S.O.L.A.R., the industrial hub where raw materials are transformed into the tools, structures, and components that every other hub depends upon. Named after the planet closest to the Sun, Mercury operates in the intense heat of manufacturing: smelting metals, firing ceramics, synthesizing polymers, and assembling modular systems.\n\nThe Mercury hub combines traditional metallurgy with cutting-edge nanomaterial science, additive manufacturing, and zero-waste industrial processes. Every product leaving Mercury is designed for durability, repairability, and eventual recycling back into the production cycle. This circular approach eliminates waste streams and reduces dependence on external supply chains.",
+            "sections": [
+                {
+                    "title": "High-Efficiency Manufacturing Techniques",
+                    "shortSummary": "Mercury’s industrial identity begins with how things are made. Manufacturing has always been the heart of industry, but in S.O.L.A.R., it is transformed into something more than assembly lines and factories. It becomes a living system of precision, where machines, energy, and intelligence cooperate to maximize efficiency while eliminating waste. High-efficiency manufacturing is not only about productivity; it is about survival in a closed-loop civilization. Every atom, every joule, every process matters.\nOn Earth, efficiency in production was often measured in terms of cost and speed. Factories churned out goods in vast numbers, but often at the expense of materials wasted, energy squandered, and environments polluted. Defects were treated as acceptable losses, and recycling was an afterthought. Within Mercury, this logic is no longer viable. In an interplanetary system where resources must circulate without loss, efficiency must be absolute: not simply faster production, but cleaner, smarter, and endlessly adaptable.\nAt the core of Mercury’s factories are AI-integrated production lines, powered by the Sun’s distributed energy network and optimized by Jupiter’s data systems. These lines are modular and reprogrammable. A facility that today produces structural alloys for Mars can, within days, reconfigure to manufacture corrosion-proof turbines for Neptune. The speed of adaptation comes not from building new factories, but from reprogramming existing ones. Robotic arms, 3D printing heads, laser cutters, and precision forges are all mounted on flexible frameworks, designed to swap tasks with minimal downtime.\nEfficiency also comes from minimizing input waste. Lean manufacturing principles are elevated into something close to perfection. Raw materials are tracked at the molecular level, with sensors ensuring no excess enters the process. AI-driven cutting and forming techniques reduce scrap to near zero. What little byproduct remains is immediately redirected into Mercury’s circular economy streams, where glass shards, metal dust, or polymer offcuts are collected, purified, and reintroduced into the cycle. In Mercury, waste is not an output—it is a misplaced input waiting to be reused.\nQuality control is another critical innovation. On Earth, quality checks often came after production, leading to costly recalls and discards. Mercury uses predictive AI and nanoscopic inspection in real time. Products are tested continuously as they are being made. Microscopic cracks in alloys, invisible to human eyes, are detected before the product leaves the forge. Ceramic panels destined for Saturn’s vertical farms are stress-tested virtually against simulated storms and heat variations before they are ever assembled. By embedding testing into the process itself, Mercury ensures that failure is prevented, not corrected.\nAnother defining feature is energy synchronization. Factories no longer run on centralized grids prone to fluctuation and waste. Instead, they are directly powered by the Sun hub’s clean energy transfers—solar, fusion, and geothermal streams distributed across hubs. This allows factories to dynamically adjust production schedules based on real-time energy availability. When energy surpluses flow from solar arrays, production ramps up. When energy must be conserved for other hubs, factories downshift to maintenance, recycling, or retooling tasks. Mercury’s industries do not fight the flow of energy—they move with it, like sails catching a shifting wind.\nThe human role in Mercury’s manufacturing also changes. People are no longer line workers repeating dangerous, monotonous tasks. Those are fully automated by robotics. Instead, humans serve as designers, supervisors, and system integrators. Their responsibility is to envision what must be built, adapt the systems for new challenges, and ensure that efficiency remains aligned with human values—safety, equity, and long-term resilience. This redefinition of human labor reflects a deeper S.O.L.A.R. principle: technology is not built to replace people, but to elevate them above drudgery.\nThe interconnections of Mercury’s manufacturing techniques ripple outward across the entire framework:\n●\tSaturn’s agricultural domes are mass-produced in lightweight but sturdy modules, enabling rapid expansion of food systems without draining resources.\n●\tNeptune’s desalination plants rely on precision-crafted membranes and turbines that require exact tolerances only possible through Mercury’s zero-defect lines.\n●\tMars receives modular, dust-resistant habitat panels that can be assembled by small teams in hostile environments.\n●\tEarth’s biotech hubs benefit from ultra-clean, contamination-proof lab instruments, supporting research without constant import of new materials.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Advanced Metallurgy",
+                    "shortSummary": "If Mercury’s high-efficiency factories are the hands of S.O.L.A.R., then metallurgy is its bones. Every structure, tool, machine, and habitat relies on the properties of metals and alloys to function. Steel, titanium, aluminum, copper—these are not just materials; they are the scaffolding of civilization. Yet in the context of a closed-loop interplanetary system, metallurgy cannot be satisfied with simply refining existing ores. It must become a science of transformation, where every atom of metal is designed, recycled, and reforged to serve across centuries without loss of quality.\nTraditional metallurgy on Earth has always been about balancing properties—strength versus weight, conductivity versus durability, cost versus performance. But it was also bound by compromise: corrosion ate away at pipelines, fatigue destroyed aircraft alloys, radiation embrittled steels in reactors. In Mercury’s research hubs, these compromises are no longer tolerated. Advanced metallurgy seeks materials that thrive under extremes, able to withstand pressures, temperatures, and exposures that would render conventional alloys useless.\nAt the heart of this work are alloy design laboratories, where Jupiter’s AI simulations and Mercury’s automated forges collaborate to develop new compositions. Using computational metallurgy, millions of possible combinations of elements are tested in silico before a single ingot is cast. Instead of decades of trial and error, alloys can be developed in months, optimized for the exact environments where they will be deployed. A turbine blade destined for the Sun’s fusion reactors, for example, may require an alloy that resists both extreme heat and neutron bombardment. Rather than guessing, Mercury’s labs simulate atomic behavior under these conditions, producing alloys with properties engineered to order.\nSpecial attention is given to corrosion resistance. Neptune’s desalination and aquaculture systems are exposed constantly to saltwater, one of the most corrosive environments for metals. Without specialized alloys, turbines, pipes, and filters would fail in years or even months. Mercury pioneers anti-corrosion steels, titanium composites, and nanocoated alloys that extend the lifespan of Neptune’s infrastructure indefinitely. Similarly, Mars requires dust-resistant and radiation-hardened metals for habitat shells, while Earth demands biocompatible alloys for medical implants and clean lab tools. Each hub’s environment becomes a testing ground, feeding back data that refines Mercury’s metallurgical research further.\nAnother pillar of innovation is lightweight strength. Transport across space—whether by rockets, cargo vessels, or orbital elevators—demands materials with maximum strength-to-weight ratios. Advanced aluminum-lithium alloys, carbon-infused steels, and nanostructured titanium composites allow for structures that are not only lighter but also stronger than their predecessors. A habitat dome for Venus can be assembled with panels one-third the weight of traditional materials, reducing transport costs and enabling rapid deployment in hostile environments. This innovation extends beyond habitats: lightweight alloys make Mars rovers more efficient, space cargo more economical, and even Earth’s terrestrial infrastructure more energy-efficient to build.\nMercury’s metallurgical expertise also extends into extreme heat applications. The Sun hub’s geothermal drills and fusion reactors require materials that can endure thousands of degrees without deformation or failure. Advanced ceramics play a role (developed in section 3.3), but many systems still demand metallic components. Superalloys with nickel, cobalt, and tungsten bases are developed to resist not only temperature but also creep—slow deformation under stress. These alloys are life-limited by conventional Earth standards, but Mercury’s metallurgy ensures they last decades, not years, before replacement is necessary.\nThe recycling of metals forms a crucial counterpart to innovation. In a closed-loop system, no ore can be wasted. Every hub returns its worn, damaged, or obsolete metal components back to Mercury, where they are disassembled, melted down, and reforged. This recycling is not simple smelting; it is molecular reconstitution. Impurities are stripped away, atomic arrangements are reset, and the result is a metal that is indistinguishable from its first casting. A steel beam that once supported a Martian dome may be reborn as part of a turbine blade for Neptune, or a surgical scalpel for Earth. Metallurgy becomes a system of eternal renewal.\nBeyond utility, advanced metallurgy has cultural implications. The materials Mercury develops shape the identity of each hub. The gleaming alloys of Venus’s greenhouses inspire confidence in controlled growth. The dark, radiation-shielded steels of Mars become symbols of resilience. Neptune’s corrosion-proof turbines represent survival against endless ocean forces. Even Earth, with its advanced biotech, relies on Mercury’s alloys for tools that extend human life. In this way, metallurgy is not only functional—it is symbolic, tying together technology and culture across planets.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                }
+            ]
+        },
+        {
+            "id": "venus",
+            "planet": "Venus",
+            "domain": "Controlled Agriculture & Animal Systems",
+            "shortDomain": "Agriculture",
+            "color": "#fbbf24",
+            "glowColor": "rgba(251,191,36,0.5)",
+            "chapter": 4,
+            "intro": "Venus manages agriculture and animal systems. It uses closed-loop greenhouses, vertical farms, and aquaponics to grow food efficiently. Waste is reused, and nutrients are cycled back into the system. Venus ensures every hub has reliable, nutritious food while conserving resources.",
+            "description": "If the Sun hub is the heartbeat of energy and Mercury is the forge of industry, then Venus is the stomach and the soul of S.O.L.A.R. — the guarantor of nourishment, fertility, and abundance. Within this framework, Venus represents the agricultural and food systems required to keep a society thriving not only in physical survival but also in cultural identity.\n\nFood is more than calories. It is history, memory, ritual, and the means by which people feel rooted in community. A society without food security is fragile. A society without shared meals is spiritually impoverished. Venus ensures that neither vulnerability takes hold. Here, climate-controlled agriculture, advanced hydroponics, nutrient recycling, and synthetic protein systems are developed, tested, and distributed across all other hubs.",
+            "sections": [
+                {
+                    "title": "Climate-Controlled Greenhouses",
+                    "shortSummary": "Greenhouses are the cornerstone of Venus’s agricultural system. While open-field farming has historically tied humanity to the mercy of weather, soil quality, and seasonal cycles, climate-controlled greenhouses liberate agriculture from these constraints. They provide stable environments where every parameter, temperature, humidity, light spectrum, nutrient delivery, and even atmospheric composition can be optimized for plant growth. This precision ensures that crops grow faster, healthier, and with fewer inputs than in the past. Unlike traditional greenhouses, which merely shelter crops from weather, the Venus hub’s facilities act as fully enclosed biospheres, capable of producing food in environments as hostile as the Martian surface or the vacuum of orbit.\nAt the heart of these systems are layered control technologies. Advanced sensors monitor plant health at the cellular level, detecting stress long before it becomes visible to the human eye. AI-driven climate models adjust lighting, irrigation, and nutrient composition in real time, ensuring that plants receive exactly what they need at every stage of growth. Adaptive LED arrays, fine-tuned to emit specific wavelengths, replace the randomness of sunlight with targeted light recipes that accelerate photosynthesis or encourage flowering. Temperature is regulated not through crude heating and cooling, but through phase-change materials and radiative systems, minimizing energy demand. The result is a kind of “programmed ecology,” where growth is not left to chance but orchestrated like a symphony.\nThe design of these greenhouses also embodies circularity. Water used in irrigation is recaptured through condensation systems, purified, and reintroduced into the loop. Nutrients lost through plant uptake or evaporation are measured precisely and replenished only as needed, reducing waste. Even plant waste, stalks, leaves and roots do not leave the system. It is composted or digested to feed soil-substitutes, provide bio-gas, or create animal feed. Nothing is discarded, everything becomes a resource. This tight loop reduces resource demand so significantly that a single Venus-style greenhouse could produce several times the yield of a conventional farm, while using less than 10% of the water.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Hydroponics & Aeroponics",
+                    "shortSummary": "If climate-controlled greenhouses form the architectural shell of Venus’s agricultural system, hydroponics and aeroponics form its beating heart. These technologies eliminate soil entirely, replacing it with carefully balanced nutrient delivery systems that maximize efficiency and crop yield. Hydroponics grows plants with their roots suspended in water enriched with minerals, while aeroponics takes the process further, suspending roots in air and misting them with nutrient sprays. Both methods drastically reduce water usage compared to traditional soil farming and allow unparalleled control over plant nutrition. In the Venus hub, they are not fringe technologies but the dominant agricultural paradigm, proving that humanity can grow abundant food without exhausting the Earth—or any world’s—resources.\nThe efficiency gains are extraordinary. Hydroponic systems typically use 90–95% less water than conventional soil farming because every drop is recaptured, filtered, and reused. Nutrient solutions are not wasted through runoff into rivers or soils but instead circulate continuously in closed loops, monitored in real time by sensors that adjust concentrations to match plant needs. In aeroponic systems, the water savings are even greater, as mist delivers nutrients directly to root surfaces with almost no loss. Crops grow faster because they expend less energy searching for water or nutrients, channeling more energy into stems, leaves, fruits, and seeds. These systems can be stacked vertically inside controlled facilities, multiplying productivity per square meter by orders of magnitude.",
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                }
+            ]
+        },
+        {
+            "id": "earth",
+            "planet": "Earth",
+            "domain": "Biology, Medicine & Genomics",
+            "shortDomain": "Biology",
+            "color": "#34d399",
+            "glowColor": "rgba(52,211,153,0.5)",
+            "chapter": 5,
+            "intro": "Earth focuses on human health, medical research, and biotechnology. It studies disease, genetics, and wellness. Knowledge from Earth is shared across all hubs, strengthening the resilience of every other system.",
+            "description": "If Mars is the crucible of engineering and Jupiter the brain of intelligence, then Earth is the beating heart of S.O.L.A.R. Here lies the domain where life itself is studied, decoded, and reimagined. Earth is not just humanity's place of origin but its living laboratory, the hub where genomes are sequenced, medicines developed, therapies refined, and ecosystems modeled.\n\nEvery advance made here echoes outward, strengthening the resilience of every other hub: crops engineered for Saturn's hydroponic towers, livestock improved for Venus's closed loops, genetic screening protocols ensuring the survival of colonists on Mars, and marine biotechnologies safeguarding Neptune's fragile aquatic balance.",
+            "sections": [
+                {
+                    "title": "Human Genomics",
+                    "content": "Unlocking the secrets of resilience, disease resistance, and human adaptability. Whole-genome sequencing identifies markers for genetic disorders, drug metabolism variants, and environmental resilience. CRISPR-Cas9 gene editing enables precise corrections to inherited conditions."
+                },
+                {
+                    "title": "Plant Genetics & Bioengineering",
+                    "content": "Engineering crops for extreme conditions: drought tolerance, salt resistance, nutrient density. Gene editing accelerates breeding cycles from years to months. Synthetic biology designs organisms that produce fuels, medicines, and materials from simple feedstocks."
+                },
+                {
+                    "title": "Medical Biotechnology",
+                    "content": "Vaccine development using mRNA platforms achieves rapid response to novel pathogens. Regenerative medicine uses stem cells to repair damaged organs. Bioprinting creates functional tissue scaffolds. Point-of-care diagnostics enable testing without laboratories."
+                },
+                {
+                    "title": "Neuroscience & Mental Health",
+                    "content": "Cognitive science preserves mental health under isolation and stress. Neurofeedback systems train resilience. Community Health Worker programs deliver primary mental healthcare in resource-limited settings. Telemedicine bridges specialist gaps."
+                },
+                {
+                    "title": "Epidemiology & Disease Control",
+                    "content": "Real-time disease surveillance networks detect outbreaks before they spread. Mathematical modeling predicts transmission patterns. Rapid diagnostic kits and mobile labs enable containment within hours. WHO essential medicine protocols cover 90% of primary care."
+                },
+                {
+                    "title": "Ecology & Ecosystem Modeling",
+                    "content": "Digital twin models simulate entire ecosystems. Mycorrhizal fungi networks mapped and optimized. Soil microbiome health monitored with DNA sequencing. Biodiversity indices tracked across all S.O.L.A.R. habitats to maintain ecological balance."
+                }
+            ]
+        },
+        {
+            "id": "mars",
+            "planet": "Mars",
+            "domain": "Engineering & Harsh Environments",
+            "shortDomain": "Engineering",
+            "color": "#f87171",
+            "glowColor": "rgba(248,113,113,0.5)",
+            "chapter": 6,
+            "intro": "Mars is the hub dedicated to engineering resilience. It represents the principles and practices that allow communities to withstand disruption, scarcity, and stress. It is the workshop of durability, the safeguard against collapse, and the forge in which adaptability becomes strength.",
+            "description": "Every society must answer a fundamental question: how does it endure when conditions turn hostile? Within S.O.L.A.R., the answer lies in Mars, the hub dedicated to engineering resilience. Mars represents not an alien frontier, but the principles and practices that allow communities to withstand disruption, scarcity, and stress.\n\nIn this hub, survival is treated not as an emergency response, but as an ongoing practice. Civil and structural engineering ensures that homes and infrastructure endure earthquakes, floods, and fires. Agricultural innovation demonstrates how food can be grown in the poorest soils. Architecture for extremes guarantees safety and dignity under the harshest conditions.",
+            "sections": [
+                {
+                    "title": "Civil & Structural Engineering",
+                    "content": "Designing buildings to withstand earthquakes (base isolation, moment frames), floods (elevated foundations, waterproof barriers), and extreme winds (aerodynamic profiles, reinforced connections). Compressed Earth Blocks achieve 3-5 MPa compressive strength using local materials."
+                },
+                {
+                    "title": "Desert & Arid Agriculture",
+                    "content": "Food production in water-scarce environments. Zai pits concentrate water for dryland farming. Fog harvesting nets collect atmospheric moisture. Solar-powered drip irrigation reduces water use by 60%. Halophyte crops tolerate saline soils."
+                },
+                {
+                    "title": "Water Purification & Recycling",
+                    "content": "Biosand filters remove 99.8% of bacteria. SODIS (solar disinfection) achieves 99.9% pathogen reduction in 6 hours. Ceramic pot filters with colloidal silver produce 1-3 L/hr. Closed-loop grey water systems recycle 95% of household water."
+                },
+                {
+                    "title": "Extreme Architecture",
+                    "content": "Earthship buildings use thermal mass walls (rammed tire earth) to maintain 18-21°C without HVAC. Integrated rain catchment, grey water botanical cells, and food-growing glazed spaces. Designs proven from New Mexico deserts to cold Netherlands."
+                },
+                {
+                    "title": "Disaster Preparedness",
+                    "content": "Community Emergency Response Teams (CERT) train neighbors in first aid and disaster response. Mutual aid networks outperform top-down disaster response. Pre-positioned supply caches, communication plans, and evacuation routes for every scenario."
+                },
+                {
+                    "title": "Robotics & Automation",
+                    "content": "Autonomous construction robots for hazardous environments. Drone-based structural inspection and damage assessment. Robotic maintenance systems extend infrastructure lifespan. Teleoperation enables repairs in contaminated or collapsed structures."
+                }
+            ]
+        },
+        {
+            "id": "jupiter",
+            "planet": "Jupiter",
+            "domain": "AI, Data & Computing",
+            "shortDomain": "Intelligence",
+            "color": "#fb923c",
+            "glowColor": "rgba(251,146,60,0.5)",
+            "chapter": 7,
+            "intro": "Jupiter is the nervous system of S.O.L.A.R., the intelligence engine that ensures the entire structure is not a collection of isolated experiments but a coordinated, adaptive civilization. Its immense capacity absorbs uncertainty, processes chaos, and transforms danger into foresight.",
+            "description": "Every civilization must decide what it will treat as its foundation. For S.O.L.A.R., the foundation is intelligence. The capacity to observe, to interpret, to decide and to learn faster than the forces that threaten survival is what separates collapse from continuity. This is the role of Jupiter.\n\nJupiter is the nervous system of the project. Where the other hubs gather resources, generate energy, or cultivate food, Jupiter gathers knowledge, generates predictions, and cultivates trust. Without it, S.O.L.A.R. would be blind — a system of organs without a mind, each working in isolation, vulnerable to the very crises it was designed to withstand.",
+            "sections": [
+                {
+                    "title": "Artificial Intelligence & Machine Learning",
+                    "content": "Neural networks process sensor data from every hub. Computer vision monitors crop health, structural integrity, and environmental conditions. Natural Language Processing indexes and retrieves knowledge across the archive. Reinforcement learning optimizes energy distribution and resource allocation in real-time."
+                },
+                {
+                    "title": "Data Integration & Analytics",
+                    "content": "Every hub produces data: nutrient balances from Saturn's farms, genetic libraries from Earth's labs, ocean sensor arrays from Neptune. Jupiter integrates them, recognizes patterns invisible to the human eye, and directs responses across the system. Prediction replaces reaction."
+                },
+                {
+                    "title": "Autonomous Sensor Networks",
+                    "content": "Self-powered wireless sensors monitor environmental parameters continuously. Solar energy harvesting (50-100 mW), ultra-low-power MCUs (<10 μA sleep), and edge AI inference reduce communication overhead by 90%. Time-synchronized TSCH networks ensure reliability."
+                },
+                {
+                    "title": "Cybersecurity & Trust",
+                    "content": "Zero-trust architecture protects all inter-hub communications. Quantum key distribution ensures theoretically unbreakable encryption. Distributed ledger technology provides immutable audit trails for resource allocation and governance decisions."
+                },
+                {
+                    "title": "Digital Twin Modeling",
+                    "content": "Complete virtual replicas of every hub simulate scenarios before implementation. What-if analysis for energy grid failures, crop diseases, and extreme weather. Real-time synchronization between physical systems and digital models enables predictive maintenance."
+                },
+                {
+                    "title": "Knowledge Management",
+                    "content": "The SOLAR Archive itself is managed by Jupiter. Coordinate-based indexing, semantic search, and automated summarization ensure knowledge is accessible. Multi-criteria decision analysis helps communities make complex trade-off decisions involving energy, water, food, and social factors."
+                }
+            ]
+        },
+        {
+            "id": "saturn",
+            "planet": "Saturn",
+            "domain": "Agriculture & Waste Systems",
+            "shortDomain": "Agriculture",
+            "color": "#fde68a",
+            "glowColor": "rgba(253,230,138,0.5)",
+            "chapter": 8,
+            "intro": "Saturn is the stomach of S.O.L.A.R. Where matter is transformed into life, food is grown, waste is repurposed, and nutrients are cycled continuously. In a closed-loop society, nothing can be discarded without consequences. Saturn ensures every resource contributes to sustaining life.",
+            "description": "If Earth is the heart of biology and Mars the crucible of engineering, Saturn is the stomach of S.O.L.A.R. It is the hub where matter is transformed into life, where food is grown, waste is repurposed, and nutrients are cycled continuously.\n\nThe Saturn hub combines vertical farms, hydroponics, aquaponics, algae and fungi cultivation, controlled soil chambers, and advanced composting facilities into an interconnected network that transforms inputs into outputs without waste. These systems are designed to operate in extreme or constrained environments, developing agricultural and waste systems that are productive, resilient, adaptable, and scalable.",
+            "sections": [
+                {
+                    "title": "Vertical Farm Operations",
+                    "content": "Multi-story growing facilities with controlled lighting, temperature, and nutrients. LED arrays tuned to optimal photosynthetic wavelengths. Automated seeding, monitoring, and harvest systems. Year-round production independent of climate or season."
+                },
+                {
+                    "title": "Composting & Anaerobic Digestion",
+                    "content": "Organic residues are never treated as useless. Anaerobic digestion produces biogas (methane) and nutrient-rich digestate. Thermophilic composting reaches 65°C, killing pathogens while producing stable humus. Vermicomposting with red wigglers processes food waste at household scale."
+                },
+                {
+                    "title": "Algae & Fungi Cultivation",
+                    "content": "Spirulina and chlorella produced in photobioreactors provide complete protein, vitamins, and omega-3 fatty acids. Mycelium grown on agricultural waste creates structural packaging and biocomposite materials. Mushroom cultivation delivers high-value nutrition from low-value substrates."
+                },
+                {
+                    "title": "Soil Regeneration",
+                    "content": "Controlled soil chambers test regeneration techniques. Biochar application (5-20 t/ha) improves cation exchange capacity and hosts beneficial microbes. Cover cropping prevents erosion and feeds soil life. Mycorrhizal inoculants extend root reach by 100x."
+                },
+                {
+                    "title": "Nutrient Recovery Systems",
+                    "content": "Struvite crystallization recovers phosphorus from wastewater. Ammonia stripping captures nitrogen for fertilizer production. Potassium recovery from wood ash. Complete nutrient cycling ensures no mineral depletion over decades of continuous cultivation."
+                },
+                {
+                    "title": "Waste-to-Energy Integration",
+                    "content": "Biogas from anaerobic digestion powers cooking and heating. Pyrolysis converts non-compostable waste to biochar and syngas. Waste heat from composting warms greenhouse spaces. Every waste stream becomes an energy or material input."
+                }
+            ]
+        },
+        {
+            "id": "uranus",
+            "planet": "Uranus",
+            "domain": "Society, Culture & Ethics",
+            "shortDomain": "Society",
+            "color": "#67e8f9",
+            "glowColor": "rgba(103,232,249,0.5)",
+            "chapter": 9,
+            "intro": "Uranus is the cultural and ethical compass of S.O.L.A.R. It is the hub where governance, education, arts, social systems, and ethical frameworks converge to ensure that society remains just, resilient, and cohesive. It produces meaning, fairness, and balance.",
+            "description": "If Saturn feeds humanity and Jupiter provides intelligence, Uranus teaches humanity how to live together. It is the cultural and ethical compass of S.O.L.A.R., the hub where governance, education, arts, social systems, and ethical frameworks converge to ensure that society remains just, resilient, and cohesive.\n\nUnlike other hubs, Uranus does not produce food, water, or energy. Instead, it produces meaning, fairness, and balance. It ensures that the technical achievements of the other hubs serve human society rather than overpower it. Without Uranus, S.O.L.A.R. would risk becoming efficient but hollow, sustainable but unequal.",
+            "sections": [
+                {
+                    "title": "Governance & Policy Systems",
+                    "content": "Scalable, transparent, and participatory decision-making models that extend across all hubs. Liquid democracy enables flexible delegation. Constitutional frameworks protect minority rights while enabling rapid collective action. Policies ensure fair distribution of Saturn's food, Neptune's water, and Sun's energy."
+                },
+                {
+                    "title": "Ethical Frameworks",
+                    "content": "Principles that protect equality, sustainability, and intergenerational responsibility. AI ethics boards oversee Jupiter's algorithms. Bioethics committees review Earth's genetic research. Environmental impact assessments required for all hub operations."
+                },
+                {
+                    "title": "Education & Knowledge Transfer",
+                    "content": "Lifelong learning programs connect to every research hub. Apprenticeship models build practical skills. Open-source curricula freely shared. Education flows in both directions: hub specialists teach communities, communities teach hubs what knowledge they need."
+                },
+                {
+                    "title": "Arts & Cultural Identity",
+                    "content": "Artistic expression reinforces morale, community identity, and shared values. Music, visual arts, storytelling, and performance documented and celebrated. Cultural diversity protected as a resource as valuable as biodiversity."
+                },
+                {
+                    "title": "Social Cohesion & Conflict Resolution",
+                    "content": "Restorative justice practices replace punitive systems. Mediation training for all community members. Social capital measurement tracks community health. Mutual aid networks formalized into hub-level support systems."
+                },
+                {
+                    "title": "Intergenerational Responsibility",
+                    "content": "Long-term planning horizons: 7-generation thinking embedded in all policy. Youth councils have formal advisory roles. Elder knowledge systematically documented and preserved. Time capsule programs ensure continuity of values and wisdom."
+                }
+            ]
+        },
+        {
+            "id": "neptune",
+            "planet": "Neptune",
+            "domain": "Oceans & Water Systems",
+            "shortDomain": "Water",
+            "color": "#818cf8",
+            "glowColor": "rgba(129,140,248,0.5)",
+            "chapter": 10,
+            "intro": "Neptune ensures that S.O.L.A.R. never goes thirsty. Water is the foundation of life, agriculture and energy. Neptune serves as the hydrological hub, managing oceans, rivers, aquifers and closed-loop water cycles to stabilize every other hub.",
+            "description": "If Saturn feeds the S.O.L.A.R. system and Jupiter provides intelligence, Neptune ensures that it never goes thirsty. Water is the foundation of life, agriculture and energy, yet it remains one of the most volatile and critical resources on Earth and beyond.\n\nNeptune serves as the hydrological hub, responsible for managing oceans, rivers, aquifers and closed-loop water cycles in a way that stabilizes every other hub. The hub transforms water from a precarious commodity into a predictable, sustainable and equitable resource that supports the entire network.",
+            "sections": [
+                {
+                    "title": "Aquaculture & Ocean Farming",
+                    "content": "3D ocean farming stacks kelp, mussels, scallops, oysters and fish on a 1-acre footprint. Kelp grows 30 cm/day, sequesters 174 kg CO2/tonne. Shellfish filter 200L water/day each. Circular aquaculture converts waste from one species into nutrients for another."
+                },
+                {
+                    "title": "Desalination Technology",
+                    "content": "Seawater Reverse Osmosis at 55 bar achieves 99.6% salt rejection at 3-4 kWh/m³. Energy recovery devices capture 96% of pressure from reject brine. Solar-powered manual RO produces 15 L/hr at 50W. Humidification-dehumidification achieves 500 L/day/kW."
+                },
+                {
+                    "title": "Storm & Flood Management",
+                    "content": "Predictive hydrological modeling forecasts floods 72 hours ahead. Bioswales and constructed wetlands manage urban runoff. Levee systems with redundant failsafes. Managed retreat strategies for coastal communities. Rain gardens reduce peak stormwater flow by 80%."
+                },
+                {
+                    "title": "Water Recycling & Purification",
+                    "content": "Closed-loop water systems recycle 98% of all water used. Membrane bioreactors combine biological treatment with ultrafiltration. UV disinfection achieves 4-log pathogen reduction. Real-time quality monitoring ensures safety at every tap."
+                },
+                {
+                    "title": "Ocean Energy Harvesting",
+                    "content": "Tidal stream turbines operate at 40-50% efficiency in 2-4 m/s currents. The Gulf Stream carries 30 million cubic meters per second. Oscillating water column devices drive Wells turbines. Wave energy global potential is 2 TW. CETO submerged buoy systems proven at 1 MW."
+                },
+                {
+                    "title": "Climate Regulation",
+                    "content": "Ocean thermal energy conversion (OTEC) uses temperature differential between surface and deep water. Arctic ice monitoring via satellite and autonomous underwater vehicles. Carbon sequestration through enhanced ocean alkalinity. Seagrass restoration projects for coastal protection."
+                }
+            ]
+        }
+    ]
+}
