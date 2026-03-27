@@ -64,7 +64,7 @@ function placeholderText(len, seed = 0) {
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore. ',
     'Data stream active. Signal strength nominal. Recursive patterns detected in sector 4. ',
     'The archive stores information on solar activities, planetary shifts, and historical data points. ',
-    'Coordinate systems calibrated. Synchronizing with deep space telemetry. Storage unit healthy. '
+    'Coordinate systems calibrated. Synchronizing with deep space archives. Storage unit healthy. '
   ]
   let out = ''
   while (out.length < len) out += bases[(out.length + seed) % bases.length]
@@ -160,96 +160,53 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark }) {
 })
 
 // L8: 16384px - Deep Full
-// One dedicated "RAW ENTRY FACTS" section for AI-readable structured data
 const L8Content = memo(function L8Content({ lx, ly, data, col, isDark }) {
-  // Build a structured fact object for AI consumption
-  const factObj = {
-    coordinate: { x: lx, y: ly },
-    title: data?.title || null,
-    content: data?.content || null,
-    shortSummary: data?.shortSummary || null,
-    segments: data?.segments || [],
-  }
   return (
-    <div style={{ width: 16384, height: 16384, display: 'flex', flexDirection: 'column', background: isDark ? '#020208' : '#ffffff', padding: 280, boxSizing: 'border-box' }}>
-
-      {/* Header */}
-      <div style={{ height: 800, flexShrink: 0, borderBottom: `4px solid ${col}44`, display: 'flex', gap: 120, marginBottom: 180, alignItems: 'flex-start' }}>
-        <div style={{ width: 2200, fontSize: 88, fontWeight: 900, color: col, lineHeight: 1.1 }}>
-          DEEP ARCHIVE<br />NODE {pad4(lx)}-{pad4(ly)}
-        </div>
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 40 }}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <MetaPanel key={i} label={`TELEMETRY ${i + 1}`} value={`${(Math.sin(lx * i + ly) * 50 + 50).toFixed(2)}`} icon={Radio} color={col} isDark={isDark} />
-          ))}
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════
-         RAW ENTRY FACTS — AI-Readable Structured Data
-         This section renders ALL facts for this grid cell
-         in a structured, machine-parseable text format.
-         The data-archive-facts attribute contains the full JSON.
-      ═══════════════════════════════════════════ */}
-      <div
-        id={`archive-facts-${lx}-${ly}`}
-        data-archive-facts={JSON.stringify(factObj)}
-        style={{
-          flexShrink: 0,
-          padding: 160,
-          marginBottom: 240,
-          background: isDark ? `${col}0d` : `${col}08`,
-          border: `3px solid ${col}44`,
-          borderRadius: 32,
-        }}
-      >
-        <div style={{ fontSize: 42, fontWeight: 900, color: col, marginBottom: 80, letterSpacing: '0.08em', textTransform: 'uppercase', borderBottom: `2px solid ${col}33`, paddingBottom: 40 }}>
-          ◆ RAW ENTRY FACTS · AI DATA INDEX
-        </div>
-
-        {/* Structured key-value fields */}
-        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '24px 60px', fontSize: 30, lineHeight: 1.8, marginBottom: 80 }}>
-          <div style={{ fontWeight: 900, color: col, textTransform: 'uppercase' }}>COORDINATE</div>
-          <div style={{ color: isDark ? '#e2e8f0' : '#0f172a', fontFamily: '"JetBrains Mono", monospace' }}>{pad4(lx)}, {pad4(ly)}</div>
-
-          <div style={{ fontWeight: 900, color: col, textTransform: 'uppercase' }}>TITLE</div>
-          <div style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>{data?.title || '— No title —'}</div>
-
-          <div style={{ fontWeight: 900, color: col, textTransform: 'uppercase' }}>SUMMARY</div>
-          <div style={{ color: isDark ? '#cbd5e1' : '#1e293b' }}>{data?.shortSummary || '— No summary —'}</div>
-        </div>
-
-        {/* Full content */}
-        <div style={{ marginBottom: 80 }}>
-          <div style={{ fontSize: 32, fontWeight: 900, color: col, marginBottom: 30, textTransform: 'uppercase' }}>FULL CONTENT</div>
-          <div style={{ fontSize: 28, lineHeight: 2.0, color: isDark ? '#e2e8f0' : '#0f172a', padding: 60, border: `1px solid ${col}22`, borderRadius: 16, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)' }}>
-            {data?.content || placeholderText(6000, lx + ly)}
+    <div style={{ width: 16384, height: 16384, display: 'flex', flexDirection: 'column', background: isDark ? '#020208' : '#ffffff', padding: 320 }}>
+      {/* 4x scaled MetaPanels to perfectly match L7's design array */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 120, marginBottom: 320 }}>
+        <div style={{ padding: 48, border: `4px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
+          <Database size={56} style={{ color: col }} />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 36, color: isDark ? '#64748b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>PRIMARY SCALE</span>
+            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>16,384 PX</span>
           </div>
         </div>
-
-        {/* Fact bullets — each sentence as a discrete, numbered fact */}
-        <div>
-          <div style={{ fontSize: 32, fontWeight: 900, color: col, marginBottom: 30, textTransform: 'uppercase' }}>FACTS ({(data?.segments || []).length} entries)</div>
-          <ol style={{ margin: 0, paddingLeft: 60, fontSize: 26, lineHeight: 2.2, color: isDark ? '#cbd5e1' : '#1e293b' }}>
-            {(data?.segments || ['No facts recorded.']).map((fact, idx) => (
-              <li key={idx} style={{ marginBottom: 12 }}>{fact}</li>
-            ))}
-          </ol>
+        <div style={{ padding: 48, border: `4px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
+          <Shield size={56} style={{ color: col }} />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 36, color: isDark ? '#64748b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>DATA INTEGRITY</span>
+            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>FULL DEPTH</span>
+          </div>
+        </div>
+        <div style={{ padding: 48, border: `4px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
+          <Zap size={56} style={{ color: col }} />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 36, color: isDark ? '#64748b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>COMPUTATION</span>
+            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>QUANTUM EXT.</span>
+          </div>
+        </div>
+        <div style={{ padding: 48, border: `4px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
+          <Target size={56} style={{ color: col }} />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 36, color: isDark ? '#64748b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>X,Y ORIGIN</span>
+            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{pad4(lx)},{pad4(ly)}</span>
+          </div>
         </div>
       </div>
-
-      {/* 4x4 Grid Segment Parity with L7 */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 120 }}>
-        {Array.from({ length: 16 }).map((_, i) => (
-          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 30 }}>
-            <div style={{ fontSize: 28, fontWeight: 900, color: col }}>SEGMENT {i + 1}</div>
-            <div style={{ fontSize: 26, lineHeight: 2.0, color: isDark ? '#475569' : '#1e293b' }}>
-              {data?.segments?.length > 0 ? data.segments[i % data.segments.length] : placeholderText(4000, i + ly)}
+      {/* 32 Segments - exactly matching L7 design (8 cols) but 4 rows */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 160, borderTop: `4px solid ${col}33`, paddingTop: 240 }}>
+        {Array.from({ length: 32 }).map((_, i) => (
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 60 }}>
+            <div style={{ fontSize: 40, fontWeight: 900, color: col }}>SEGMENT {i + 1}</div>
+            <div style={{ fontSize: 44, color: isDark ? '#64748b' : '#475569', lineHeight: 1.8 }}>
+              {i === 31 
+                ? (data?.content || placeholderText(12000, lx)) 
+                : (data?.segments?.length > 0 ? data.segments[i % data.segments.length] : placeholderText(8000, i + ly))}
             </div>
           </div>
         ))}
       </div>
-
     </div>
   )
 })
@@ -430,7 +387,7 @@ function StaticBg({ layer, viewX, viewY, isDark, color, zoom, planet, vpSize }) 
   
   // Layer 1 Responsive Planet Logic
   // Scale the base radius based on viewport to look good on all devices
-  const baseRadius = layer === 1 ? Math.min(vpSize.w, vpSize.h) * 0.35 / zoom : 300
+  const baseRadius = layer === 1 ? Math.min(vpSize.w, vpSize.h) * 0.35 : 300
   const planetPx = baseRadius * cp
 
   const customImg = window.SOLAR_LAYER_CONFIG?.[planetId]?.[layer] || planet?.layerImages?.[layer]
@@ -698,9 +655,11 @@ export default function ArchiveGrid() {
   const startMoving = useCallback((dx, dy) => {
     stopMoving()
     move(dx, dy) // Initial move
-    moveInterval.current = setInterval(() => {
-      move(dx, dy)
-    }, 60) // 60ms for smooth continuous movement
+    moveInterval.current = setTimeout(() => {
+      moveInterval.current = setInterval(() => {
+        move(dx, dy)
+      }, 60) // 60ms for smooth continuous movement
+    }, 300) // Wait 300ms before starting continuous movement
   }, [move, stopMoving])
 
   useEffect(() => {
@@ -714,21 +673,25 @@ export default function ArchiveGrid() {
   const switchLayer = useCallback((nl) => {
     nl = Math.max(1, Math.min(TOTAL_LAYERS, nl))
     setLayer(nl)
-    setZoom(1.0)
+    
+    let defaultZoom = 1.0
+    if (nl === 7) defaultZoom = 0.60
+    if (nl === 8) defaultZoom = 0.15
+    setZoom(defaultZoom)
 
-    const cp = CELL_PX[nl]
+    const cp = CELL_PX[nl] * defaultZoom
     const offsetX = (vpSize.w / cp) / 2
     const offsetY = (vpSize.h / cp) / 2
 
     if (focusedCell) {
-      const { x, y } = clamp(focusedCell.x - offsetX, focusedCell.y - offsetY, nl, 1.0)
+      const { x, y } = clamp(focusedCell.x - offsetX, focusedCell.y - offsetY, nl, defaultZoom)
       setViewX(x)
       setViewY(y)
       return
     }
 
     // Center display (0,0) = absolute (HALF_W, HALF_H)
-    const { x, y } = clamp(HALF_W - offsetX, HALF_H - offsetY, nl, 1.0)
+    const { x, y } = clamp(HALF_W - offsetX, HALF_H - offsetY, nl, defaultZoom)
     setViewX(x)
     setViewY(y)
   }, [clamp, focusedCell, vpSize])
@@ -788,17 +751,7 @@ export default function ArchiveGrid() {
     }
     const onUp = (e) => {
       drag.current.active = false;
-      el.style.cursor = 'grab';
-
-      // Double-tap detection
-      const now = Date.now()
-      const clickDiff = now - lastClick.current
-      if (clickDiff < 300) {
-        if (layer < TOTAL_LAYERS) switchLayer(layer + 1)
-        lastClick.current = 0
-        return
-      }
-      lastClick.current = now
+      if (el) el.style.cursor = 'grab';
     }
     el.addEventListener('mousedown', onDown)
     window.addEventListener('mousemove', onMove)
@@ -988,75 +941,138 @@ export default function ArchiveGrid() {
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, zIndex: 1000
         }}>
           
-          {/* "+" Shaped Nav Groups */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 64px)', gridTemplateRows: 'repeat(3, 64px)', gap: 8 }}>
-            <div />
-            <button 
-              className="archive-pan-btn" 
-              style={{ width: 64, height: 64, borderRadius: 16 }} 
-              onMouseDown={() => startMoving(0, 1)}
-              onMouseUp={stopMoving}
-              onMouseLeave={stopMoving}
-              onTouchStart={(e) => { e.preventDefault(); startMoving(0, 1); }}
-              onTouchEnd={stopMoving}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <ChevronUp size={22} /><span style={{ fontSize: 9, fontWeight: 900 }}>+Y</span>
-              </div>
-            </button>
-            <div />
+          {/* Navigation Controls: D-Pad & Zoom */}
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            
+            {/* Z-Axis (Layer) Controls */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button 
+                className="archive-pan-btn" 
+                style={{ width: 56, height: 56, borderRadius: 14, background: `${col}15`, border: `2px solid ${col}44` }} 
+                onClick={() => { setFocusedCell(null); if(layer < TOTAL_LAYERS) switchLayer(layer + 1); }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Layers size={18} /><span style={{ fontSize: 9, fontWeight: 900 }}>+Z</span>
+                </div>
+              </button>
+              <button 
+                className="archive-pan-btn" 
+                style={{ width: 56, height: 56, borderRadius: 14, background: `${col}15`, border: `2px solid ${col}44` }} 
+                onClick={() => { setFocusedCell(null); if(layer > 1) switchLayer(layer - 1); }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={{ fontSize: 9, fontWeight: 900 }}>-Z</span><Layers size={18} style={{ opacity: 0.5 }} />
+                </div>
+              </button>
+            </div>
 
-            <button 
-              className="archive-pan-btn" 
-              style={{ width: 64, height: 64, borderRadius: 16 }} 
-              onMouseDown={() => startMoving(1, 0)}
-              onMouseUp={stopMoving}
-              onMouseLeave={stopMoving}
-              onTouchStart={(e) => { e.preventDefault(); startMoving(1, 0); }}
-              onTouchEnd={stopMoving}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <ChevronLeft size={22} /><span style={{ fontSize: 9, fontWeight: 900 }}>-X</span>
-              </div>
-            </button>
-            <button 
-              className="archive-pan-btn" 
-              style={{ width: 64, height: 64, borderRadius: 16, background: `${col}15`, border: `2px solid ${col}44` }} 
-              onClick={() => switchLayer(layer - 1)}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <ZoomOut size={20} /><span style={{ fontSize: 9, fontWeight: 900 }}>OUT</span>
-              </div>
-            </button>
-            <button 
-              className="archive-pan-btn" 
-              style={{ width: 64, height: 64, borderRadius: 16 }} 
-              onMouseDown={() => startMoving(-1, 0)}
-              onMouseUp={stopMoving}
-              onMouseLeave={stopMoving}
-              onTouchStart={(e) => { e.preventDefault(); startMoving(-1, 0); }}
-              onTouchEnd={stopMoving}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <span style={{ fontSize: 9, fontWeight: 900 }}>+X</span><ChevronRight size={22} />
-              </div>
-            </button>
+            {/* D-Pad Buttons (X, Y) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 56px)', gridTemplateRows: 'repeat(3, 56px)', gap: 8 }}>
+              <div />
+              <button 
+                className="archive-pan-btn" 
+                style={{ width: 56, height: 56, borderRadius: 14 }} 
+                onMouseDown={() => startMoving(0, 1)}
+                onMouseUp={stopMoving}
+                onMouseLeave={stopMoving}
+                onTouchStart={(e) => { e.preventDefault(); startMoving(0, 1); }}
+                onTouchEnd={stopMoving}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <ChevronUp size={20} /><span style={{ fontSize: 8, fontWeight: 900 }}>+Y</span>
+                </div>
+              </button>
+              <div />
 
-            <div />
-            <button 
-              className="archive-pan-btn" 
-              style={{ width: 64, height: 64, borderRadius: 16 }} 
-              onMouseDown={() => startMoving(0, -1)}
-              onMouseUp={stopMoving}
-              onMouseLeave={stopMoving}
-              onTouchStart={(e) => { e.preventDefault(); startMoving(0, -1); }}
-              onTouchEnd={stopMoving}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontSize: 9, fontWeight: 900 }}>-Y</span><ChevronDown size={22} />
-              </div>
-            </button>
-            <div />
+              <button 
+                className="archive-pan-btn" 
+                style={{ width: 56, height: 56, borderRadius: 14 }} 
+                onMouseDown={() => startMoving(1, 0)}
+                onMouseUp={stopMoving}
+                onMouseLeave={stopMoving}
+                onTouchStart={(e) => { e.preventDefault(); startMoving(1, 0); }}
+                onTouchEnd={stopMoving}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <ChevronLeft size={20} /><span style={{ fontSize: 8, fontWeight: 900 }}>-X</span>
+                </div>
+              </button>
+              
+              <div /> {/* Empty center */}
+
+              <button 
+                className="archive-pan-btn" 
+                style={{ width: 56, height: 56, borderRadius: 14 }} 
+                onMouseDown={() => startMoving(-1, 0)}
+                onMouseUp={stopMoving}
+                onMouseLeave={stopMoving}
+                onTouchStart={(e) => { e.preventDefault(); startMoving(-1, 0); }}
+                onTouchEnd={stopMoving}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <span style={{ fontSize: 8, fontWeight: 900 }}>+X</span><ChevronRight size={20} />
+                </div>
+              </button>
+
+              <div />
+              <button 
+                className="archive-pan-btn" 
+                style={{ width: 56, height: 56, borderRadius: 14 }} 
+                onMouseDown={() => startMoving(0, -1)}
+                onMouseUp={stopMoving}
+                onMouseLeave={stopMoving}
+                onTouchStart={(e) => { e.preventDefault(); startMoving(0, -1); }}
+                onTouchEnd={stopMoving}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={{ fontSize: 8, fontWeight: 900 }}>-Y</span><ChevronDown size={20} />
+                </div>
+              </button>
+              <div />
+            </div>
+
+            {/* Scale Zoom Controls */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button 
+                className="archive-pan-btn" 
+                style={{ width: 56, height: 56, borderRadius: 14, background: `${col}15`, border: `2px solid ${col}44` }} 
+                onClick={() => {
+                  setFocusedCell(null)
+                  setZoom(prev => {
+                    const nZ = Math.min(10.0, prev + 0.25)
+                    const cpX = viewX + (vpSize.w / 2) / (CELL_PX[layer] * prev)
+                    const cpY = viewY + (vpSize.h / 2) / (CELL_PX[layer] * prev)
+                    const { x, y } = clamp(cpX - (vpSize.w / 2) / (CELL_PX[layer] * nZ), cpY - (vpSize.h / 2) / (CELL_PX[layer] * nZ), layer, nZ)
+                    setViewX(x); setViewY(y)
+                    return nZ
+                  })
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <ZoomIn size={18} /><span style={{ fontSize: 8, fontWeight: 900 }}>+ZOOM</span>
+                </div>
+              </button>
+              <button 
+                className="archive-pan-btn" 
+                style={{ width: 56, height: 56, borderRadius: 14, background: `${col}15`, border: `2px solid ${col}44` }} 
+                onClick={() => {
+                  setFocusedCell(null)
+                  setZoom(prev => {
+                    const nZ = Math.max(0.15, prev - 0.25)
+                    const cpX = viewX + (vpSize.w / 2) / (CELL_PX[layer] * prev)
+                    const cpY = viewY + (vpSize.h / 2) / (CELL_PX[layer] * prev)
+                    const { x, y } = clamp(cpX - (vpSize.w / 2) / (CELL_PX[layer] * nZ), cpY - (vpSize.h / 2) / (CELL_PX[layer] * nZ), layer, nZ)
+                    setViewX(x); setViewY(y)
+                    return nZ
+                  })
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <ZoomOut size={18} /><span style={{ fontSize: 8, fontWeight: 900 }}>-ZOOM</span>
+                </div>
+              </button>
+            </div>
+
           </div>
 
           {/* Search Bar & Reset Row */}
@@ -1081,9 +1097,8 @@ export default function ArchiveGrid() {
               }}
               onClick={() => {
                 setFocusedCell(null)
-                setLayer(1)
                 setZoom(1.0)
-                const cp = CELL_PX[1]
+                const cp = CELL_PX[layer]
                 const vx = HALF_W - (vpSize.w / cp) / 2
                 const vy = HALF_H - (vpSize.h / cp) / 2
                 setViewX(vx)

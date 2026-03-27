@@ -100,8 +100,18 @@ export default function SubmitArchive() {
                 errs.coordY = 'Valid Y coordinate required'
             }
         }
-        if (!form.summary.trim() || form.summary.length < 50) errs.summary = 'Summary must be at least 50 characters'
-        if (!form.detail.trim() || form.detail.length < 100) errs.detail = 'Detail must be at least 100 characters'
+        if (!form.summary.trim() || form.summary.length < 50 || form.summary.length > 400) errs.summary = 'Summary must be 50 to 400 characters'
+
+        const detailTrimmed = form.detail.trim();
+        if (!detailTrimmed || detailTrimmed.length < 100 || detailTrimmed.length > 2500) {
+            errs.detail = 'Detail must be 100 to 2500 characters'
+        } else {
+            const segments = (detailTrimmed.match(/[^.!?]+[.!?]*/g) || [detailTrimmed]).map(s => s.trim()).filter(s => s.length > 0);
+            const invalidSegment = segments.find(s => s.length < 20 || s.length > 250);
+            if (invalidSegment) {
+                errs.detail = `Segments (sentences) must be 20-250 chars. Found invalid length (${invalidSegment.length} chars): "${invalidSegment.substring(0, 30)}..."`;
+            }
+        }
         return errs
     }
 
@@ -272,8 +282,9 @@ export default function SubmitArchive() {
                     <Field label="Short Summary" required>
                         <textarea
                             rows={3}
-                            placeholder="A concise overview of the research entry (min. 50 characters)..."
+                            placeholder="A concise overview of the research entry (50-400 characters)..."
                             value={form.summary}
+                            maxLength={400}
                             onChange={e => set('summary', e.target.value)}
                             style={{ ...inputStyle, resize: 'vertical' }}
                         />
@@ -282,8 +293,8 @@ export default function SubmitArchive() {
                                 ? <p className="text-xs" style={{ color: errorColor }}>{errors.summary}</p>
                                 : <span />
                             }
-                            <span className="text-xs" style={{ color: form.summary.length < 50 ? (isDark ? '#475569' : '#94a3b8') : '#34d399' }}>
-                                {form.summary.length}/50+
+                            <span className="text-xs" style={{ color: form.summary.length < 50 || form.summary.length > 400 ? errorColor : '#34d399' }}>
+                                {form.summary.length}/400
                             </span>
                         </div>
                     </Field>
@@ -292,8 +303,9 @@ export default function SubmitArchive() {
                     <Field label="Technical Deep Detail" required>
                         <textarea
                             rows={6}
-                            placeholder="In-depth technical analysis, methodologies, data, citations... (min. 100 characters)"
+                            placeholder="In-depth technical analysis. Enter discrete sentences to be parsed as grid segments (20-250 characters each)..."
                             value={form.detail}
+                            maxLength={2500}
                             onChange={e => set('detail', e.target.value)}
                             style={{ ...inputStyle, resize: 'vertical' }}
                         />
@@ -302,8 +314,8 @@ export default function SubmitArchive() {
                                 ? <p className="text-xs" style={{ color: errorColor }}>{errors.detail}</p>
                                 : <span />
                             }
-                            <span className="text-xs" style={{ color: form.detail.length < 100 ? (isDark ? '#475569' : '#94a3b8') : '#34d399' }}>
-                                {form.detail.length}/100+
+                            <span className="text-xs" style={{ color: form.detail.length < 100 || form.detail.length > 2500 ? errorColor : '#34d399' }}>
+                                {form.detail.length}/2500
                             </span>
                         </div>
                     </Field>
