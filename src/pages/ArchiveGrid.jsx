@@ -581,6 +581,12 @@ export default function ArchiveGrid() {
   const [focusedCell, setFocusedCell] = useState(null)
   const [vpSize, setVpSize] = useState({ w: document.documentElement.clientWidth, h: window.innerHeight - 92 })
   const drag = useRef({ active: false, sx: 0, sy: 0, svx: 0, svy: 0 })
+  const touch = useRef({
+    active: false, isPinch: false,
+    startX: 0, startY: 0, startVX: 0, startVY: 0,
+    startDist: 0, startZoom: 1,
+    lastVX: 0, lastVY: 0, lastZoom: 1,
+  })
   const lastClick = useRef(0)
   // Cleanup interval on unmount
   useEffect(() => () => {
@@ -763,6 +769,121 @@ export default function ArchiveGrid() {
     }
   }, [showGrid, layer, viewX, viewY, clamp, zoom, switchLayer])
 
+  // Touch: single-finger pan + two-finger pinch-to-zoom
+  useEffect(() => {
+    if (!showGrid) return
+    const el = vpRef.current; if (!el) return
+    const ts = touch.current
+
+    const getDist = (touches) => {
+      const dx = touches[0].clientX - touches[1].clientX
+      const dy = touches[0].clientY - touches[1].clientY
+      return Math.sqrt(dx * dx + dy * dy)
+    }
+
+    const onTouchStart = (e) => {
+      // Don't intercept touches on interactive controls
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT'
+        || e.target.closest('button') || e.target.closest('select')) return
+
+      const touches = e.touches
+      if (touches.length === 1) {
+        e.preventDefault()
+        ts.active = true
+        ts.isPinch = false
+        ts.startX = touches[0].clientX
+        ts.startY = touches[0].clientY
+        ts.startVX = viewX
+        ts.startVY = viewY
+        ts.lastVX = viewX
+        ts.lastVY = viewY
+        ts.lastZoom = zoom
+      } else if (touches.length === 2) {
+        e.preventDefault()
+        ts.active = true
+        ts.isPinch = true
+        ts.startDist = getDist(touches)
+        ts.startZoom = ts.lastZoom !== undefined ? ts.lastZoom : zoom
+        ts.startX = (touches[0].clientX + touches[1].clientX) / 2
+        ts.startY = (touches[0].clientY + touches[1].clientY) / 2
+        ts.startVX = ts.lastVX !== undefined ? ts.lastVX : viewX
+        ts.startVY = ts.lastVY !== undefined ? ts.lastVY : viewY
+      }
+    }
+
+    const onTouchMove = (e) => {
+      if (!ts.active) return
+      e.preventDefault()
+
+      const touches = e.touches
+
+      if (ts.isPinch && touches.length >= 2) {
+        // Pinch-to-zoom with simultaneous pan
+        const dist = getDist(touches)
+        const scale = dist / ts.startDist
+        const nZ = Math.max(0.15, Math.min(10.0, ts.startZoom * scale))
+
+        const midX = (touches[0].clientX + touches[1].clientX) / 2
+        const midY = (touches[0].clientY + touches[1].clientY) / 2
+
+        const cpOld = CELL_PX[layer] * ts.startZoom
+        const cpNew = CELL_PX[layer] * nZ
+        const rect = el.getBoundingClientRect()
+
+        // Keep the grid point under the initial pinch center anchored to the current midpoint
+        const nVX = ts.startVX + (ts.startX - rect.left) / cpOld - (midX - rect.left) / cpNew
+        const nVY = ts.startVY + (ts.startY - rect.top) / cpOld - (midY - rect.top) / cpNew
+
+        const { x, y } = clamp(nVX, nVY, layer, nZ)
+        setViewX(x)
+        setViewY(y)
+        setZoom(nZ)
+        setFocusedCell(null)
+        ts.lastVX = x
+        ts.lastVY = y
+        ts.lastZoom = nZ
+      } else if (!ts.isPinch && touches.length === 1) {
+        // Single-finger pan
+        const cp = CELL_PX[layer] * (ts.lastZoom !== undefined ? ts.lastZoom : zoom)
+        const dx = (ts.startX - touches[0].clientX) / cp
+        const dy = (ts.startY - touches[0].clientY) / cp
+        const { x, y } = clamp(ts.startVX + dx, ts.startVY + dy, layer, ts.lastZoom !== undefined ? ts.lastZoom : zoom)
+        setViewX(x)
+        setViewY(y)
+        setFocusedCell(null)
+        ts.lastVX = x
+        ts.lastVY = y
+      }
+    }
+
+    const onTouchEnd = (e) => {
+      const touches = e.touches
+      if (touches.length === 0) {
+        ts.active = false
+        ts.isPinch = false
+      } else if (touches.length === 1 && ts.isPinch) {
+        // Transitioned from 2 fingers to 1 — switch to pan mode
+        ts.isPinch = false
+        ts.startX = touches[0].clientX
+        ts.startY = touches[0].clientY
+        ts.startVX = ts.lastVX
+        ts.startVY = ts.lastVY
+      }
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: false })
+    el.addEventListener('touchmove', onTouchMove, { passive: false })
+    el.addEventListener('touchend', onTouchEnd, { passive: false })
+    el.addEventListener('touchcancel', onTouchEnd, { passive: false })
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove)
+      el.removeEventListener('touchend', onTouchEnd)
+      el.removeEventListener('touchcancel', onTouchEnd)
+    }
+  }, [showGrid, layer, zoom, viewX, viewY, clamp, vpSize])
+
   // Keyboard navigation
   useEffect(() => {
     const fn = (e) => {
@@ -922,7 +1043,7 @@ export default function ArchiveGrid() {
         </div>
 
         {/* Viewport */}
-        <div className="archive-viewport" ref={vpRef} style={{ flex: 1, position: 'relative', cursor: 'grab', overflow: 'hidden' }}>
+        <div className="archive-viewport" ref={vpRef} style={{ flex: 1, position: 'relative', cursor: 'grab', overflow: 'hidden', touchAction: 'none' }}>
           {layer <= STATIC_UP_TO
             ? <StaticBg layer={layer} viewX={viewX} viewY={viewY} isDark={isDark} color={col} zoom={zoom} planet={planet} vpSize={vpSize} />
             : <InteractiveGrid layer={layer} viewX={viewX} viewY={viewY} vpW={vpSize.w} vpH={vpSize.h} planet={planet} isDark={isDark} navigate={navigate} sectionEntries={sectionEntries} zoom={zoom} />
