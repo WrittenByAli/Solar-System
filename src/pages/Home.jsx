@@ -18,7 +18,7 @@ const DOMAINS = [
     { planet: 'Earth', domain: 'Biology', color: '#34d399', emoji: '🧬' },
     { planet: 'Mars', domain: 'Engineering', color: '#f87171', emoji: '🔧' },
     { planet: 'Jupiter', domain: 'Intelligence', color: '#fb923c', emoji: '🧠' },
-    { planet: 'Saturn', domain: 'Agriculture', color: '#fde68a', emoji: '♻️' },
+    { planet: 'Saturn', domain: 'Ecology', color: '#fde68a', emoji: '♻️' },
     { planet: 'Uranus', domain: 'Society', color: '#67e8f9', emoji: '⚖️' },
     { planet: 'Neptune', domain: 'Water', color: '#818cf8', emoji: '🌊' },
 ]

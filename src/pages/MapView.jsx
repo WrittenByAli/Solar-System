@@ -11,7 +11,7 @@ const PLANETS = [
     { id: 'earth', label: 'Earth', domain: 'Biology & Medicine', color: '#34d399', glow: 'rgba(52,211,153,0.5)', size: 24, orbitR: 190, baseAngle: 60, period: 365, desc: 'Genomics, medicine, ecology, biotech' },
     { id: 'mars', label: 'Mars', domain: 'Engineering', color: '#f87171', glow: 'rgba(248,113,113,0.5)', size: 18, orbitR: 245, baseAngle: 150, period: 687, desc: 'Resilience, harsh environments, robotics' },
     { id: 'jupiter', label: 'Jupiter', domain: 'AI & Computing', color: '#fb923c', glow: 'rgba(251,146,60,0.5)', size: 50, orbitR: 310, baseAngle: 270, period: 4333, desc: 'Neural networks, sensor nets, digital twins' },
-    { id: 'saturn', label: 'Saturn', domain: 'Agriculture & Waste', color: '#fde68a', glow: 'rgba(253,230,138,0.5)', size: 42, orbitR: 380, baseAngle: 30, period: 10759, desc: 'Vertical farms, composting, biochar' },
+    { id: 'saturn', label: 'Saturn', domain: 'Ecology & Waste', color: '#fde68a', glow: 'rgba(253,230,138,0.5)', size: 42, orbitR: 380, baseAngle: 30, period: 10759, desc: 'Vertical farms, composting, biochar' },
     { id: 'uranus', label: 'Uranus', domain: 'Society & Ethics', color: '#67e8f9', glow: 'rgba(103,232,249,0.5)', size: 30, orbitR: 445, baseAngle: 100, period: 30687, desc: 'Governance, education, arts, ethics' },
     { id: 'neptune', label: 'Neptune', domain: 'Oceans & Water', color: '#818cf8', glow: 'rgba(129,140,248,0.5)', size: 28, orbitR: 505, baseAngle: 220, period: 60190, desc: 'Desalination, aquaculture, tidal energy' },
 ]

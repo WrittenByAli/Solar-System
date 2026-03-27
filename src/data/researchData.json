@@ -59,7 +59,12 @@
                     "detailedSummary": "",
                     "fullDepth": ""
                 }
-            ]
+            ],
+            "layerImages": {
+                "1": "",
+                "2": "",
+                "3": ""
+            }
         },
         {
             "id": "mercury",
@@ -84,7 +89,12 @@
                     "detailedSummary": "",
                     "fullDepth": ""
                 }
-            ]
+            ],
+            "layerImages": {
+                "1": "",
+                "2": "",
+                "3": ""
+            }
         },
         {
             "id": "venus",
@@ -109,7 +119,12 @@
                     "detailedSummary": "",
                     "fullDepth": ""
                 }
-            ]
+            ],
+            "layerImages": {
+                "1": "",
+                "2": "",
+                "3": ""
+            }
         },
         {
             "id": "earth",
@@ -146,7 +161,12 @@
                     "title": "Ecology & Ecosystem Modeling",
                     "content": "Digital twin models simulate entire ecosystems. Mycorrhizal fungi networks mapped and optimized. Soil microbiome health monitored with DNA sequencing. Biodiversity indices tracked across all S.O.L.A.R. habitats to maintain ecological balance."
                 }
-            ]
+            ],
+            "layerImages": {
+                "1": "",
+                "2": "",
+                "3": ""
+            }
         },
         {
             "id": "mars",
@@ -183,7 +203,12 @@
                     "title": "Robotics & Automation",
                     "content": "Autonomous construction robots for hazardous environments. Drone-based structural inspection and damage assessment. Robotic maintenance systems extend infrastructure lifespan. Teleoperation enables repairs in contaminated or collapsed structures."
                 }
-            ]
+            ],
+            "layerImages": {
+                "1": "",
+                "2": "",
+                "3": ""
+            }
         },
         {
             "id": "jupiter",
@@ -220,13 +245,18 @@
                     "title": "Knowledge Management",
                     "content": "The SOLAR Archive itself is managed by Jupiter. Coordinate-based indexing, semantic search, and automated summarization ensure knowledge is accessible. Multi-criteria decision analysis helps communities make complex trade-off decisions involving energy, water, food, and social factors."
                 }
-            ]
+            ],
+            "layerImages": {
+                "1": "",
+                "2": "",
+                "3": ""
+            }
         },
         {
             "id": "saturn",
             "planet": "Saturn",
-            "domain": "Agriculture & Waste Systems",
-            "shortDomain": "Agriculture",
+            "domain": "Ecology & Waste Systems",
+            "shortDomain": "Ecology",
             "color": "#fde68a",
             "glowColor": "rgba(253,230,138,0.5)",
             "chapter": 8,
@@ -257,7 +287,12 @@
                     "title": "Waste-to-Energy Integration",
                     "content": "Biogas from anaerobic digestion powers cooking and heating. Pyrolysis converts non-compostable waste to biochar and syngas. Waste heat from composting warms greenhouse spaces. Every waste stream becomes an energy or material input."
                 }
-            ]
+            ],
+            "layerImages": {
+                "1": "",
+                "2": "",
+                "3": ""
+            }
         },
         {
             "id": "uranus",
@@ -294,7 +329,12 @@
                     "title": "Intergenerational Responsibility",
                     "content": "Long-term planning horizons: 7-generation thinking embedded in all policy. Youth councils have formal advisory roles. Elder knowledge systematically documented and preserved. Time capsule programs ensure continuity of values and wisdom."
                 }
-            ]
+            ],
+            "layerImages": {
+                "1": "",
+                "2": "",
+                "3": ""
+            }
         },
         {
             "id": "neptune",
@@ -331,7 +371,12 @@
                     "title": "Climate Regulation",
                     "content": "Ocean thermal energy conversion (OTEC) uses temperature differential between surface and deep water. Arctic ice monitoring via satellite and autonomous underwater vehicles. Carbon sequestration through enhanced ocean alkalinity. Seagrass restoration projects for coastal protection."
                 }
-            ]
+            ],
+            "layerImages": {
+                "1": "",
+                "2": "",
+                "3": ""
+            }
         }
     ]
 }

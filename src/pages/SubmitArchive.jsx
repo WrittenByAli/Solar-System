@@ -4,17 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, CheckCircle, ChevronDown, AlertCircle } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 
-const PLANETS = [
-    { id: 'sun', label: 'Sun', domain: 'Energy Research', color: '#ff6b35' },
-    { id: 'mercury', label: 'Mercury', domain: 'Communication Systems', color: '#9ca3af' },
-    { id: 'venus', label: 'Venus', domain: 'Atmospheric Sciences', color: '#fbbf24' },
-    { id: 'earth', label: 'Earth', domain: 'Ecology & Food Systems', color: '#34d399' },
-    { id: 'mars', label: 'Mars', domain: 'Resilience & Adaptation', color: '#f87171' },
-    { id: 'jupiter', label: 'Jupiter', domain: 'Systems & Autonomy', color: '#fb923c' },
-    { id: 'saturn', label: 'Saturn', domain: 'Materials & Fabrication', color: '#fde68a' },
-    { id: 'uranus', label: 'Uranus', domain: 'Magnetism & Geophysics', color: '#67e8f9' },
-    { id: 'neptune', label: 'Neptune', domain: 'Marine & Ocean Systems', color: '#818cf8' },
-]
+import fallbackData from '../data/researchData.json'
+
+const researchData = window.SOLAR_CONTENT_DATA || fallbackData;
+const PLANETS = researchData.planets.map(p => ({
+    id: p.id,
+    label: p.planet,
+    domain: p.domain,
+    color: p.color
+}))
 
 function Field({ label, children, required }) {
     return (
