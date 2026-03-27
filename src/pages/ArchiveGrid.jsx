@@ -145,11 +145,14 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark }) {
         <MetaPanel label="LATENCY" value="2.4 MS" icon={Zap} color={col} isDark={isDark} />
         <MetaPanel label="X,Y ORIGIN" value={`${pad4(lx)},${pad4(ly)}`} icon={Target} color={col} isDark={isDark} />
       </div>
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 40, borderTop: `1px solid ${col}33`, paddingTop: 60 }}>
-        {Array.from({ length: 16 }).map((_, i) => (
-          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 40, borderTop: `1px solid ${col}33`, paddingTop: 60, overflow: 'hidden' }}>
+        {Array.from({ length: 32 }).map((_, i) => (
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 15, overflow: 'hidden' }}>
             <div style={{ fontSize: 10, fontWeight: 900, color: col }}>SEGMENT {i + 1}</div>
-            <div style={{ fontSize: 11, color: isDark ? '#64748b' : '#475569', lineHeight: 1.8 }}>
+            <div style={{ 
+              fontSize: 11, color: isDark ? '#64748b' : '#475569', lineHeight: 1.8,
+              display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 18, overflow: 'hidden'
+            }}>
               {data?.segments?.length > 0 ? data.segments[i % data.segments.length] : placeholderText(3000, i + lx)}
             </div>
           </div>
@@ -195,11 +198,14 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark }) {
         </div>
       </div>
       {/* 32 Segments - exactly matching L7 design (8 cols) but 4 rows */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 160, borderTop: `4px solid ${col}33`, paddingTop: 240 }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 160, borderTop: `4px solid ${col}33`, paddingTop: 240, overflow: 'hidden', paddingBottom: 160 }}>
         {Array.from({ length: 32 }).map((_, i) => (
-          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 60 }}>
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 60, overflow: 'hidden' }}>
             <div style={{ fontSize: 40, fontWeight: 900, color: col }}>SEGMENT {i + 1}</div>
-            <div style={{ fontSize: 44, color: isDark ? '#64748b' : '#475569', lineHeight: 1.8 }}>
+            <div style={{ 
+              fontSize: 44, color: isDark ? '#64748b' : '#475569', lineHeight: 1.8,
+              display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 36, overflow: 'hidden' 
+            }}>
               {i === 31 
                 ? (data?.content || placeholderText(12000, lx)) 
                 : (data?.segments?.length > 0 ? data.segments[i % data.segments.length] : placeholderText(8000, i + ly))}
@@ -674,15 +680,21 @@ export default function ArchiveGrid() {
     return () => window.removeEventListener('resize', fn)
   }, [])
 
-  // Switch layer: navigate to display 0,0 centered on screen
-  // unless a search result focused a specific cell
+  // Switch layer: preserve current viewport center position
+  // so the user stays at the same grid coordinate when drilling deeper
   const switchLayer = useCallback((nl) => {
     nl = Math.max(1, Math.min(TOTAL_LAYERS, nl))
+
+    // Calculate the center of the current viewport in absolute grid coordinates
+    const oldCp = CELL_PX[layer] * zoom
+    const centerGX = viewX + (vpSize.w / 2) / oldCp
+    const centerGY = viewY + (vpSize.h / 2) / oldCp
+
     setLayer(nl)
     
     let defaultZoom = 1.0
     if (nl === 7) defaultZoom = 0.60
-    if (nl === 8) defaultZoom = 0.15
+    if (nl === 8) defaultZoom = 0.08
     setZoom(defaultZoom)
 
     const cp = CELL_PX[nl] * defaultZoom
@@ -696,11 +708,11 @@ export default function ArchiveGrid() {
       return
     }
 
-    // Center display (0,0) = absolute (HALF_W, HALF_H)
-    const { x, y } = clamp(HALF_W - offsetX, HALF_H - offsetY, nl, defaultZoom)
+    // Stay centered on the same grid position across layer switches
+    const { x, y } = clamp(centerGX - offsetX, centerGY - offsetY, nl, defaultZoom)
     setViewX(x)
     setViewY(y)
-  }, [clamp, focusedCell, vpSize])
+  }, [clamp, focusedCell, vpSize, viewX, viewY, layer, zoom])
 
   // Mouse wheel: zoom or pan
   useEffect(() => {
@@ -715,7 +727,7 @@ export default function ArchiveGrid() {
       if (isPinch || Math.abs(e.deltaY) > 40) {
         setFocusedCell(null)
         setZoom(prev => {
-          const nZ = Math.max(0.15, Math.min(10.0, prev + delta))
+          const nZ = Math.max(0.03, Math.min(10.0, prev + delta))
           // Zoom toward viewport center
           const cpX = viewX + (vpSize.w / 2) / (CELL_PX[layer] * prev)
           const cpY = viewY + (vpSize.h / 2) / (CELL_PX[layer] * prev)
@@ -821,7 +833,7 @@ export default function ArchiveGrid() {
         // Pinch-to-zoom with simultaneous pan
         const dist = getDist(touches)
         const scale = dist / ts.startDist
-        const nZ = Math.max(0.15, Math.min(10.0, ts.startZoom * scale))
+        const nZ = Math.max(0.03, Math.min(10.0, ts.startZoom * scale))
 
         const midX = (touches[0].clientX + touches[1].clientX) / 2
         const midY = (touches[0].clientY + touches[1].clientY) / 2
