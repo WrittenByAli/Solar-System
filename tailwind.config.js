@@ -6,10 +6,20 @@ export default {
     ],
     darkMode: 'class',
     theme: {
+        screens: {
+            xs: '400px',
+            sm: '640px',
+            md: '768px',
+            lg: '1024px',
+            xl: '1280px',
+            '2xl': '1536px',
+        },
         extend: {
             fontFamily: {
                 sans: ['Inter', 'system-ui', 'sans-serif'],
                 mono: ['JetBrains Mono', 'monospace'],
+                /** Heavy condensed display — matches SOLAR wordmark (custom SVG stays on “A” only). */
+                solar: ['Anton', 'Impact', 'Haettenschweiler', 'Arial Narrow', 'system-ui', 'sans-serif'],
             },
             colors: {
                 space: {

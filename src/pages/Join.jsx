@@ -1,9 +1,14 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UserPlus, LogIn, Mail, Lock, User, Eye, EyeOff, Rocket, ArrowRight } from 'lucide-react'
+import { UserPlus, LogIn, Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { useTheme } from '../App.jsx'
+import FoundationLogo from '../components/FoundationLogo.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 
 export default function Join() {
+    const navigate = useNavigate()
+    const { login } = useAuth()
     const { theme } = useTheme()
     const isDark = theme === 'dark'
     const [mode, setMode] = useState('login') // 'login' | 'signup'
@@ -28,8 +33,27 @@ export default function Join() {
 
     const handleSubmit = (e) => {
         e.preventDefault()
+        if (mode === 'signup') {
+            if (form.password !== form.confirmPassword) {
+                alert('Passwords do not match.')
+                return
+            }
+            const uname = form.username.trim()
+            if (!uname) {
+                alert('Choose a username.')
+                return
+            }
+            login(uname, form.email)
+        } else {
+            const uname = form.username.trim()
+            if (!uname) {
+                alert('Enter your username to sign in.')
+                return
+            }
+            login(uname, form.email)
+        }
         setSubmitted(true)
-        setTimeout(() => setSubmitted(false), 3000)
+        setTimeout(() => navigate('/'), 2200)
     }
 
     if (submitted) {
@@ -41,14 +65,26 @@ export default function Join() {
                     transition={{ type: 'spring', bounce: 0.4 }}
                     className="text-center max-w-sm"
                 >
-                    <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 0.5, delay: 0.2 }} className="text-5xl mb-4">🚀</motion.div>
+                    <motion.div
+                        animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.05, 1] }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        className="mx-auto mb-6 flex items-center justify-center rounded-full overflow-hidden"
+                        style={{
+                            width: 112,
+                            height: 112,
+                            background: 'linear-gradient(135deg, #f5a623, #ff6b35)',
+                            boxShadow: isDark ? '0 0 36px rgba(245,166,35,0.45)' : '0 0 28px rgba(245,166,35,0.35)',
+                        }}
+                    >
+                        <FoundationLogo fillCircle alt="" />
+                    </motion.div>
                     <h2 className="text-2xl font-black mb-2" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
                         {mode === 'login' ? 'Welcome Back!' : 'Account Created!'}
                     </h2>
                     <p className="text-sm mb-4" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
                         {mode === 'login' ? 'You are now logged into the SOLAR Archive.' : 'Your SOLAR Archive account is ready.'}
                     </p>
-                    <p className="text-xs" style={{ color: isDark ? '#475569' : '#cbd5e1' }}>Redirecting to the archive...</p>
+                    <p className="text-xs" style={{ color: isDark ? '#475569' : '#cbd5e1' }}>Taking you home…</p>
                 </motion.div>
             </div>
         )
@@ -61,16 +97,7 @@ export default function Join() {
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full max-w-md"
             >
-                {/* Logo */}
                 <div className="text-center mb-8">
-                    <motion.div
-                        whileHover={{ rotate: 360 }}
-                        transition={{ duration: 0.6 }}
-                        className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center"
-                        style={{ background: 'linear-gradient(135deg, #f5a623, #ff6b35)', boxShadow: '0 0 30px rgba(245,166,35,0.4)' }}
-                    >
-                        <Rocket size={24} color="white" />
-                    </motion.div>
                     <h1 className="text-2xl font-black" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
                         {mode === 'login' ? 'Welcome Back' : 'Join the Archive'}
                     </h1>
@@ -123,13 +150,11 @@ export default function Join() {
                         boxShadow: isDark ? '0 0 40px rgba(79,195,247,0.06)' : '0 4px 40px rgba(0,0,0,0.08)',
                     }}
                 >
-                    {/* Username (signup only) */}
-                    {mode === 'signup' && (
-                        <div className="relative">
-                            <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: isDark ? '#475569' : '#94a3b8' }} />
-                            <input style={inputStyle} type="text" placeholder="Username" value={form.username} onChange={e => set('username', e.target.value)} required />
-                        </div>
-                    )}
+                    {/* Username */}
+                    <div className="relative">
+                        <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: isDark ? '#475569' : '#94a3b8' }} />
+                        <input style={inputStyle} type="text" placeholder="Username" value={form.username} onChange={e => set('username', e.target.value)} required />
+                    </div>
 
                     {/* Email */}
                     <div className="relative">

@@ -4,6 +4,26 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 
+/** Same route as research hub id `star` (legacy `beacon` redirects) — Foundation archive (not drawn as an orbiting body). */
+const FOUNDATION_ARCHIVE = {
+    id: 'star',
+    label: 'Star',
+    domain: 'Foundation archive · memoranda, canon, stewardship',
+    color: '#f5a623',
+    glow: 'rgba(245,166,35,0.55)',
+    desc: 'Institutional memoranda, canon, and long-term stewardship — same SEG GRID as hub archives.',
+}
+
+/** Meta archive connecting all hubs; SOLAR = Sustainable Off-grid Living-labs for Autonomy & Research (client name). */
+const NEXUS_ARCHIVE = {
+    id: 'nexus',
+    label: 'SOLAR Nexus',
+    domain: 'Connects all planetary archives',
+    color: '#c084fc',
+    glow: 'rgba(192,132,252,0.55)',
+    desc: 'One integrated grid for cross-hub data and hosted living-lab layouts.',
+}
+
 const PLANETS = [
     { id: 'sun', label: 'Sun', domain: 'Energy Research', color: '#ff6b35', glow: 'rgba(255,107,53,0.7)', size: 72, orbitR: 0, baseAngle: 0, period: 0, desc: 'Solar, wind, fusion, hydrogen, batteries' },
     { id: 'mercury', label: 'Mercury', domain: 'Industrial Production', color: '#9ca3af', glow: 'rgba(156,163,175,0.5)', size: 14, orbitR: 95, baseAngle: 200, period: 88, desc: 'Metals, ceramics, 3D printing, composites' },
@@ -55,6 +75,16 @@ export default function MapView() {
         e.preventDefault()
         const q = searchVal.trim().toLowerCase()
         if (!q) return
+        const foundationTerms = ['star', 'beacon', 'foundation', 'foundation archive', 'institutional', 'memoranda', 'canon']
+        if (foundationTerms.some(t => q === t || q.includes(t))) {
+            navigate(`/archive/${FOUNDATION_ARCHIVE.id}`)
+            return
+        }
+        const nexusTerms = ['nexus', 'solar nexus', 'the solar nexus', 'solar-nexus', 'living-labs', 'living labs', 'off-grid living']
+        if (nexusTerms.some(t => q === t || q.includes(t))) {
+            navigate(`/archive/${NEXUS_ARCHIVE.id}`)
+            return
+        }
         const planet = PLANETS.find(p =>
             p.id === q || p.label.toLowerCase() === q || p.domain.toLowerCase().includes(q)
         )
@@ -83,6 +113,30 @@ export default function MapView() {
                 <p className="text-xs" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
                     Click a planet to explore its research domain
                 </p>
+                <div className="mt-2 flex flex-col items-center gap-1">
+                    <motion.button
+                        type="button"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.15 }}
+                        onClick={() => navigate(`/archive/${FOUNDATION_ARCHIVE.id}`)}
+                        className="text-[11px] font-semibold tracking-wide underline-offset-4 hover:underline"
+                        style={{ color: FOUNDATION_ARCHIVE.color }}
+                    >
+                        {FOUNDATION_ARCHIVE.label} — Foundation archive
+                    </motion.button>
+                    <motion.button
+                        type="button"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.22 }}
+                        onClick={() => navigate(`/archive/${NEXUS_ARCHIVE.id}`)}
+                        className="text-[11px] font-semibold tracking-wide underline-offset-4 hover:underline"
+                        style={{ color: NEXUS_ARCHIVE.color }}
+                    >
+                        {NEXUS_ARCHIVE.label} — connects all hubs
+                    </motion.button>
+                </div>
             </motion.div>
 
             {/* Search */}
@@ -108,7 +162,7 @@ export default function MapView() {
                 <AnimatePresence>
                     {hoveredPlanet && (
                         <motion.div key={hoveredPlanet.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
-                            className="px-5 py-2 rounded-2xl text-center"
+                            className="mx-2 max-w-[min(95vw,28rem)] px-3 py-2 sm:px-5 rounded-2xl text-center"
                             style={{
                                 background: isDark ? 'rgba(4,12,24,0.93)' : 'rgba(255,255,255,0.95)',
                                 border: `1px solid ${hoveredPlanet.glow}`,
@@ -116,16 +170,19 @@ export default function MapView() {
                                 backdropFilter: 'blur(12px)',
                             }}
                         >
-                            <p className="font-bold text-sm" style={{ color: hoveredPlanet.color }}>{hoveredPlanet.label} — {hoveredPlanet.domain}</p>
-                            <p className="text-xs mt-0.5" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>{hoveredPlanet.desc}</p>
+                            <p className="font-bold text-xs sm:text-sm break-words" style={{ color: hoveredPlanet.color }}>{hoveredPlanet.label} — {hoveredPlanet.domain}</p>
+                            <p className="text-[11px] sm:text-xs mt-0.5 break-words" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>{hoveredPlanet.desc}</p>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
 
             {/* SVG Solar System */}
-            <div className="relative z-10 w-full" style={{ maxWidth: 1000, height: 620 }}>
-                <svg ref={svgRef} viewBox="0 0 1000 800" className="w-full h-full" style={{ overflow: 'visible' }}>
+            <div
+                className="relative z-10 w-full max-w-[min(1000px,100%)] shrink-0 px-2 sm:px-4"
+                style={{ height: 'min(62vh, 620px)', minHeight: 'min(42vh, 360px)' }}
+            >
+                <svg ref={svgRef} viewBox="0 0 1000 800" className="w-full h-full" style={{ overflow: 'visible' }} preserveAspectRatio="xMidYMid meet">
                     {/* Orbital rings */}
                     {PLANETS.filter(p => p.orbitR > 0).map(p => (
                         <ellipse key={`orbit-${p.id}`} cx={CX} cy={CY} rx={p.orbitR} ry={p.orbitR * 0.38}

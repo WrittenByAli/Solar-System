@@ -9,7 +9,13 @@ import Join from './pages/Join.jsx'
 import Leaderboard from './pages/Leaderboard.jsx'
 import Reviews from './pages/Reviews.jsx'
 import SubmitArchive from './pages/SubmitArchive.jsx'
+import GradeSubmissions from './pages/GradeSubmissions.jsx'
+import CreateArchive from './pages/CreateArchive.jsx'
+import HostArchive from './pages/HostArchive.jsx'
+import ArchiveDirectory from './pages/ArchiveDirectory.jsx'
+import { AuthProvider } from './context/AuthContext.jsx'
 import StarField from './components/StarField.jsx'
+import FoundationArchiveStar from './components/FoundationArchiveStar.jsx'
 
 // Theme context
 export const ThemeContext = createContext()
@@ -23,10 +29,15 @@ function AnimatedRoutes() {
                 <Route path="/" element={<PageWrap><Home /></PageWrap>} />
                 <Route path="/map" element={<PageWrap><MapView /></PageWrap>} />
                 <Route path="/join" element={<PageWrap><Join /></PageWrap>} />
+                <Route path="/archive/beacon" element={<Navigate to="/archive/star" replace />} />
                 <Route path="/archive/:planetId" element={<PageWrap><ArchiveGrid /></PageWrap>} />
                 <Route path="/leaderboard" element={<PageWrap><Leaderboard /></PageWrap>} />
                 <Route path="/reviews" element={<PageWrap><Reviews /></PageWrap>} />
+                <Route path="/review-queue" element={<PageWrap><GradeSubmissions /></PageWrap>} />
                 <Route path="/submit" element={<PageWrap><SubmitArchive /></PageWrap>} />
+                <Route path="/create-archive" element={<PageWrap><CreateArchive /></PageWrap>} />
+                <Route path="/host-archive" element={<PageWrap><HostArchive /></PageWrap>} />
+                <Route path="/directory" element={<PageWrap><ArchiveDirectory /></PageWrap>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </AnimatePresence>
@@ -40,7 +51,7 @@ function PageWrap({ children }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25 }}
-            style={{ minHeight: '100vh' }}
+            className="min-h-[100dvh] min-w-0 max-w-full overflow-x-hidden"
         >
             {children}
         </motion.div>
@@ -66,11 +77,14 @@ export default function App() {
     return (
         <ThemeContext.Provider value={{ theme, toggleTheme }}>
             <Router>
-                <div className={theme === 'dark' ? 'bg-[#020408] text-slate-100 min-h-screen relative' : 'bg-white text-slate-900 min-h-screen relative'}>
-                    <StarField theme={theme} />
-                    <Navbar />
-                    <AnimatedRoutes />
-                </div>
+                <AuthProvider>
+                    <div className={theme === 'dark' ? 'bg-[#020408] text-slate-100 min-h-screen relative min-w-0 max-w-[100vw] overflow-x-hidden' : 'bg-white text-slate-900 min-h-screen relative min-w-0 max-w-[100vw] overflow-x-hidden'}>
+                        <StarField theme={theme} />
+                        <FoundationArchiveStar />
+                        <Navbar />
+                        <AnimatedRoutes />
+                    </div>
+                </AuthProvider>
             </Router>
         </ThemeContext.Provider>
     )

@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, CheckCircle, ChevronDown, AlertCircle } from 'lucide-react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { useSearchParams, Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Upload, CheckCircle, ChevronDown, AlertCircle, X, Link2, PenLine, Flag } from 'lucide-react'
 import { useTheme } from '../App.jsx'
+import FoundationLogo from '../components/FoundationLogo.jsx'
+import SubmissionLayerGuide from '../components/SubmissionLayerGuide.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
+import { appendPendingSubmission, getSubmissions, migrateSubmission, normalizeSubmissionTags, MAX_TAGS_PER_SUBMISSION } from '../utils/submissionStorage.js'
+import { appendSegmentReport } from '../utils/segmentReports.js'
+import { parseSubmissionArchiveLayer, parsePositiveInt } from '../utils/archiveLayerSpecs.js'
 
 import fallbackData from '../data/researchData.json'
 
@@ -13,6 +19,34 @@ const PLANETS = researchData.planets.map(p => ({
     domain: p.domain,
     color: p.color
 }))
+
+const MAX_ATTACHMENTS = 6
+const MAX_FILE_BYTES = 1_200_000
+
+const KIND_OPTIONS = [
+    { value: 'image', label: 'Photo / figure' },
+    { value: 'sketch', label: 'Sketch / scan' },
+    { value: 'graph', label: 'Chart / graph' },
+]
+
+function newAttachmentId() {
+    return typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `a-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function emptyForm() {
+    return {
+        planet: '',
+        subject: '',
+        coordX: '',
+        coordY: '',
+        summary: '',
+        detail: '',
+        difficulty: 3,
+        tags: '',
+    }
+}
 
 function Field({ label, children, required }) {
     return (
@@ -25,43 +59,201 @@ function Field({ label, children, required }) {
     )
 }
 
+function AuthorSubmissionOverview({ username, isDark, accent }) {
+    const [tick, setTick] = useState(0)
+    useEffect(() => {
+        const bump = () => setTick((t) => t + 1)
+        window.addEventListener('solar-archive-submissions-updated', bump)
+        return () => window.removeEventListener('solar-archive-submissions-updated', bump)
+    }, [])
+    const rows = useMemo(
+        () =>
+            getSubmissions()
+                .filter((s) => s.authorUsername === username)
+                .map(migrateSubmission)
+                .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))),
+        [username, tick],
+    )
+
+    if (!username || rows.length === 0) return null
+
+    const border = isDark ? 'rgba(79,195,247,0.18)' : 'rgba(15,23,42,0.1)'
+    const cardBg = isDark ? 'rgba(7,20,40,0.85)' : 'rgba(255,255,255,0.92)'
+    const muted = isDark ? '#94a3b8' : '#64748b'
+    const a = accent || (isDark ? '#4fc3f7' : '#0284c7')
+
+    return (
+        <div
+            className="mb-6 p-4 rounded-2xl text-sm"
+            style={{ background: cardBg, border: `1px solid ${border}` }}
+        >
+            <p className="font-bold mb-3" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
+                Your submissions
+            </p>
+            <ul className="space-y-3">
+                {rows.map((s) => {
+                    const tags = Array.isArray(s.tags) ? s.tags : []
+                    const reviews = s.reviews || []
+                    return (
+                        <li
+                            key={s.id}
+                            className="rounded-xl p-3"
+                            style={{
+                                background: isDark ? 'rgba(2,4,8,0.35)' : 'rgba(241,245,249,0.95)',
+                                border: `1px solid ${isDark ? 'rgba(79,195,247,0.1)' : 'rgba(15,23,42,0.06)'}`,
+                            }}
+                        >
+                            <div className="flex flex-wrap justify-between gap-2">
+                                <span className="font-semibold" style={{ color: a }}>{s.subject || 'Untitled'}</span>
+                                <span className="text-xs uppercase font-bold" style={{ color: muted }}>{s.status}</span>
+                            </div>
+                            <div className="text-xs mt-1" style={{ color: muted }}>
+                                {String(s.planet)} · ({String(s.coordX).padStart(3, '0')},{String(s.coordY).padStart(3, '0')}) ·{' '}
+                                {reviews.length}/3 reviews
+                            </div>
+                            {tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                    {tags.map((tg) => (
+                                        <Link
+                                            key={tg}
+                                            to={`/submit?tags=${encodeURIComponent(tg)}`}
+                                            className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
+                                            style={{ background: `${a}22`, color: a }}
+                                        >
+                                            #{tg}
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                            {reviews.length > 0 && (
+                                <div className="mt-2 text-xs space-y-2" style={{ color: muted }}>
+                                    <span className="font-semibold" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>Reviewer feedback</span>
+                                    {reviews.map((r) => (
+                                        <div key={`${r.reviewerUsername}-${r.at}`}>
+                                            <span className="font-medium" style={{ color: isDark ? '#e2e8f0' : '#334155' }}>
+                                                @{r.reviewerUsername}
+                                            </span>
+                                            {' — '}
+                                            fact-check {r.factCheckPass ? 'pass' : 'fail'}, difficulty {r.difficulty}/5
+                                            {r.notes?.trim() ? (
+                                                <div className="mt-0.5 pl-2 border-l-2 whitespace-pre-wrap" style={{ borderColor: a }}>
+                                                    {r.notes.trim()}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {s.status === 'approved' && (
+                                <Link to={`/archive/${s.planet}`} className="inline-block mt-2 text-xs font-bold" style={{ color: a }}>
+                                    Open archive hub →
+                                </Link>
+                            )}
+                        </li>
+                    )
+                })}
+            </ul>
+        </div>
+    )
+}
+
 export default function SubmitArchive() {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
-    const [searchParams] = useSearchParams()
+    const { isLoggedIn, username } = useAuth()
+    const [searchParams, setSearchParams] = useSearchParams()
+    const isSegmentReport = searchParams.get('intent') === 'segmentReport'
     const [submitted, setSubmitted] = useState(false)
-    const [form, setForm] = useState({
-        planet: '',
-        subject: '',
-        coordX: '',
-        coordY: '',
-        summary: '',
-        detail: '',
-        difficulty: 3,
-    })
+    const [form, setForm] = useState(emptyForm)
     const [errors, setErrors] = useState({})
     const [availableSlots, setAvailableSlots] = useState([])
-    const [occupiedSlots, setOccupiedSlots] = useState(new Set())
+    const [attachments, setAttachments] = useState([])
+    const [attachKind, setAttachKind] = useState('image')
+    const [graphUrlDraft, setGraphUrlDraft] = useState('')
+    const [attachErr, setAttachErr] = useState('')
+    const [attachmentCountSubmitted, setAttachmentCountSubmitted] = useState(0)
+    const [previewLayer, setPreviewLayer] = useState(5)
+    const [showRichPreview, setShowRichPreview] = useState(false)
+
+    const highlightSegmentSlot = useMemo(() => {
+        const lyr = parseSubmissionArchiveLayer(searchParams.get('archiveLayer'))
+        if (lyr !== 7 && lyr !== 8) return null
+        return parsePositiveInt(searchParams.get('nextSegmentSlot'))
+    }, [searchParams])
 
     useEffect(() => {
+        const layerFromUrl = parseSubmissionArchiveLayer(searchParams.get('archiveLayer'))
+        if (layerFromUrl != null) setPreviewLayer(layerFromUrl)
+    }, [searchParams])
+
+    const handlePreviewLayerChange = useCallback(
+        (layer) => {
+            setPreviewLayer(layer)
+            setSearchParams(
+                (prev) => {
+                    const next = new URLSearchParams(prev)
+                    if ([5, 6, 7, 8].includes(layer)) next.set('archiveLayer', String(layer))
+                    if (layer !== 7 && layer !== 8) next.delete('nextSegmentSlot')
+                    return next
+                },
+                { replace: true },
+            )
+        },
+        [setSearchParams],
+    )
+
+    const set = useCallback((key, val) => setForm((f) => ({ ...f, [key]: val })), [])
+
+    useEffect(() => {
+        const intent = searchParams.get('intent')
+        if (intent === 'segmentReport') {
+            const p = searchParams.get('planet') || ''
+            const x = searchParams.get('coordX') ?? ''
+            const y = searchParams.get('coordY') ?? ''
+            const archiveLayer = searchParams.get('archiveLayer') || '6'
+            const segmentIndex = searchParams.get('segmentIndex') || ''
+            const segmentLabel = searchParams.get('segmentLabel') || ''
+            const excerpt = searchParams.get('excerpt') || ''
+            setForm((f) => ({
+                ...f,
+                planet: p || f.planet,
+                coordX: x !== '' ? String(x) : f.coordX,
+                coordY: y !== '' ? String(y) : f.coordY,
+                subject:
+                    p && x !== '' && y !== ''
+                        ? `Segment report · L${archiveLayer} · (${x},${y}) · ${segmentLabel || `#${segmentIndex}`}`
+                        : f.subject,
+                summary: excerpt
+                    ? `Issue with ${segmentLabel || `segment ${segmentIndex}`}: ${excerpt.slice(0, 240)}${excerpt.length > 240 ? '…' : ''}`
+                    : `Segment report — ${segmentLabel || `slot ${segmentIndex}`} — describe what is wrong (accuracy, tone, formatting, etc.).`,
+                detail:
+                    `--- System context (keep for moderators) ---\nHub: ${p}\nLayer: L${archiveLayer}\nDisplay coords: X=${x}, Y=${y}\nSegment id: ${segmentIndex}\nLabel: ${segmentLabel}\nExcerpt:\n${excerpt || '(none)'}\n\n--- Your report ---\n`,
+            }))
+            return
+        }
         const p = searchParams.get('planet')
         const x = searchParams.get('coordX')
         const y = searchParams.get('coordY')
-        if (!p && !x && !y) return
+        const tags = searchParams.get('tags')
+        if (!p && !x && !y && (tags == null || tags === '')) return
         setForm(f => ({
             ...f,
             ...(p ? { planet: p } : {}),
             ...(x ? { coordX: String(x).padStart(3, '0') } : {}),
             ...(y ? { coordY: String(y).padStart(3, '0') } : {}),
+            ...(tags != null && tags !== '' ? { tags } : {}),
         }))
     }, [searchParams])
 
     useEffect(() => {
-        const persisted = JSON.parse(localStorage.getItem('submittedArchiveEntries') || '[]')
-        const occupied = new Set(persisted.map(item => `${String(item.coordX).padStart(3, '0')}:${String(item.coordY).padStart(3, '0')}`))
+        const persisted = getSubmissions()
+        const occupied = new Set(
+            persisted
+                .filter((item) => item.status !== 'rejected')
+                .map((item) => `${String(item.coordX).padStart(3, '0')}:${String(item.coordY).padStart(3, '0')}`),
+        )
 
         const nextSlots = []
-        // Larger range for the coordinated grid
         for (let x = 100; x <= 160; x += 1) {
             for (let y = 130; y <= 180; y += 1) {
                 const x3 = String(x).padStart(3, '0')
@@ -71,23 +263,92 @@ export default function SubmitArchive() {
             }
         }
 
-        // Always ensure the pre-filled form coordinate is available in the list if not occupied
         if (form.coordX && form.coordY) {
             const currentKey = `${String(form.coordX).padStart(3, '0')}:${String(form.coordY).padStart(3, '0')}`
             if (!occupied.has(currentKey) && !nextSlots.find(s => `${s.coordX}:${s.coordY}` === currentKey)) {
-                nextSlots.unshift({ 
-                    coordX: String(form.coordX).padStart(3, '0'), 
-                    coordY: String(form.coordY).padStart(3, '0'), 
-                    label: `X=${String(form.coordX).padStart(3, '0')}, Y=${String(form.coordY).padStart(3, '0')} (Selected)` 
+                nextSlots.unshift({
+                    coordX: String(form.coordX).padStart(3, '0'),
+                    coordY: String(form.coordY).padStart(3, '0'),
+                    label: `X=${String(form.coordX).padStart(3, '0')}, Y=${String(form.coordY).padStart(3, '0')} (Selected)`
                 })
             }
         }
 
-        setOccupiedSlots(occupied)
         setAvailableSlots(nextSlots)
     }, [form.coordX, form.coordY, submitted])
 
+    const appendFiles = useCallback((fileList, kind) => {
+        const files = Array.from(fileList || [])
+        if (!files.length) return
+        setAttachErr('')
+        for (const file of files) {
+            if (file.size > MAX_FILE_BYTES) {
+                setAttachErr(`"${file.name}" is too large (max ${Math.round(MAX_FILE_BYTES / 1024)} KB).`)
+                continue
+            }
+            const reader = new FileReader()
+            reader.onload = () => {
+                const url = reader.result
+                if (typeof url !== 'string') return
+                setAttachments((prev) => {
+                    if (prev.length >= MAX_ATTACHMENTS) {
+                        setAttachErr(`Maximum ${MAX_ATTACHMENTS} files.`)
+                        return prev
+                    }
+                    return [...prev, {
+                        id: newAttachmentId(),
+                        kind,
+                        label: file.name,
+                        url,
+                        mime: file.type || '',
+                        download: file.type === 'application/pdf',
+                    }]
+                })
+            }
+            reader.readAsDataURL(file)
+        }
+    }, [])
+
+    const addRemoteGraphUrl = () => {
+        const u = graphUrlDraft.trim()
+        setAttachErr('')
+        if (!u) return
+        if (!/^https?:\/\//i.test(u)) {
+            setAttachErr('URL must start with http:// or https://')
+            return
+        }
+        if (attachments.length >= MAX_ATTACHMENTS) {
+            setAttachErr(`Maximum ${MAX_ATTACHMENTS} attachments.`)
+            return
+        }
+        setAttachments((prev) => [...prev, {
+            id: newAttachmentId(),
+            kind: 'graph',
+            label: u.length > 80 ? `${u.slice(0, 77)}…` : u,
+            url: u,
+            download: false,
+        }])
+        setGraphUrlDraft('')
+    }
+
+    const removeAttachment = (id) => setAttachments((a) => a.filter((x) => x.id !== id))
+
     const validate = () => {
+        if (isSegmentReport) {
+            const errs = {}
+            if (!form.planet) errs.planet = 'Select a planet/domain'
+            if (!form.coordX || !form.coordY) {
+                errs.coordX = 'Coordinates are required'
+                errs.coordY = 'Coordinates are required'
+            }
+            if (!form.subject.trim()) errs.subject = 'Subject is required'
+            const sum = form.summary.trim()
+            if (sum.length < 30 || sum.length > 800) errs.summary = 'Summary must be 30–800 characters (what is the issue?)'
+            const det = form.detail.trim()
+            if (det.length < 40 || det.length > 4000) errs.detail = 'Detail must be 40–4000 characters (keep the context block and explain).'
+            if (String(form.tags || '').length > 600) errs.tags = 'Tags field is too long'
+            return errs
+        }
         const errs = {}
         if (!form.planet) errs.planet = 'Select a planet/domain'
         if (!form.subject.trim()) errs.subject = 'Subject is required'
@@ -102,16 +363,17 @@ export default function SubmitArchive() {
         }
         if (!form.summary.trim() || form.summary.length < 50 || form.summary.length > 400) errs.summary = 'Summary must be 50 to 400 characters'
 
-        const detailTrimmed = form.detail.trim();
+        const detailTrimmed = form.detail.trim()
         if (!detailTrimmed || detailTrimmed.length < 100 || detailTrimmed.length > 2500) {
             errs.detail = 'Detail must be 100 to 2500 characters'
         } else {
-            const segments = (detailTrimmed.match(/[^.!?]+[.!?]*/g) || [detailTrimmed]).map(s => s.trim()).filter(s => s.length > 0);
-            const invalidSegment = segments.find(s => s.length < 20 || s.length > 250);
+            const segments = (detailTrimmed.match(/[^.!?]+[.!?]*/g) || [detailTrimmed]).map(s => s.trim()).filter(s => s.length > 0)
+            const invalidSegment = segments.find(s => s.length < 20 || s.length > 250)
             if (invalidSegment) {
-                errs.detail = `Segments (sentences) must be 20-250 chars. Found invalid length (${invalidSegment.length} chars): "${invalidSegment.substring(0, 30)}..."`;
+                errs.detail = `Segments (sentences) must be 20-250 chars. Found invalid length (${invalidSegment.length} chars): "${invalidSegment.substring(0, 30)}..."`
             }
         }
+        if (String(form.tags || '').length > 600) errs.tags = 'Tags field is too long (use shorter comma-separated labels)'
         return errs
     }
 
@@ -120,18 +382,55 @@ export default function SubmitArchive() {
         const errs = validate()
         if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
-        const persisted = JSON.parse(localStorage.getItem('submittedArchiveEntries') || '[]')
-        const entry = {
+        if (!isLoggedIn || !username) {
+            setErrors({ login: 'Please sign in from Join / Login before submitting.' })
+            return
+        }
+
+        if (isSegmentReport) {
+            const attachmentCount = attachments.length
+            appendSegmentReport({
+                planet: form.planet,
+                coordX: String(form.coordX).trim(),
+                coordY: String(form.coordY).trim(),
+                archiveLayer: searchParams.get('archiveLayer') || '',
+                segmentIndex: searchParams.get('segmentIndex') || '',
+                segmentLabel: searchParams.get('segmentLabel') || '',
+                excerptAtOpen: searchParams.get('excerpt') || '',
+                subject: form.subject.trim(),
+                summary: form.summary.trim(),
+                detail: form.detail.trim(),
+                authorUsername: username,
+                attachments,
+            })
+            setAttachmentCountSubmitted(attachmentCount)
+            setSubmitted(true)
+            return
+        }
+
+        const attachmentCount = attachments.length
+        appendPendingSubmission({
             ...form,
             coordX: String(form.coordX).padStart(3, '0'),
             coordY: String(form.coordY).padStart(3, '0'),
             createdAt: new Date().toISOString(),
-        }
-        localStorage.setItem('submittedArchiveEntries', JSON.stringify([...persisted, entry]))
+            attachments,
+            authorUsername: username,
+            tags: normalizeSubmissionTags(form.tags),
+        })
+        setAttachmentCountSubmitted(attachmentCount)
         setSubmitted(true)
     }
 
     const selectedPlanet = PLANETS.find(p => p.id === form.planet)
+
+    const archiveLayerHint = searchParams.get('archiveLayer')
+    const nextSegmentSlotHint = searchParams.get('nextSegmentSlot')
+    const showSegmentSlotHint =
+        !isSegmentReport &&
+        (archiveLayerHint === '7' || archiveLayerHint === '8') &&
+        nextSegmentSlotHint &&
+        /^\d+$/.test(String(nextSegmentSlotHint).trim())
 
     const inputStyle = {
         padding: '10px 14px',
@@ -145,10 +444,30 @@ export default function SubmitArchive() {
         fontFamily: 'Inter, sans-serif',
     }
 
-    const labelColor = isDark ? '#94a3b8' : '#475569'
     const errorColor = '#f87171'
 
+    const resetForm = () => {
+        setSubmitted(false)
+        setAttachments([])
+        setAttachErr('')
+        setGraphUrlDraft('')
+        setAttachmentCountSubmitted(0)
+        setPreviewLayer(5)
+        setShowRichPreview(false)
+        setForm(emptyForm())
+        setSearchParams(
+            (prev) => {
+                const next = new URLSearchParams(prev)
+                next.delete('archiveLayer')
+                next.delete('nextSegmentSlot')
+                return next
+            },
+            { replace: true },
+        )
+    }
+
     if (submitted) {
+        const wasSegmentReport = searchParams.get('intent') === 'segmentReport'
         return (
             <div className="min-h-screen pt-20 flex items-center justify-center px-4">
                 <motion.div
@@ -158,28 +477,46 @@ export default function SubmitArchive() {
                     className="text-center max-w-md"
                 >
                     <motion.div
-                        animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+                        animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.05, 1] }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-6xl mb-6"
+                        className="mx-auto mb-6 flex items-center justify-center rounded-full overflow-hidden"
+                        style={{
+                            width: 112,
+                            height: 112,
+                            background: 'linear-gradient(135deg, #f5a623, #ff6b35)',
+                            boxShadow: isDark ? '0 0 36px rgba(245,166,35,0.45)' : '0 0 28px rgba(245,166,35,0.35)',
+                        }}
                     >
-                        🚀
+                        <FoundationLogo fillCircle alt="" />
                     </motion.div>
                     <CheckCircle size={48} className="mx-auto mb-4" color="#34d399" />
                     <h2 className="text-2xl font-black mb-2" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
-                        Entry Submitted!
+                        {wasSegmentReport ? 'Report Sent' : 'Entry Submitted!'}
                     </h2>
                     <p className="mb-2" style={{ color: isDark ? '#64748b' : '#94a3b8', fontSize: 14 }}>
-                        Your archive entry for <strong style={{ color: selectedPlanet?.color }}>{selectedPlanet?.label}</strong> has been received.
+                        {wasSegmentReport ? (
+                            <>
+                                Your segment report for <strong style={{ color: selectedPlanet?.color }}>{selectedPlanet?.label}</strong> at ({form.coordX}, {form.coordY}) was saved locally for the moderation queue demo.
+                            </>
+                        ) : (
+                            <>
+                                Your archive entry for <strong style={{ color: selectedPlanet?.color }}>{selectedPlanet?.label}</strong> has been received.
+                            </>
+                        )}
                     </p>
                     <p className="text-sm mb-6" style={{ color: isDark ? '#475569' : '#94a3b8' }}>
-                        It will be reviewed and added to the coordinate grid at ({form.coordX}, {form.coordY}).
+                        {wasSegmentReport
+                            ? 'Reports are stored in this browser (solarArchiveSegmentReports). Attachments, if any, are included in the report record.'
+                            : `It enters the review queue until three independent reviewers pass fact-check and difficulty grading; only then it appears on the coordinate grid at (${form.coordX}, ${form.coordY}).${
+                                  attachmentCountSubmitted > 0 ? ` ${attachmentCountSubmitted} file(s) attached (stored in this browser).` : ''
+                              }`}
                     </p>
                     <motion.button
                         whileHover={{ scale: 1.04 }}
                         whileTap={{ scale: 0.96 }}
                         className="px-8 py-3 rounded-full font-bold text-white"
                         style={{ background: 'linear-gradient(135deg, #7c3aed, #4fc3f7)' }}
-                        onClick={() => { setSubmitted(false); setForm({ planet: '', subject: '', coordX: '', coordY: '', summary: '', detail: '', difficulty: 3 }) }}
+                        onClick={resetForm}
                     >
                         Submit Another
                     </motion.button>
@@ -190,33 +527,128 @@ export default function SubmitArchive() {
 
     return (
         <div className="min-h-screen pt-20 pb-16 px-4">
-            <div className="max-w-2xl mx-auto">
-                {/* Header */}
+            <div className="max-w-6xl mx-auto">
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+                    <motion.div
+                        whileHover={{ rotate: 360 }}
+                        transition={{ duration: 0.65, ease: 'easeInOut' }}
+                        className="w-[4.5rem] h-[4.5rem] rounded-full mx-auto mb-5 flex items-center justify-center overflow-hidden"
+                        style={{
+                            background: 'linear-gradient(135deg, #f5a623, #ff6b35)',
+                            boxShadow: isDark ? '0 0 28px rgba(245,166,35,0.35)' : '0 0 24px rgba(245,166,35,0.25)',
+                        }}
+                    >
+                        <FoundationLogo fillCircle alt="" />
+                    </motion.div>
                     <div className="flex items-center justify-center gap-3 mb-3">
-                        <Upload size={28} color={isDark ? '#4fc3f7' : '#0284c7'} />
+                        {isSegmentReport ? (
+                            <Flag size={28} color={isDark ? '#f87171' : '#dc2626'} aria-hidden />
+                        ) : (
+                            <Upload size={28} color={isDark ? '#4fc3f7' : '#0284c7'} />
+                        )}
                         <h1 className="text-3xl md:text-4xl font-black" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
-                            Submit Archive
+                            {isSegmentReport ? 'Report a segment' : 'Submit Archive'}
                         </h1>
                     </div>
                     <p className="text-sm" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
-                        Contribute a research entry to the SOLAR coordinate grid
+                        {isSegmentReport
+                            ? 'Flag inaccurate, offensive, or misplaced archive text on layers 6–8. Your context block is pre-filled; add specifics below. Sign in so moderators can follow up.'
+                            : 'Contribute a research entry to the SOLAR coordinate grid. Add tags so peers can search and cross-link related submissions. Sign in so reviewers know who authored each entry.'}
                     </p>
                 </motion.div>
 
+                {isSegmentReport && (
+                    <div
+                        className="mb-6 p-4 rounded-2xl text-sm flex gap-3 items-start"
+                        style={{
+                            border: '1px solid rgba(248,113,113,0.45)',
+                            background: isDark ? 'rgba(127,29,29,0.2)' : 'rgba(254,226,226,0.95)',
+                            color: isDark ? '#fecaca' : '#7f1d1d',
+                        }}
+                    >
+                        <Flag size={18} className="shrink-0 mt-0.5" aria-hidden />
+                        <div>
+                            <p className="font-bold mb-1" style={{ color: isDark ? '#fecaca' : '#7f1d1d' }}>
+                                Segment moderation report
+                            </p>
+                            <p className="text-xs leading-relaxed" style={{ color: isDark ? '#fca5a5' : '#991b1b' }}>
+                                This submission is saved as a <strong>report</strong> (not a new grid entry). Keep the gray &quot;System context&quot; block in the detail field so reviewers know which tile you mean.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {showSegmentSlotHint && (
+                    <div
+                        className="mb-6 p-4 rounded-2xl text-sm flex gap-3 items-start"
+                        style={{
+                            border: `1px solid ${(selectedPlanet?.color || '#4fc3f7')}44`,
+                            background: isDark ? `${selectedPlanet?.color || '#4fc3f7'}14` : `${selectedPlanet?.color || '#0284c7'}0d`,
+                            color: isDark ? '#e2e8f0' : '#0f172a',
+                        }}
+                    >
+                        <PenLine size={18} className="shrink-0 mt-0.5" style={{ color: selectedPlanet?.color || '#4fc3f7' }} aria-hidden />
+                        <div>
+                            <p className="font-bold mb-1" style={{ color: isDark ? '#f1f5f9' : '#0f172a' }}>
+                                Layer {archiveLayerHint} · narrative segment {nextSegmentSlotHint}
+                            </p>
+                            <p className="text-xs leading-relaxed" style={{ color: isDark ? '#94a3b8' : '#475569' }}>
+                                Your detail field must split into sentences (20–250 characters each). After grading, sentences land on archive tiles in
+                                easiest-to-hardest order — slot <strong>{nextSegmentSlotHint}</strong> is the next empty narrative tile for this coordinate from the archive HUD.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {!isLoggedIn && (
+                    <div
+                        className="mb-6 p-4 rounded-2xl text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                        style={{
+                            background: isDark ? 'rgba(124,58,237,0.12)' : 'rgba(124,58,237,0.08)',
+                            border: `1px solid ${isDark ? 'rgba(124,58,237,0.35)' : 'rgba(124,58,237,0.25)'}`,
+                            color: isDark ? '#e2e8f0' : '#0f172a',
+                        }}
+                    >
+                        <span>Submitting requires an account so entries can be reviewed and attributed.</span>
+                        <Link
+                            to="/join"
+                            className="font-bold shrink-0 px-4 py-2 rounded-xl text-center text-white"
+                            style={{ background: 'linear-gradient(135deg, #7c3aed, #4fc3f7)' }}
+                        >
+                            Join / Login
+                        </Link>
+                    </div>
+                )}
+
+                {isLoggedIn && (
+                    <AuthorSubmissionOverview username={username} isDark={isDark} accent={selectedPlanet?.color} />
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] gap-8 items-start">
                 <motion.form
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
                     onSubmit={handleSubmit}
-                    className="p-6 rounded-2xl flex flex-col gap-5"
+                    className="p-6 rounded-2xl flex flex-col gap-5 min-w-0"
                     style={{
                         background: isDark ? 'rgba(7,20,40,0.9)' : 'rgba(255,255,255,0.9)',
                         border: `1px solid ${isDark ? 'rgba(79,195,247,0.18)' : 'rgba(15,23,42,0.1)'}`,
                         boxShadow: isDark ? '0 0 40px rgba(79,195,247,0.06)' : '0 4px 40px rgba(0,0,0,0.08)',
                     }}
                 >
-                    {/* Planet selector */}
+                    {errors.login && (
+                        <div
+                            className="flex flex-wrap items-center gap-2 text-xs p-3 rounded-xl"
+                            style={{ background: 'rgba(248,113,113,0.12)', color: '#f87171', border: '1px solid rgba(248,113,113,0.35)' }}
+                        >
+                            <AlertCircle size={14} className="shrink-0" />
+                            <span>{errors.login}</span>
+                            <Link to="/join" className="font-bold underline" style={{ color: '#f87171' }}>
+                                Open Join / Login
+                            </Link>
+                        </div>
+                    )}
                     <Field label="Planet / Research Domain" required>
                         <div className="relative">
                             <select
@@ -239,7 +671,83 @@ export default function SubmitArchive() {
                         {errors.planet && <p className="text-xs" style={{ color: errorColor }}>{errors.planet}</p>}
                     </Field>
 
-                    {/* Subject */}
+                    <Field label="Images, sketches, and graphs (optional)">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                            <select
+                                value={attachKind}
+                                onChange={(e) => setAttachKind(e.target.value)}
+                                style={{ ...inputStyle, maxWidth: 220, cursor: 'pointer' }}
+                            >
+                                {KIND_OPTIONS.map((o) => (
+                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                            </select>
+                            <label className="text-xs font-medium cursor-pointer px-4 py-2.5 rounded-xl border text-center" style={{ borderColor: isDark ? 'rgba(79,195,247,0.35)' : 'rgba(15,23,42,0.2)', color: isDark ? '#94a3b8' : '#475569' }}>
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept="image/*,.svg,image/svg+xml,application/pdf"
+                                    className="hidden"
+                                    onChange={(e) => { appendFiles(e.target.files, attachKind); e.target.value = '' }}
+                                />
+                                Choose files…
+                            </label>
+                        </div>
+                        <p className="text-xs mt-1" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
+                            Up to {MAX_ATTACHMENTS} files, {Math.round(MAX_FILE_BYTES / 1024)} KB each (images, SVG, PDF). Stored locally until a backend is connected.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2 mt-3 items-stretch sm:items-center">
+                            <input
+                                type="url"
+                                placeholder="Or paste image URL (https://…)"
+                                value={graphUrlDraft}
+                                onChange={(e) => setGraphUrlDraft(e.target.value)}
+                                style={inputStyle}
+                            />
+                            <button
+                                type="button"
+                                onClick={addRemoteGraphUrl}
+                                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold shrink-0"
+                                style={{
+                                    background: isDark ? 'rgba(79,195,247,0.15)' : 'rgba(2,132,199,0.1)',
+                                    color: isDark ? '#4fc3f7' : '#0284c7',
+                                    border: `1px solid ${isDark ? 'rgba(79,195,247,0.3)' : 'rgba(2,132,199,0.25)'}`,
+                                }}
+                            >
+                                <Link2 size={16} /> Add URL
+                            </button>
+                        </div>
+                        {attachErr && <p className="text-xs mt-2" style={{ color: errorColor }}>{attachErr}</p>}
+                        {attachments.length > 0 && (
+                            <ul className="mt-3 space-y-2">
+                                {attachments.map((a) => (
+                                    <li
+                                        key={a.id}
+                                        className="flex items-center justify-between gap-2 text-xs px-3 py-2 rounded-lg"
+                                        style={{
+                                            background: isDark ? 'rgba(15,23,42,0.6)' : 'rgba(241,245,249,0.95)',
+                                            border: `1px solid ${isDark ? 'rgba(79,195,247,0.12)' : 'rgba(15,23,42,0.08)'}`,
+                                        }}
+                                    >
+                                        <span className="truncate" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
+                                            <span className="font-bold uppercase mr-2 opacity-70">{a.kind}</span>
+                                            {a.label}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            aria-label="Remove"
+                                            onClick={() => removeAttachment(a.id)}
+                                            className="shrink-0 p-1 rounded-md hover:opacity-80"
+                                            style={{ color: errorColor }}
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </Field>
+
                     <Field label="Subject Title" required>
                         <input
                             type="text"
@@ -252,7 +760,20 @@ export default function SubmitArchive() {
                         {errors.subject && <p className="text-xs" style={{ color: errorColor }}>{errors.subject}</p>}
                     </Field>
 
-                    {/* Available grid selection */}
+                    <Field label={`Tags (optional, up to ${MAX_TAGS_PER_SUBMISSION})`}>
+                        <input
+                            type="text"
+                            placeholder="e.g. fusion, materials-science, citation-needed"
+                            value={form.tags}
+                            onChange={e => set('tags', e.target.value)}
+                            style={inputStyle}
+                        />
+                        <p className="text-xs mt-1" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
+                            Comma or hashtag separated. Normalized for search — reuse tags to cross-link subjects across hubs.
+                        </p>
+                        {errors.tags && <p className="text-xs" style={{ color: errorColor }}>{errors.tags}</p>}
+                    </Field>
+
                     <Field label="Choose an available grid slot" required>
                         <select
                             value={`${form.coordX || ''}:${form.coordY || ''}`}
@@ -278,7 +799,6 @@ export default function SubmitArchive() {
                         {(errors.coordX || errors.coordY) && <p className="text-xs" style={{ color: errorColor }}>{errors.coordX || errors.coordY}</p>}
                     </Field>
 
-                    {/* Summary */}
                     <Field label="Short Summary" required>
                         <textarea
                             rows={3}
@@ -299,7 +819,6 @@ export default function SubmitArchive() {
                         </div>
                     </Field>
 
-                    {/* Detail */}
                     <Field label="Technical Deep Detail" required>
                         <textarea
                             rows={6}
@@ -320,13 +839,13 @@ export default function SubmitArchive() {
                         </div>
                     </Field>
 
-                    {/* Difficulty */}
+                    {!isSegmentReport && (
                     <Field label={`Difficulty Level: ${form.difficulty}/5`}>
                         <input
                             type="range"
                             min={1} max={5} step={1}
                             value={form.difficulty}
-                            onChange={e => set('difficulty', parseInt(e.target.value))}
+                            onChange={e => set('difficulty', parseInt(e.target.value, 10))}
                             className="w-full"
                             style={{ accentColor: isDark ? '#4fc3f7' : '#0284c7' }}
                         />
@@ -341,8 +860,9 @@ export default function SubmitArchive() {
                             ))}
                         </div>
                     </Field>
+                    )}
 
-                    {/* Guidelines note */}
+                    {!isSegmentReport && (
                     <div
                         className="flex items-start gap-2 p-3 rounded-xl"
                         style={{
@@ -350,28 +870,44 @@ export default function SubmitArchive() {
                             border: `1px solid ${isDark ? 'rgba(79,195,247,0.15)' : 'rgba(2,132,199,0.15)'}`,
                         }}
                     >
-                        <AlertCircle size={14} style={{ color: isDark ? '#4fc3f7' : '#0284c7', flexShrink: 0, marginTop: 1 }} />
+                        <AlertCircle size={14} style={{ color: isDark ? '#4fc3f7' : '#0284c7', flexShrink: 0, marginTop: 1 }} aria-hidden />
                         <p className="text-xs leading-relaxed" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
                             All entries are reviewed for accuracy and relevance before being added to the archive. Entries with citations and real-world examples are prioritised. Coordinates are checked against the existing grid to avoid collisions.
                         </p>
                     </div>
+                    )}
 
-                    {/* Submit */}
                     <motion.button
                         type="submit"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.97 }}
-                        className="w-full py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2"
+                        disabled={!isLoggedIn}
+                        whileHover={{ scale: isLoggedIn ? 1.02 : 1 }}
+                        whileTap={{ scale: isLoggedIn ? 0.97 : 1 }}
+                        className="w-full py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
                         style={{
-                            background: 'linear-gradient(135deg, #7c3aed, #4fc3f7)',
-                            boxShadow: '0 0 24px rgba(124,58,237,0.4)',
+                            background: isSegmentReport
+                                ? 'linear-gradient(135deg, #b91c1c, #f97316)'
+                                : 'linear-gradient(135deg, #7c3aed, #4fc3f7)',
+                            boxShadow: isSegmentReport ? '0 0 24px rgba(185,28,28,0.35)' : '0 0 24px rgba(124,58,237,0.4)',
                             fontSize: 15,
                         }}
                     >
-                        <Upload size={17} />
-                        Submit to the Archive
+                        {isSegmentReport ? <Flag size={17} /> : <Upload size={17} />}
+                        {isSegmentReport ? 'Send segment report' : 'Submit to the Archive'}
                     </motion.button>
                 </motion.form>
+
+                <SubmissionLayerGuide
+                    previewLayer={previewLayer}
+                    onLayerChange={handlePreviewLayerChange}
+                    showRichPreview={showRichPreview}
+                    onRichToggle={setShowRichPreview}
+                    form={form}
+                    attachments={attachments}
+                    isDark={isDark}
+                    accent={selectedPlanet?.color || (isDark ? '#4fc3f7' : '#0284c7')}
+                    highlightSegmentSlot={highlightSegmentSlot}
+                />
+                </div>
             </div>
         </div>
     )

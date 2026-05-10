@@ -14,48 +14,85 @@
                 {
                     "title": "Geothermal Energy",
                     "shortSummary": "Under the ground of each planet or hub is heat. The Sun hub studies how to use this heat for energy. This includes drilling deep to reach hot areas and using systems that store heat for later use.\nBy combining geothermal energy with solar power, the hubs can have constant energy. For example, Mars uses geothermal heat to keep habitats warm, and Earth can use it to reduce fossil fuel use. This energy is steady, reliable, and always available.",
+                    "attachments": [
+                        { "label": "Reference diagram (PNG)", "url": "/logo.png", "kind": "graph", "download": false }
+                    ],
+                    "alternatePerspectives": [
+                        { "hubId": "mars", "label": "Engineering — geothermal heat in habitats & harsh environments" },
+                        { "hubId": "earth", "label": "Biology & medicine — planetary health tied to stable energy" }
+                    ],
                     "detailedSummary": "",
                     "fullDepth": ""
                 },
                 {
                     "title": "Solar Power",
                     "shortSummary": "The Sun hub uses solar panels and mirrors to collect sunlight. Some panels are built into windows or rooftops. Others use large mirrors to focus sunlight and store it in molten salts, which hold heat for hours.\nThis energy is shared with other hubs. Venus’s greenhouses use thin-film solar panels, while Neptune uses sunlight to help clean water. Mars has panels designed to survive dust storms. This shows how solar energy can be adapted to different conditions.",
+                    "alternatePerspectives": [
+                        { "hubId": "venus", "label": "Agriculture — solar-driven controlled growing" },
+                        { "hubId": "neptune", "label": "Water systems — solar-assisted purification & treatment" }
+                    ],
                     "detailedSummary": "",
                     "fullDepth": ""
                 },
                 {
                     "title": "Hydrogen Energy",
                     "shortSummary": "Hydrogen is a way to store and move energy. The Sun hub produces hydrogen from electricity using water. Hydrogen can then be stored safely and used to create electricity when needed.\nHubs like Jupiter manage hydrogen flows, making sure that energy moves where it is most needed. Earth uses hydrogen to reduce pollution, and Saturn uses it to keep nutrient cycles running in farms. Hydrogen acts like a battery for the whole system.",
+                    "alternatePerspectives": [
+                        { "hubId": "jupiter", "label": "AI & computing — routing, prediction, and load balancing" },
+                        { "hubId": "saturn", "label": "Ecology — hydrogen in nutrient & farm loops" },
+                        { "hubId": "earth", "label": "Biology & medicine — clean fuels and clinical logistics" }
+                    ],
                     "detailedSummary": "",
                     "fullDepth": ""
                 },
                 {
                     "title": "Sodium-Based Batteries",
                     "shortSummary": "Lithium is limited, so the Sun hub researches sodium-based batteries. Sodium is cheap and plentiful. These batteries store energy from solar panels or geothermal plants and release it when needed.\nMars uses sodium batteries for cold environments, and Earth can scale them to cities. Venus integrates these batteries in animal systems to ensure uninterrupted power. These batteries are key for making energy reliable across all hubs.",
+                    "alternatePerspectives": [
+                        { "hubId": "mars", "label": "Engineering — cold-environment storage & rugged power" },
+                        { "hubId": "mercury", "label": "Industry — materials and manufacturing at scale" }
+                    ],
                     "detailedSummary": "",
                     "fullDepth": ""
                 },
                 {
                     "title": "Smart Energy Distribution",
                     "shortSummary": "Energy is only useful if it reaches the places that need it. The Sun hub builds smart grids and microgrids that can operate independently.\nAI helps balance energy use, making sure no hub runs out. If a disaster happens, the grid can reroute power automatically. This means all hubs, from Mars to Saturn, can rely on constant energy without human intervention.",
+                    "alternatePerspectives": [
+                        { "hubId": "jupiter", "label": "AI & computing — grids, prediction, and balancing" },
+                        { "hubId": "mars", "label": "Engineering — resilient infrastructure when grids fail" }
+                    ],
                     "detailedSummary": "",
                     "fullDepth": ""
                 },
                 {
                     "title": "Heat Management",
                     "shortSummary": "Energy is not just about creating power; it’s also about using it wisely. The Sun hub develops heat pumps, insulation, and radiative cooling to keep buildings and systems efficient.\nVenus uses these systems in greenhouses, Mars in habitat domes, and Neptune in water treatment facilities. Proper heat management saves energy and keeps the hubs comfortable and safe.",
+                    "alternatePerspectives": [
+                        { "hubId": "venus", "label": "Agriculture — thermal control in closed-loop farms" },
+                        { "hubId": "mars", "label": "Engineering — habitats and passive thermal design" },
+                        { "hubId": "neptune", "label": "Water systems — process heat and treatment plants" }
+                    ],
                     "detailedSummary": "",
                     "fullDepth": ""
                 },
                 {
                     "title": "Fusion Research",
                     "shortSummary": "Fusion is the long-term energy solution. The Sun hub tests tokamaks, stellarators, and laser-based fusion methods.\nSuccess in fusion would provide almost limitless clean energy. Mars, Jupiter, and Earth all use lessons from fusion experiments to power other systems. Fusion could eventually make the entire S.O.L.A.R. system almost independent from solar panels or batteries.",
+                    "alternatePerspectives": [
+                        { "hubId": "mercury", "label": "Industry — reactor alloys, ceramics, and extreme materials" },
+                        { "hubId": "jupiter", "label": "AI & computing — modeling, control, and digital twins" }
+                    ],
                     "detailedSummary": "",
                     "fullDepth": ""
                 },
                 {
                     "title": "Materials for Energy Systems",
                     "shortSummary": "Energy systems need special materials. The Sun hub develops strong metals, heat-resistant ceramics, and lightweight composites.\nThese materials are used in turbines, solar panels, batteries, and fusion reactors. Mars tests them under harsh conditions, Mercury uses them in production, and Neptune applies them in water systems. Good materials make energy systems last longer and work better.",
+                    "alternatePerspectives": [
+                        { "hubId": "mercury", "label": "Industry — metallurgy and precision manufacturing" },
+                        { "hubId": "mars", "label": "Engineering — proving materials in harsh environments" }
+                    ],
                     "detailedSummary": "",
                     "fullDepth": ""
                 }
@@ -79,12 +116,21 @@
             "sections": [
                 {
                     "title": "High-Efficiency Manufacturing Techniques",
+                    "alternatePerspectives": [
+                        { "hubId": "sun", "label": "Energy — powering factories and synchronized production" },
+                        { "hubId": "jupiter", "label": "AI & computing — adaptive lines and predictive quality" }
+                    ],
                     "shortSummary": "Mercury’s industrial identity begins with how things are made. Manufacturing has always been the heart of industry, but in S.O.L.A.R., it is transformed into something more than assembly lines and factories. It becomes a living system of precision, where machines, energy, and intelligence cooperate to maximize efficiency while eliminating waste. High-efficiency manufacturing is not only about productivity; it is about survival in a closed-loop civilization. Every atom, every joule, every process matters.\nOn Earth, efficiency in production was often measured in terms of cost and speed. Factories churned out goods in vast numbers, but often at the expense of materials wasted, energy squandered, and environments polluted. Defects were treated as acceptable losses, and recycling was an afterthought. Within Mercury, this logic is no longer viable. In an interplanetary system where resources must circulate without loss, efficiency must be absolute: not simply faster production, but cleaner, smarter, and endlessly adaptable.\nAt the core of Mercury’s factories are AI-integrated production lines, powered by the Sun’s distributed energy network and optimized by Jupiter’s data systems. These lines are modular and reprogrammable. A facility that today produces structural alloys for Mars can, within days, reconfigure to manufacture corrosion-proof turbines for Neptune. The speed of adaptation comes not from building new factories, but from reprogramming existing ones. Robotic arms, 3D printing heads, laser cutters, and precision forges are all mounted on flexible frameworks, designed to swap tasks with minimal downtime.\nEfficiency also comes from minimizing input waste. Lean manufacturing principles are elevated into something close to perfection. Raw materials are tracked at the molecular level, with sensors ensuring no excess enters the process. AI-driven cutting and forming techniques reduce scrap to near zero. What little byproduct remains is immediately redirected into Mercury’s circular economy streams, where glass shards, metal dust, or polymer offcuts are collected, purified, and reintroduced into the cycle. In Mercury, waste is not an output—it is a misplaced input waiting to be reused.\nQuality control is another critical innovation. On Earth, quality checks often came after production, leading to costly recalls and discards. Mercury uses predictive AI and nanoscopic inspection in real time. Products are tested continuously as they are being made. Microscopic cracks in alloys, invisible to human eyes, are detected before the product leaves the forge. Ceramic panels destined for Saturn’s vertical farms are stress-tested virtually against simulated storms and heat variations before they are ever assembled. By embedding testing into the process itself, Mercury ensures that failure is prevented, not corrected.\nAnother defining feature is energy synchronization. Factories no longer run on centralized grids prone to fluctuation and waste. Instead, they are directly powered by the Sun hub’s clean energy transfers—solar, fusion, and geothermal streams distributed across hubs. This allows factories to dynamically adjust production schedules based on real-time energy availability. When energy surpluses flow from solar arrays, production ramps up. When energy must be conserved for other hubs, factories downshift to maintenance, recycling, or retooling tasks. Mercury’s industries do not fight the flow of energy—they move with it, like sails catching a shifting wind.\nThe human role in Mercury’s manufacturing also changes. People are no longer line workers repeating dangerous, monotonous tasks. Those are fully automated by robotics. Instead, humans serve as designers, supervisors, and system integrators. Their responsibility is to envision what must be built, adapt the systems for new challenges, and ensure that efficiency remains aligned with human values—safety, equity, and long-term resilience. This redefinition of human labor reflects a deeper S.O.L.A.R. principle: technology is not built to replace people, but to elevate them above drudgery.\nThe interconnections of Mercury’s manufacturing techniques ripple outward across the entire framework:\n●\tSaturn’s agricultural domes are mass-produced in lightweight but sturdy modules, enabling rapid expansion of food systems without draining resources.\n●\tNeptune’s desalination plants rely on precision-crafted membranes and turbines that require exact tolerances only possible through Mercury’s zero-defect lines.\n●\tMars receives modular, dust-resistant habitat panels that can be assembled by small teams in hostile environments.\n●\tEarth’s biotech hubs benefit from ultra-clean, contamination-proof lab instruments, supporting research without constant import of new materials.",
                     "detailedSummary": "",
                     "fullDepth": ""
                 },
                 {
                     "title": "Advanced Metallurgy",
+                    "alternatePerspectives": [
+                        { "hubId": "neptune", "label": "Water systems — corrosion-proof alloys for oceans & desalination" },
+                        { "hubId": "mars", "label": "Engineering — metals for harsh, dusty, high-radiation sites" },
+                        { "hubId": "sun", "label": "Energy — alloys for turbines, reactors, and extremes" }
+                    ],
                     "shortSummary": "If Mercury’s high-efficiency factories are the hands of S.O.L.A.R., then metallurgy is its bones. Every structure, tool, machine, and habitat relies on the properties of metals and alloys to function. Steel, titanium, aluminum, copper—these are not just materials; they are the scaffolding of civilization. Yet in the context of a closed-loop interplanetary system, metallurgy cannot be satisfied with simply refining existing ores. It must become a science of transformation, where every atom of metal is designed, recycled, and reforged to serve across centuries without loss of quality.\nTraditional metallurgy on Earth has always been about balancing properties—strength versus weight, conductivity versus durability, cost versus performance. But it was also bound by compromise: corrosion ate away at pipelines, fatigue destroyed aircraft alloys, radiation embrittled steels in reactors. In Mercury’s research hubs, these compromises are no longer tolerated. Advanced metallurgy seeks materials that thrive under extremes, able to withstand pressures, temperatures, and exposures that would render conventional alloys useless.\nAt the heart of this work are alloy design laboratories, where Jupiter’s AI simulations and Mercury’s automated forges collaborate to develop new compositions. Using computational metallurgy, millions of possible combinations of elements are tested in silico before a single ingot is cast. Instead of decades of trial and error, alloys can be developed in months, optimized for the exact environments where they will be deployed. A turbine blade destined for the Sun’s fusion reactors, for example, may require an alloy that resists both extreme heat and neutron bombardment. Rather than guessing, Mercury’s labs simulate atomic behavior under these conditions, producing alloys with properties engineered to order.\nSpecial attention is given to corrosion resistance. Neptune’s desalination and aquaculture systems are exposed constantly to saltwater, one of the most corrosive environments for metals. Without specialized alloys, turbines, pipes, and filters would fail in years or even months. Mercury pioneers anti-corrosion steels, titanium composites, and nanocoated alloys that extend the lifespan of Neptune’s infrastructure indefinitely. Similarly, Mars requires dust-resistant and radiation-hardened metals for habitat shells, while Earth demands biocompatible alloys for medical implants and clean lab tools. Each hub’s environment becomes a testing ground, feeding back data that refines Mercury’s metallurgical research further.\nAnother pillar of innovation is lightweight strength. Transport across space—whether by rockets, cargo vessels, or orbital elevators—demands materials with maximum strength-to-weight ratios. Advanced aluminum-lithium alloys, carbon-infused steels, and nanostructured titanium composites allow for structures that are not only lighter but also stronger than their predecessors. A habitat dome for Venus can be assembled with panels one-third the weight of traditional materials, reducing transport costs and enabling rapid deployment in hostile environments. This innovation extends beyond habitats: lightweight alloys make Mars rovers more efficient, space cargo more economical, and even Earth’s terrestrial infrastructure more energy-efficient to build.\nMercury’s metallurgical expertise also extends into extreme heat applications. The Sun hub’s geothermal drills and fusion reactors require materials that can endure thousands of degrees without deformation or failure. Advanced ceramics play a role (developed in section 3.3), but many systems still demand metallic components. Superalloys with nickel, cobalt, and tungsten bases are developed to resist not only temperature but also creep—slow deformation under stress. These alloys are life-limited by conventional Earth standards, but Mercury’s metallurgy ensures they last decades, not years, before replacement is necessary.\nThe recycling of metals forms a crucial counterpart to innovation. In a closed-loop system, no ore can be wasted. Every hub returns its worn, damaged, or obsolete metal components back to Mercury, where they are disassembled, melted down, and reforged. This recycling is not simple smelting; it is molecular reconstitution. Impurities are stripped away, atomic arrangements are reset, and the result is a metal that is indistinguishable from its first casting. A steel beam that once supported a Martian dome may be reborn as part of a turbine blade for Neptune, or a surgical scalpel for Earth. Metallurgy becomes a system of eternal renewal.\nBeyond utility, advanced metallurgy has cultural implications. The materials Mercury develops shape the identity of each hub. The gleaming alloys of Venus’s greenhouses inspire confidence in controlled growth. The dark, radiation-shielded steels of Mars become symbols of resilience. Neptune’s corrosion-proof turbines represent survival against endless ocean forces. Even Earth, with its advanced biotech, relies on Mercury’s alloys for tools that extend human life. In this way, metallurgy is not only functional—it is symbolic, tying together technology and culture across planets.",
                     "detailedSummary": "",
                     "fullDepth": ""
@@ -109,12 +155,21 @@
             "sections": [
                 {
                     "title": "Climate-Controlled Greenhouses",
+                    "alternatePerspectives": [
+                        { "hubId": "saturn", "label": "Ecology — vertical farms & stacked controlled growing" },
+                        { "hubId": "sun", "label": "Energy — powering lights, climate loops, and resilience" },
+                        { "hubId": "jupiter", "label": "AI & computing — sensing and climate optimization" }
+                    ],
                     "shortSummary": "Greenhouses are the cornerstone of Venus’s agricultural system. While open-field farming has historically tied humanity to the mercy of weather, soil quality, and seasonal cycles, climate-controlled greenhouses liberate agriculture from these constraints. They provide stable environments where every parameter, temperature, humidity, light spectrum, nutrient delivery, and even atmospheric composition can be optimized for plant growth. This precision ensures that crops grow faster, healthier, and with fewer inputs than in the past. Unlike traditional greenhouses, which merely shelter crops from weather, the Venus hub’s facilities act as fully enclosed biospheres, capable of producing food in environments as hostile as the Martian surface or the vacuum of orbit.\nAt the heart of these systems are layered control technologies. Advanced sensors monitor plant health at the cellular level, detecting stress long before it becomes visible to the human eye. AI-driven climate models adjust lighting, irrigation, and nutrient composition in real time, ensuring that plants receive exactly what they need at every stage of growth. Adaptive LED arrays, fine-tuned to emit specific wavelengths, replace the randomness of sunlight with targeted light recipes that accelerate photosynthesis or encourage flowering. Temperature is regulated not through crude heating and cooling, but through phase-change materials and radiative systems, minimizing energy demand. The result is a kind of “programmed ecology,” where growth is not left to chance but orchestrated like a symphony.\nThe design of these greenhouses also embodies circularity. Water used in irrigation is recaptured through condensation systems, purified, and reintroduced into the loop. Nutrients lost through plant uptake or evaporation are measured precisely and replenished only as needed, reducing waste. Even plant waste, stalks, leaves and roots do not leave the system. It is composted or digested to feed soil-substitutes, provide bio-gas, or create animal feed. Nothing is discarded, everything becomes a resource. This tight loop reduces resource demand so significantly that a single Venus-style greenhouse could produce several times the yield of a conventional farm, while using less than 10% of the water.",
                     "detailedSummary": "",
                     "fullDepth": ""
                 },
                 {
                     "title": "Hydroponics & Aeroponics",
+                    "alternatePerspectives": [
+                        { "hubId": "saturn", "label": "Ecology — hydroponics, nutrients, and circular waste" },
+                        { "hubId": "neptune", "label": "Water systems — recovery, purity, and closed loops" }
+                    ],
                     "shortSummary": "If climate-controlled greenhouses form the architectural shell of Venus’s agricultural system, hydroponics and aeroponics form its beating heart. These technologies eliminate soil entirely, replacing it with carefully balanced nutrient delivery systems that maximize efficiency and crop yield. Hydroponics grows plants with their roots suspended in water enriched with minerals, while aeroponics takes the process further, suspending roots in air and misting them with nutrient sprays. Both methods drastically reduce water usage compared to traditional soil farming and allow unparalleled control over plant nutrition. In the Venus hub, they are not fringe technologies but the dominant agricultural paradigm, proving that humanity can grow abundant food without exhausting the Earth—or any world’s—resources.\nThe efficiency gains are extraordinary. Hydroponic systems typically use 90–95% less water than conventional soil farming because every drop is recaptured, filtered, and reused. Nutrient solutions are not wasted through runoff into rivers or soils but instead circulate continuously in closed loops, monitored in real time by sensors that adjust concentrations to match plant needs. In aeroponic systems, the water savings are even greater, as mist delivers nutrients directly to root surfaces with almost no loss. Crops grow faster because they expend less energy searching for water or nutrients, channeling more energy into stems, leaves, fruits, and seeds. These systems can be stacked vertically inside controlled facilities, multiplying productivity per square meter by orders of magnitude.",
                     "detailedSummary": "",
                     "fullDepth": ""
@@ -139,27 +194,51 @@
             "sections": [
                 {
                     "title": "Human Genomics",
-                    "content": "Unlocking the secrets of resilience, disease resistance, and human adaptability. Whole-genome sequencing identifies markers for genetic disorders, drug metabolism variants, and environmental resilience. CRISPR-Cas9 gene editing enables precise corrections to inherited conditions."
+                    "content": "Unlocking the secrets of resilience, disease resistance, and human adaptability. Whole-genome sequencing identifies markers for genetic disorders, drug metabolism variants, and environmental resilience. CRISPR-Cas9 gene editing enables precise corrections to inherited conditions.",
+                    "alternatePerspectives": [
+                        { "hubId": "jupiter", "label": "AI & computing — genomics pipelines and secure data integration" },
+                        { "hubId": "uranus", "label": "Society & ethics — oversight of heritable edits" }
+                    ]
                 },
                 {
                     "title": "Plant Genetics & Bioengineering",
-                    "content": "Engineering crops for extreme conditions: drought tolerance, salt resistance, nutrient density. Gene editing accelerates breeding cycles from years to months. Synthetic biology designs organisms that produce fuels, medicines, and materials from simple feedstocks."
+                    "content": "Engineering crops for extreme conditions: drought tolerance, salt resistance, nutrient density. Gene editing accelerates breeding cycles from years to months. Synthetic biology designs organisms that produce fuels, medicines, and materials from simple feedstocks.",
+                    "alternatePerspectives": [
+                        { "hubId": "venus", "label": "Agriculture — crops inside controlled environments" },
+                        { "hubId": "saturn", "label": "Ecology — nutrient cycling and organism platforms" }
+                    ]
                 },
                 {
                     "title": "Medical Biotechnology",
-                    "content": "Vaccine development using mRNA platforms achieves rapid response to novel pathogens. Regenerative medicine uses stem cells to repair damaged organs. Bioprinting creates functional tissue scaffolds. Point-of-care diagnostics enable testing without laboratories."
+                    "content": "Vaccine development using mRNA platforms achieves rapid response to novel pathogens. Regenerative medicine uses stem cells to repair damaged organs. Bioprinting creates functional tissue scaffolds. Point-of-care diagnostics enable testing without laboratories.",
+                    "alternatePerspectives": [
+                        { "hubId": "mercury", "label": "Industry — sterile instruments and precision fabrication" },
+                        { "hubId": "mars", "label": "Engineering — rugged diagnostics and field clinics" }
+                    ]
                 },
                 {
                     "title": "Neuroscience & Mental Health",
-                    "content": "Cognitive science preserves mental health under isolation and stress. Neurofeedback systems train resilience. Community Health Worker programs deliver primary mental healthcare in resource-limited settings. Telemedicine bridges specialist gaps."
+                    "content": "Cognitive science preserves mental health under isolation and stress. Neurofeedback systems train resilience. Community Health Worker programs deliver primary mental healthcare in resource-limited settings. Telemedicine bridges specialist gaps.",
+                    "alternatePerspectives": [
+                        { "hubId": "mars", "label": "Engineering — isolation, habitats, and crew resilience" },
+                        { "hubId": "uranus", "label": "Society & ethics — norms, care access, and cohesion" }
+                    ]
                 },
                 {
                     "title": "Epidemiology & Disease Control",
-                    "content": "Real-time disease surveillance networks detect outbreaks before they spread. Mathematical modeling predicts transmission patterns. Rapid diagnostic kits and mobile labs enable containment within hours. WHO essential medicine protocols cover 90% of primary care."
+                    "content": "Real-time disease surveillance networks detect outbreaks before they spread. Mathematical modeling predicts transmission patterns. Rapid diagnostic kits and mobile labs enable containment within hours. WHO essential medicine protocols cover 90% of primary care.",
+                    "alternatePerspectives": [
+                        { "hubId": "jupiter", "label": "AI & computing — forecasting, surveillance, and analytics" },
+                        { "hubId": "neptune", "label": "Water systems — vector ecology and waterborne disease" }
+                    ]
                 },
                 {
                     "title": "Ecology & Ecosystem Modeling",
-                    "content": "Digital twin models simulate entire ecosystems. Mycorrhizal fungi networks mapped and optimized. Soil microbiome health monitored with DNA sequencing. Biodiversity indices tracked across all S.O.L.A.R. habitats to maintain ecological balance."
+                    "content": "Digital twin models simulate entire ecosystems. Mycorrhizal fungi networks mapped and optimized. Soil microbiome health monitored with DNA sequencing. Biodiversity indices tracked across all S.O.L.A.R. habitats to maintain ecological balance.",
+                    "alternatePerspectives": [
+                        { "hubId": "saturn", "label": "Ecology — soils, nutrients, and regeneration in farms" },
+                        { "hubId": "jupiter", "label": "AI & computing — twin models and cross-hub telemetry" }
+                    ]
                 }
             ],
             "layerImages": {
@@ -181,27 +260,53 @@
             "sections": [
                 {
                     "title": "Civil & Structural Engineering",
-                    "content": "Designing buildings to withstand earthquakes (base isolation, moment frames), floods (elevated foundations, waterproof barriers), and extreme winds (aerodynamic profiles, reinforced connections). Compressed Earth Blocks achieve 3-5 MPa compressive strength using local materials."
+                    "content": "Designing buildings to withstand earthquakes (base isolation, moment frames), floods (elevated foundations, waterproof barriers), and extreme winds (aerodynamic profiles, reinforced connections). Compressed Earth Blocks achieve 3-5 MPa compressive strength using local materials.",
+                    "alternatePerspectives": [
+                        { "hubId": "neptune", "label": "Water systems — floods, coasts, and hydrological risk" },
+                        { "hubId": "earth", "label": "Biology & medicine — health impacts of disasters" },
+                        { "hubId": "mercury", "label": "Industry — structural materials and modular builds" }
+                    ]
                 },
                 {
                     "title": "Desert & Arid Agriculture",
-                    "content": "Food production in water-scarce environments. Zai pits concentrate water for dryland farming. Fog harvesting nets collect atmospheric moisture. Solar-powered drip irrigation reduces water use by 60%. Halophyte crops tolerate saline soils."
+                    "content": "Food production in water-scarce environments. Zai pits concentrate water for dryland farming. Fog harvesting nets collect atmospheric moisture. Solar-powered drip irrigation reduces water use by 60%. Halophyte crops tolerate saline soils.",
+                    "alternatePerspectives": [
+                        { "hubId": "venus", "label": "Agriculture — intensive controlled growing" },
+                        { "hubId": "neptune", "label": "Water systems — scarcity, reuse, and purification" },
+                        { "hubId": "sun", "label": "Energy — solar-powered irrigation & pumping" }
+                    ]
                 },
                 {
                     "title": "Water Purification & Recycling",
-                    "content": "Biosand filters remove 99.8% of bacteria. SODIS (solar disinfection) achieves 99.9% pathogen reduction in 6 hours. Ceramic pot filters with colloidal silver produce 1-3 L/hr. Closed-loop grey water systems recycle 95% of household water."
+                    "content": "Biosand filters remove 99.8% of bacteria. SODIS (solar disinfection) achieves 99.9% pathogen reduction in 6 hours. Ceramic pot filters with colloidal silver produce 1-3 L/hr. Closed-loop grey water systems recycle 95% of household water.",
+                    "alternatePerspectives": [
+                        { "hubId": "neptune", "label": "Water systems — membranes, desalination, and ocean-scale loops" },
+                        { "hubId": "earth", "label": "Biology & medicine — pathogens and public health" }
+                    ]
                 },
                 {
                     "title": "Extreme Architecture",
-                    "content": "Earthship buildings use thermal mass walls (rammed tire earth) to maintain 18-21°C without HVAC. Integrated rain catchment, grey water botanical cells, and food-growing glazed spaces. Designs proven from New Mexico deserts to cold Netherlands."
+                    "content": "Earthship buildings use thermal mass walls (rammed tire earth) to maintain 18-21°C without HVAC. Integrated rain catchment, grey water botanical cells, and food-growing glazed spaces. Designs proven from New Mexico deserts to cold Netherlands.",
+                    "alternatePerspectives": [
+                        { "hubId": "sun", "label": "Energy — passive heating, cooling, and load reduction" },
+                        { "hubId": "venus", "label": "Agriculture — living architecture & integrated food" }
+                    ]
                 },
                 {
                     "title": "Disaster Preparedness",
-                    "content": "Community Emergency Response Teams (CERT) train neighbors in first aid and disaster response. Mutual aid networks outperform top-down disaster response. Pre-positioned supply caches, communication plans, and evacuation routes for every scenario."
+                    "content": "Community Emergency Response Teams (CERT) train neighbors in first aid and disaster response. Mutual aid networks outperform top-down disaster response. Pre-positioned supply caches, communication plans, and evacuation routes for every scenario.",
+                    "alternatePerspectives": [
+                        { "hubId": "uranus", "label": "Society & ethics — mutual aid, governance, and cohesion" },
+                        { "hubId": "jupiter", "label": "AI & computing — early warning and logistics models" }
+                    ]
                 },
                 {
                     "title": "Robotics & Automation",
-                    "content": "Autonomous construction robots for hazardous environments. Drone-based structural inspection and damage assessment. Robotic maintenance systems extend infrastructure lifespan. Teleoperation enables repairs in contaminated or collapsed structures."
+                    "content": "Autonomous construction robots for hazardous environments. Drone-based structural inspection and damage assessment. Robotic maintenance systems extend infrastructure lifespan. Teleoperation enables repairs in contaminated or collapsed structures.",
+                    "alternatePerspectives": [
+                        { "hubId": "jupiter", "label": "AI & computing — perception, planning, and autonomy" },
+                        { "hubId": "mercury", "label": "Industry — fabrication of robotic systems" }
+                    ]
                 }
             ],
             "layerImages": {
@@ -223,27 +328,52 @@
             "sections": [
                 {
                     "title": "Artificial Intelligence & Machine Learning",
-                    "content": "Neural networks process sensor data from every hub. Computer vision monitors crop health, structural integrity, and environmental conditions. Natural Language Processing indexes and retrieves knowledge across the archive. Reinforcement learning optimizes energy distribution and resource allocation in real-time."
+                    "content": "Neural networks process sensor data from every hub. Computer vision monitors crop health, structural integrity, and environmental conditions. Natural Language Processing indexes and retrieves knowledge across the archive. Reinforcement learning optimizes energy distribution and resource allocation in real-time.",
+                    "alternatePerspectives": [
+                        { "hubId": "sun", "label": "Energy — optimizing generation, storage, and grids" },
+                        { "hubId": "earth", "label": "Biology & medicine — clinical AI and bioinformatics" }
+                    ]
                 },
                 {
                     "title": "Data Integration & Analytics",
-                    "content": "Every hub produces data: nutrient balances from Saturn's farms, genetic libraries from Earth's labs, ocean sensor arrays from Neptune. Jupiter integrates them, recognizes patterns invisible to the human eye, and directs responses across the system. Prediction replaces reaction."
+                    "content": "Every hub produces data: nutrient balances from Saturn's farms, genetic libraries from Earth's labs, ocean sensor arrays from Neptune. Jupiter integrates them, recognizes patterns invisible to the human eye, and directs responses across the system. Prediction replaces reaction.",
+                    "alternatePerspectives": [
+                        { "hubId": "sun", "label": "Energy hub — smart distribution & infrastructure" },
+                        { "hubId": "earth", "label": "Biology & medicine — biosignals and population health data" },
+                        { "hubId": "saturn", "label": "Ecology — farm telemetry and nutrient streams" }
+                    ]
                 },
                 {
                     "title": "Autonomous Sensor Networks",
-                    "content": "Self-powered wireless sensors monitor environmental parameters continuously. Solar energy harvesting (50-100 mW), ultra-low-power MCUs (<10 μA sleep), and edge AI inference reduce communication overhead by 90%. Time-synchronized TSCH networks ensure reliability."
+                    "content": "Self-powered wireless sensors monitor environmental parameters continuously. Solar energy harvesting (50-100 mW), ultra-low-power MCUs (<10 μA sleep), and edge AI inference reduce communication overhead by 90%. Time-synchronized TSCH networks ensure reliability.",
+                    "alternatePerspectives": [
+                        { "hubId": "sun", "label": "Energy — harvesting power for edge devices" },
+                        { "hubId": "neptune", "label": "Water systems — aquatic and coastal sensor meshes" }
+                    ]
                 },
                 {
                     "title": "Cybersecurity & Trust",
-                    "content": "Zero-trust architecture protects all inter-hub communications. Quantum key distribution ensures theoretically unbreakable encryption. Distributed ledger technology provides immutable audit trails for resource allocation and governance decisions."
+                    "content": "Zero-trust architecture protects all inter-hub communications. Quantum key distribution ensures theoretically unbreakable encryption. Distributed ledger technology provides immutable audit trails for resource allocation and governance decisions.",
+                    "alternatePerspectives": [
+                        { "hubId": "uranus", "label": "Society & ethics — governance of surveillance and trust" },
+                        { "hubId": "star", "label": "Foundation — attribution, provenance, and policy" }
+                    ]
                 },
                 {
                     "title": "Digital Twin Modeling",
-                    "content": "Complete virtual replicas of every hub simulate scenarios before implementation. What-if analysis for energy grid failures, crop diseases, and extreme weather. Real-time synchronization between physical systems and digital models enables predictive maintenance."
+                    "content": "Complete virtual replicas of every hub simulate scenarios before implementation. What-if analysis for energy grid failures, crop diseases, and extreme weather. Real-time synchronization between physical systems and digital models enables predictive maintenance.",
+                    "alternatePerspectives": [
+                        { "hubId": "mars", "label": "Engineering — structural and infrastructure twins" },
+                        { "hubId": "sun", "label": "Energy — grid and plant-level simulation" }
+                    ]
                 },
                 {
                     "title": "Knowledge Management",
-                    "content": "The SOLAR Archive itself is managed by Jupiter. Coordinate-based indexing, semantic search, and automated summarization ensure knowledge is accessible. Multi-criteria decision analysis helps communities make complex trade-off decisions involving energy, water, food, and social factors."
+                    "content": "The SOLAR Archive itself is managed by Jupiter. Coordinate-based indexing, semantic search, and automated summarization ensure knowledge is accessible. Multi-criteria decision analysis helps communities make complex trade-off decisions involving energy, water, food, and social factors.",
+                    "alternatePerspectives": [
+                        { "hubId": "star", "label": "Foundation — canon, versioning, and institutional memory" },
+                        { "hubId": "uranus", "label": "Society & ethics — education and knowledge justice" }
+                    ]
                 }
             ],
             "layerImages": {
@@ -265,27 +395,51 @@
             "sections": [
                 {
                     "title": "Vertical Farm Operations",
-                    "content": "Multi-story growing facilities with controlled lighting, temperature, and nutrients. LED arrays tuned to optimal photosynthetic wavelengths. Automated seeding, monitoring, and harvest systems. Year-round production independent of climate or season."
+                    "content": "Multi-story growing facilities with controlled lighting, temperature, and nutrients. LED arrays tuned to optimal photosynthetic wavelengths. Automated seeding, monitoring, and harvest systems. Year-round production independent of climate or season.",
+                    "alternatePerspectives": [
+                        { "hubId": "venus", "label": "Agriculture — greenhouses and controlled environments" },
+                        { "hubId": "sun", "label": "Energy — powering LEDs and climate systems" }
+                    ]
                 },
                 {
                     "title": "Composting & Anaerobic Digestion",
-                    "content": "Organic residues are never treated as useless. Anaerobic digestion produces biogas (methane) and nutrient-rich digestate. Thermophilic composting reaches 65°C, killing pathogens while producing stable humus. Vermicomposting with red wigglers processes food waste at household scale."
+                    "content": "Organic residues are never treated as useless. Anaerobic digestion produces biogas (methane) and nutrient-rich digestate. Thermophilic composting reaches 65°C, killing pathogens while producing stable humus. Vermicomposting with red wigglers processes food waste at household scale.",
+                    "alternatePerspectives": [
+                        { "hubId": "venus", "label": "Agriculture — closing nutrient loops on farms" },
+                        { "hubId": "earth", "label": "Biology & medicine — pathogens and sanitation science" }
+                    ]
                 },
                 {
                     "title": "Algae & Fungi Cultivation",
-                    "content": "Spirulina and chlorella produced in photobioreactors provide complete protein, vitamins, and omega-3 fatty acids. Mycelium grown on agricultural waste creates structural packaging and biocomposite materials. Mushroom cultivation delivers high-value nutrition from low-value substrates."
+                    "content": "Spirulina and chlorella produced in photobioreactors provide complete protein, vitamins, and omega-3 fatty acids. Mycelium grown on agricultural waste creates structural packaging and biocomposite materials. Mushroom cultivation delivers high-value nutrition from low-value substrates.",
+                    "alternatePerspectives": [
+                        { "hubId": "earth", "label": "Biology & medicine — novel foods and biomaterials" },
+                        { "hubId": "venus", "label": "Agriculture — organism-based production stacks" }
+                    ]
                 },
                 {
                     "title": "Soil Regeneration",
-                    "content": "Controlled soil chambers test regeneration techniques. Biochar application (5-20 t/ha) improves cation exchange capacity and hosts beneficial microbes. Cover cropping prevents erosion and feeds soil life. Mycorrhizal inoculants extend root reach by 100x."
+                    "content": "Controlled soil chambers test regeneration techniques. Biochar application (5-20 t/ha) improves cation exchange capacity and hosts beneficial microbes. Cover cropping prevents erosion and feeds soil life. Mycorrhizal inoculants extend root reach by 100x.",
+                    "alternatePerspectives": [
+                        { "hubId": "earth", "label": "Biology & medicine — soil microbiome and ecology" },
+                        { "hubId": "mars", "label": "Engineering — regolith and marginal substrates" }
+                    ]
                 },
                 {
                     "title": "Nutrient Recovery Systems",
-                    "content": "Struvite crystallization recovers phosphorus from wastewater. Ammonia stripping captures nitrogen for fertilizer production. Potassium recovery from wood ash. Complete nutrient cycling ensures no mineral depletion over decades of continuous cultivation."
+                    "content": "Struvite crystallization recovers phosphorus from wastewater. Ammonia stripping captures nitrogen for fertilizer production. Potassium recovery from wood ash. Complete nutrient cycling ensures no mineral depletion over decades of continuous cultivation.",
+                    "alternatePerspectives": [
+                        { "hubId": "neptune", "label": "Water systems — phosphorus & nitrogen from wastewater streams" },
+                        { "hubId": "venus", "label": "Agriculture — feeding crops from recovered minerals" }
+                    ]
                 },
                 {
                     "title": "Waste-to-Energy Integration",
-                    "content": "Biogas from anaerobic digestion powers cooking and heating. Pyrolysis converts non-compostable waste to biochar and syngas. Waste heat from composting warms greenhouse spaces. Every waste stream becomes an energy or material input."
+                    "content": "Biogas from anaerobic digestion powers cooking and heating. Pyrolysis converts non-compostable waste to biochar and syngas. Waste heat from composting warms greenhouse spaces. Every waste stream becomes an energy or material input.",
+                    "alternatePerspectives": [
+                        { "hubId": "sun", "label": "Energy — digesters, syngas, and thermal cascades" },
+                        { "hubId": "mercury", "label": "Industry — reactors, containment, and materials" }
+                    ]
                 }
             ],
             "layerImages": {
@@ -307,27 +461,52 @@
             "sections": [
                 {
                     "title": "Governance & Policy Systems",
-                    "content": "Scalable, transparent, and participatory decision-making models that extend across all hubs. Liquid democracy enables flexible delegation. Constitutional frameworks protect minority rights while enabling rapid collective action. Policies ensure fair distribution of Saturn's food, Neptune's water, and Sun's energy."
+                    "content": "Scalable, transparent, and participatory decision-making models that extend across all hubs. Liquid democracy enables flexible delegation. Constitutional frameworks protect minority rights while enabling rapid collective action. Policies ensure fair distribution of Saturn's food, Neptune's water, and Sun's energy.",
+                    "alternatePerspectives": [
+                        { "hubId": "star", "label": "Foundation — charter, jurisdiction, and canon" },
+                        { "hubId": "jupiter", "label": "AI & computing — decision-support and transparency tooling" }
+                    ]
                 },
                 {
                     "title": "Ethical Frameworks",
-                    "content": "Principles that protect equality, sustainability, and intergenerational responsibility. AI ethics boards oversee Jupiter's algorithms. Bioethics committees review Earth's genetic research. Environmental impact assessments required for all hub operations."
+                    "content": "Principles that protect equality, sustainability, and intergenerational responsibility. AI ethics boards oversee Jupiter's algorithms. Bioethics committees review Earth's genetic research. Environmental impact assessments required for all hub operations.",
+                    "alternatePerspectives": [
+                        { "hubId": "star", "label": "Foundation — institutional ethics memoranda" },
+                        { "hubId": "jupiter", "label": "AI & computing — alignment and oversight of automation" },
+                        { "hubId": "earth", "label": "Biology & medicine — bioethics and trials" }
+                    ]
                 },
                 {
                     "title": "Education & Knowledge Transfer",
-                    "content": "Lifelong learning programs connect to every research hub. Apprenticeship models build practical skills. Open-source curricula freely shared. Education flows in both directions: hub specialists teach communities, communities teach hubs what knowledge they need."
+                    "content": "Lifelong learning programs connect to every research hub. Apprenticeship models build practical skills. Open-source curricula freely shared. Education flows in both directions: hub specialists teach communities, communities teach hubs what knowledge they need.",
+                    "alternatePerspectives": [
+                        { "hubId": "jupiter", "label": "AI & computing — archives, search, and personalization" },
+                        { "hubId": "star", "label": "Foundation — citation patterns and continuity" }
+                    ]
                 },
                 {
                     "title": "Arts & Cultural Identity",
-                    "content": "Artistic expression reinforces morale, community identity, and shared values. Music, visual arts, storytelling, and performance documented and celebrated. Cultural diversity protected as a resource as valuable as biodiversity."
+                    "content": "Artistic expression reinforces morale, community identity, and shared values. Music, visual arts, storytelling, and performance documented and celebrated. Cultural diversity protected as a resource as valuable as biodiversity.",
+                    "alternatePerspectives": [
+                        { "hubId": "earth", "label": "Biology & medicine — culture and wellbeing" },
+                        { "hubId": "star", "label": "Foundation — stewardship of shared narrative" }
+                    ]
                 },
                 {
                     "title": "Social Cohesion & Conflict Resolution",
-                    "content": "Restorative justice practices replace punitive systems. Mediation training for all community members. Social capital measurement tracks community health. Mutual aid networks formalized into hub-level support systems."
+                    "content": "Restorative justice practices replace punitive systems. Mediation training for all community members. Social capital measurement tracks community health. Mutual aid networks formalized into hub-level support systems.",
+                    "alternatePerspectives": [
+                        { "hubId": "mars", "label": "Engineering — disaster response and mutual aid logistics" },
+                        { "hubId": "star", "label": "Foundation — procedural fairness memoranda" }
+                    ]
                 },
                 {
                     "title": "Intergenerational Responsibility",
-                    "content": "Long-term planning horizons: 7-generation thinking embedded in all policy. Youth councils have formal advisory roles. Elder knowledge systematically documented and preserved. Time capsule programs ensure continuity of values and wisdom."
+                    "content": "Long-term planning horizons: 7-generation thinking embedded in all policy. Youth councils have formal advisory roles. Elder knowledge systematically documented and preserved. Time capsule programs ensure continuity of values and wisdom.",
+                    "alternatePerspectives": [
+                        { "hubId": "star", "label": "Foundation — long-term stewardship & continuity" },
+                        { "hubId": "neptune", "label": "Water systems — climate and oceans on century scales" }
+                    ]
                 }
             ],
             "layerImages": {
@@ -349,27 +528,183 @@
             "sections": [
                 {
                     "title": "Aquaculture & Ocean Farming",
-                    "content": "3D ocean farming stacks kelp, mussels, scallops, oysters and fish on a 1-acre footprint. Kelp grows 30 cm/day, sequesters 174 kg CO2/tonne. Shellfish filter 200L water/day each. Circular aquaculture converts waste from one species into nutrients for another."
+                    "content": "3D ocean farming stacks kelp, mussels, scallops, oysters and fish on a 1-acre footprint. Kelp grows 30 cm/day, sequesters 174 kg CO2/tonne. Shellfish filter 200L water/day each. Circular aquaculture converts waste from one species into nutrients for another.",
+                    "alternatePerspectives": [
+                        { "hubId": "saturn", "label": "Ecology — algae, fungi, and circular nutrient stacks" },
+                        { "hubId": "venus", "label": "Agriculture — controlled production of foods & feeds" }
+                    ]
                 },
                 {
                     "title": "Desalination Technology",
-                    "content": "Seawater Reverse Osmosis at 55 bar achieves 99.6% salt rejection at 3-4 kWh/m³. Energy recovery devices capture 96% of pressure from reject brine. Solar-powered manual RO produces 15 L/hr at 50W. Humidification-dehumidification achieves 500 L/day/kW."
+                    "content": "Seawater Reverse Osmosis at 55 bar achieves 99.6% salt rejection at 3-4 kWh/m³. Energy recovery devices capture 96% of pressure from reject brine. Solar-powered manual RO produces 15 L/hr at 50W. Humidification-dehumidification achieves 500 L/day/kW.",
+                    "alternatePerspectives": [
+                        { "hubId": "sun", "label": "Energy — powering RO and thermal desalination" },
+                        { "hubId": "mercury", "label": "Industry — membranes, metals, and precision components" },
+                        { "hubId": "mars", "label": "Engineering — compact units for remote settlements" }
+                    ]
                 },
                 {
                     "title": "Storm & Flood Management",
-                    "content": "Predictive hydrological modeling forecasts floods 72 hours ahead. Bioswales and constructed wetlands manage urban runoff. Levee systems with redundant failsafes. Managed retreat strategies for coastal communities. Rain gardens reduce peak stormwater flow by 80%."
+                    "content": "Predictive hydrological modeling forecasts floods 72 hours ahead. Bioswales and constructed wetlands manage urban runoff. Levee systems with redundant failsafes. Managed retreat strategies for coastal communities. Rain gardens reduce peak stormwater flow by 80%.",
+                    "alternatePerspectives": [
+                        { "hubId": "mars", "label": "Engineering — civil structures and resilient shelter" },
+                        { "hubId": "jupiter", "label": "AI & computing — forecasting and sensor fusion" }
+                    ]
                 },
                 {
                     "title": "Water Recycling & Purification",
-                    "content": "Closed-loop water systems recycle 98% of all water used. Membrane bioreactors combine biological treatment with ultrafiltration. UV disinfection achieves 4-log pathogen reduction. Real-time quality monitoring ensures safety at every tap."
+                    "content": "Closed-loop water systems recycle 98% of all water used. Membrane bioreactors combine biological treatment with ultrafiltration. UV disinfection achieves 4-log pathogen reduction. Real-time quality monitoring ensures safety at every tap.",
+                    "alternatePerspectives": [
+                        { "hubId": "mars", "label": "Engineering — greywater loops and field purification" },
+                        { "hubId": "saturn", "label": "Ecology — nutrient recovery tied to water cycles" },
+                        { "hubId": "earth", "label": "Biology & medicine — pathogens and safe drinking water" }
+                    ]
                 },
                 {
                     "title": "Ocean Energy Harvesting",
-                    "content": "Tidal stream turbines operate at 40-50% efficiency in 2-4 m/s currents. The Gulf Stream carries 30 million cubic meters per second. Oscillating water column devices drive Wells turbines. Wave energy global potential is 2 TW. CETO submerged buoy systems proven at 1 MW."
+                    "content": "Tidal stream turbines operate at 40-50% efficiency in 2-4 m/s currents. The Gulf Stream carries 30 million cubic meters per second. Oscillating water column devices drive Wells turbines. Wave energy global potential is 2 TW. CETO submerged buoy systems proven at 1 MW.",
+                    "alternatePerspectives": [
+                        { "hubId": "sun", "label": "Energy — marine renewables in the wider mix" },
+                        { "hubId": "mercury", "label": "Industry — turbines, moorings, and corrosion-resistant alloys" }
+                    ]
                 },
                 {
                     "title": "Climate Regulation",
-                    "content": "Ocean thermal energy conversion (OTEC) uses temperature differential between surface and deep water. Arctic ice monitoring via satellite and autonomous underwater vehicles. Carbon sequestration through enhanced ocean alkalinity. Seagrass restoration projects for coastal protection."
+                    "content": "Ocean thermal energy conversion (OTEC) uses temperature differential between surface and deep water. Arctic ice monitoring via satellite and autonomous underwater vehicles. Carbon sequestration through enhanced ocean alkalinity. Seagrass restoration projects for coastal protection.",
+                    "alternatePerspectives": [
+                        { "hubId": "earth", "label": "Biology & medicine — ecosystems and planetary health" },
+                        { "hubId": "sun", "label": "Energy — OTEC and coupled ocean–energy models" },
+                        { "hubId": "jupiter", "label": "AI & computing — Earth-system observation networks" }
+                    ]
+                }
+            ],
+            "layerImages": {
+                "1": "",
+                "2": "",
+                "3": ""
+            }
+        },
+        {
+            "id": "star",
+            "planet": "Star",
+            "domain": "Foundation archive · memoranda, canon, and stewardship",
+            "shortDomain": "Foundation",
+            "color": "#f5a623",
+            "glowColor": "rgba(245,166,35,0.55)",
+            "chapter": 11,
+            "intro": "Star is the Foundation’s dedicated archive: institutional memoranda, canon, governance records, and stewardship documents that apply across every hub. It does not replace domain hubs; it anchors how knowledge is attributed, reviewed, and preserved for the long term.",
+            "description": "Where hub archives organize research by domain — energy, materials, water, and so on — Star holds the cross-cutting corpus that belongs to the institution itself: charters, submission policies, review criteria, attribution norms, and continuity plans. Entries here are cited by every other archive when procedures or canonical definitions matter.\n\nNavigate Star like any hub: coordinates and zoom levels map memoranda and records into the same SEG GRID experience so contributors encounter one consistent interface whether they are placing facts under Neptune or under Foundation stewardship.",
+            "sections": [
+                {
+                    "title": "Charter & jurisdictional scope",
+                    "shortSummary": "Star documents what the archive is for and what it is not: institutional memory and binding canon for contributors, distinct from planet-scale research corpora. Scope covers governance memoranda, procedural amendments, and definitions that other hubs inherit by reference.\nWhen a hub policy cites “Foundation standards,” the authoritative text lives here at documented coordinates so reviewers and submitters share one source of truth.",
+                    "alternatePerspectives": [
+                        { "hubId": "uranus", "label": "Society & ethics — governance norms behind the charter" },
+                        { "hubId": "jupiter", "label": "AI & computing — tooling that enforces scope and policy" }
+                    ],
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Submission intake & formatting",
+                    "shortSummary": "Memoranda submitted into Star follow the same coordinate and layer conventions as domain hubs, with additional tags for policy tier and revision lineage. Formatting rules ensure every entry can be diffed across revisions and linked from hub-side citations.\nTemplates distinguish institutional prose from research summaries so Grade queues and automated checks know which rubric applies.",
+                    "alternatePerspectives": [
+                        { "hubId": "earth", "label": "Biology hub — example domain corpus using the same grid" },
+                        { "hubId": "jupiter", "label": "AI & computing — automation checks and parsing" }
+                    ],
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Peer review & institutional grades",
+                    "shortSummary": "Foundation-facing material passes through review tracks aligned with the global leaderboard and grade workflow, with criteria weighted toward clarity, auditability, and cross-hub impact rather than experimental novelty.\nHigh-grade Star entries become canonical references; lower-tier drafts remain visible for transparency until superseded.",
+                    "alternatePerspectives": [
+                        { "hubId": "jupiter", "label": "AI & computing — ranking, signals, and reviewer tooling" },
+                        { "hubId": "uranus", "label": "Society & ethics — fairness and transparency in review" }
+                    ],
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Attribution, provenance & versioning",
+                    "shortSummary": "Every Star cell records authorship, reviewer chain, and semantic version so downstream hubs can cite a stable identifier even when wording evolves. Provenance blocks link to supporting evidence in domain archives without duplicating full corpora.\nThis keeps institutional claims accountable while preserving lean storage in the Foundation layer.",
+                    "alternatePerspectives": [
+                        { "hubId": "jupiter", "label": "AI & computing — knowledge graphs and citation graphs" },
+                        { "hubId": "sun", "label": "Energy hub — example domain entries Star cites" }
+                    ],
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Long-term stewardship & continuity",
+                    "shortSummary": "Stewardship memoranda describe backup cadences, format migrations, and succession-of-custodian protocols — the boring infrastructure that keeps the grid intelligible across decades. Star cells hold runbooks that operators follow during outages or governance transitions.\nCross-links to Uranus (society & ethics) appear when memoranda touch civic norms; links to Jupiter when automation or tooling changes.",
+                    "alternatePerspectives": [
+                        { "hubId": "uranus", "label": "Society & ethics — civic norms and continuity" },
+                        { "hubId": "jupiter", "label": "AI & computing — automation and migrations" }
+                    ],
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Cross-hub linkage patterns",
+                    "shortSummary": "Hub articles reference Star for definitions; Star references hubs for empirical grounding. Standard linkage patterns are documented so parsers and human editors resolve citations consistently.\nThat symmetry is what makes the Foundation archive feel like part of the same map rather than a separate silo.",
+                    "alternatePerspectives": [
+                        { "hubId": "sun", "label": "Energy — sample domain archive for cross-links" },
+                        { "hubId": "earth", "label": "Biology & medicine — sample research corpus" },
+                        { "hubId": "neptune", "label": "Water systems — sample hydrological corpus" },
+                        { "hubId": "nexus", "label": "SOLAR Nexus — federated view across domains" }
+                    ],
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                }
+            ],
+            "layerImages": {
+                "1": "",
+                "2": "",
+                "3": ""
+            }
+        },
+        {
+            "id": "nexus",
+            "planet": "SOLAR Nexus",
+            "domain": "Integration · Sustainable Off-grid Living-labs for Autonomy & Research",
+            "shortDomain": "Nexus",
+            "color": "#c084fc",
+            "glowColor": "rgba(192,132,252,0.55)",
+            "chapter": 12,
+            "intro": "The SOLAR Nexus is the tenth archive: it connects planetary hub data into one coherent grid so teams can host their own living-lab layouts. SOLAR stands for Sustainable Off-grid Living-labs for Autonomy and Research — a single nexus where energy, food, water, ethics, and tooling meet the same coordinate map you already use for every world.",
+            "description": "Where Star anchors institutional canon and each planet hub carries domain research, the Nexus is the integration layer: cross-reference lenses, shared indices, and room for visitor-hosted archives built on the same SEG GRID — including layouts defined from an image, where width × height in pixels becomes your cell space.\n\nThe Nexus does not replace domain hubs; it makes their relationships explicit, so a submission on Mars can point to Sun power regimes, Neptune water loops, and Uranus governance notes without leaving one navigation model.",
+            "sections": [
+                {
+                    "title": "Cross-hub integration",
+                    "shortSummary": "The Nexus treats every hub as a contributor to one research fabric. Alternate perspectives, federation IDs, and shared tags are gathered so reviewers and field builders see how an entry in one domain depends on another.\nThis is where “all the data of the planets” becomes a working map instead of nine separate silos.",
+                    "alternatePerspectives": [
+                        { "hubId": "star", "label": "Foundation — canon and attribution for cross-hub claims" },
+                        { "hubId": "jupiter", "label": "AI & computing — graphs, search, and routing across archives" },
+                        { "hubId": "sun", "label": "Energy — master resource tying labs to power reality" }
+                    ],
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Host your own grid",
+                    "shortSummary": "Anyone can export or import a portable archive pack: upload a picture, let its dimensions define the grid, and deploy the layout on a static site. The Nexus narrative is the home for that pattern in the story world — off-grid labs documenting autonomy and research on terms they control.\nThe Host archive flow in this build is the technical hinge; the Nexus is its institutional name in S.O.L.A.R.",
+                    "alternatePerspectives": [
+                        { "hubId": "earth", "label": "Biology & medicine — clinic and field lab comparables" },
+                        { "hubId": "mars", "label": "Engineering — harsh-environment lab templates" }
+                    ],
+                    "detailedSummary": "",
+                    "fullDepth": ""
+                },
+                {
+                    "title": "Federation toward archive.solar",
+                    "shortSummary": "Today, listings stay in-browser; tomorrow, the Nexus label marks archives intended to register in a public federation directory. Packs you download here are designed to drop into the same open layout anywhere.\nThat path keeps the demo honest while naming where the client work is headed.",
+                    "alternatePerspectives": [
+                        { "hubId": "uranus", "label": "Society & ethics — open access and contributor rights" },
+                        { "hubId": "star", "label": "Foundation — policy hooks for external listing" }
+                    ],
+                    "detailedSummary": "",
+                    "fullDepth": ""
                 }
             ],
             "layerImages": {
