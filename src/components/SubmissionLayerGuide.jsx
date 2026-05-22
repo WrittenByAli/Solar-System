@@ -13,7 +13,10 @@ import {
     CELL_PX,
     L7_SEGMENT_NAV_COLS,
     L7_SEGMENT_NAV_TOTAL,
+    L7_NARRATIVE_SEGMENT_COUNT,
+    L8_CITED_SEGMENT_START_INDEX,
     L8_FACT_SOURCE_SLOTS,
+    L8_FINAL_SEGMENT_INDEX,
     L8_GRID_COLS,
     L8_NARRATIVE_TILE_TOTAL,
     L8_SEGMENT_COUNT,
@@ -94,7 +97,7 @@ export const SUBMISSION_LAYER_GUIDES = {
         ],
         writingBody: [
             'L7 expands the same cell to **4096×4096 px**. The **narrative band** is a **fixed 8×4 grid of 30 tiles** (SEG navigation steps between these). Each filled tile is one ranked sentence.',
-            'Tiles **31–32** are reserved hub-wide **grid fact indices** on the real archive (not filled from your submission text). Do not rely on those slots for your narrative.',
+            'Tiles **31–32** hold **cited facts** (from hub references and attachments; compact preview) and **grid references** (other indexed coordinates on the hub). They are **not** filled from your submission body text.',
             'Write **complete thoughts per sentence**; D-pad readers may land on any tile. The preview mirrors tile order after difficulty sort.',
         ],
         figuresBody: [
@@ -106,12 +109,12 @@ export const SUBMISSION_LAYER_GUIDES = {
         headline: 'Deep citations + narrative mesh',
         tips: [
             'First attachments seed “CITED FACT” tiles with a source link when possible.',
-            'Remaining tiles cycle segment sentences (easiest first); the **last slot** of the 450-grid is the full stitched block.',
+            'Narrative fills the main band (easiest first); the **final** cell stitches the full-depth block; **cited** tier sits on the **bottom row** of the 450-grid.',
             'Use SI units, define acronyms once, and prefer indicative mood over vague qualifiers.',
         ],
         writingBody: [
             'L8 is **16384×16384 px** inside one cell. The segment index is a **30-column × 15-row grid (450 slots)** on the real archive.',
-            `Slots **1–${L8_FACT_SOURCE_SLOTS}** are **cited-fact + source** pairs drawn from hub facts and your strongest references. Slots **${L8_FACT_SOURCE_SLOTS + 1}–${L8_SEGMENT_COUNT - 1}** are **narrative** (${L8_NARRATIVE_TILE_TOTAL} tiles) plus aggregation patterns. Slot **${L8_SEGMENT_COUNT}** is the **final stitched** full-depth block.`,
+            `**Slots 1–${L8_NARRATIVE_TILE_TOTAL}** are **narrative** tiles in difficulty order. **Slot ${L8_FINAL_SEGMENT_INDEX + 1}** is the **final stitched** full-depth block. **Slots ${L8_CITED_SEGMENT_START_INDEX + 1}–${L8_SEGMENT_COUNT}** are **cited-fact + source** pairs on the **bottom row** (same ${L8_FACT_SOURCE_SLOTS}-wide cited tier as before, moved visually to the end of the layer).`,
             'Sentence rules are unchanged (20–250 chars). The narrative band consumes sentences in difficulty order across hundreds of tiles — concise sentences age better than long rambles.',
         ],
         figuresBody: [
@@ -277,17 +280,17 @@ function PreviewL6({ lx, ly, data, col, isDark, attachments, segments }) {
     )
 }
 
-/** Mini 8×4 L7 narrative grid (30 active tiles) — matches archive SEG stepping. */
+/** Mini 8×4 L7 narrative grid (30 active tiles) — matches archive SEG stepping (31–32 are separate panels). */
 function PreviewL7NarrativeGrid({ sortedSegments, col, isDark, highlightSlot }) {
-    const filledCount = Math.min(L7_SEGMENT_NAV_TOTAL, sortedSegments?.length || 0)
+    const filledCount = Math.min(L7_NARRATIVE_SEGMENT_COUNT, sortedSegments?.length || 0)
     return (
         <div>
             <div className="flex justify-between items-center mb-1.5 gap-2">
                 <span className="text-[9px] font-black" style={{ color: col }}>
-                    NARRATIVE GRID · {L7_SEGMENT_NAV_COLS} cols × 4 rows (30) + hub index
+                    NARRATIVE GRID · {L7_SEGMENT_NAV_COLS} cols × 4 rows (30) + cited / grid refs
                 </span>
                 <span className="text-[9px] font-mono opacity-80" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
-                    {filledCount}/{L7_SEGMENT_NAV_TOTAL} filled
+                    {filledCount}/{L7_NARRATIVE_SEGMENT_COUNT} filled
                 </span>
             </div>
             <div
@@ -298,7 +301,7 @@ function PreviewL7NarrativeGrid({ sortedSegments, col, isDark, highlightSlot }) 
                     gridTemplateColumns: `repeat(${L7_SEGMENT_NAV_COLS}, minmax(0, 1fr))`,
                 }}
             >
-                {Array.from({ length: L7_SEGMENT_NAV_TOTAL }, (_, i) => {
+                {Array.from({ length: L7_NARRATIVE_SEGMENT_COUNT }, (_, i) => {
                     const n = i + 1
                     const filled = i < filledCount
                     const seg = sortedSegments[i]
@@ -340,20 +343,20 @@ function PreviewL7NarrativeGrid({ sortedSegments, col, isDark, highlightSlot }) 
                     className="flex-1 rounded border px-2 py-1.5 text-[8px] font-bold text-center opacity-80"
                     style={{ borderColor: `${col}28`, color: col }}
                 >
-                    SEG 31 · hub fact index (part 1)
+                    SEG 31 · cited facts
                 </div>
                 <div
                     className="flex-1 rounded border px-2 py-1.5 text-[8px] font-bold text-center opacity-80"
                     style={{ borderColor: `${col}28`, color: col }}
                 >
-                    SEG 32 · hub fact index (part 2)
+                    SEG 32 · grid references
                 </div>
             </div>
         </div>
     )
 }
 
-/** L8: cited strip + narrative window into 30-col grid */
+/** L8: narrative window + final + cited row at bottom (matches archive order). */
 function PreviewL8Grid({ sortedSegments, col, isDark, highlightSlot, attachments }) {
     const citedDemoFilled = Math.min(
         L8_FACT_SOURCE_SLOTS,
@@ -369,38 +372,8 @@ function PreviewL8Grid({ sortedSegments, col, isDark, highlightSlot, attachments
     return (
         <div className="space-y-2">
             <div className="text-[9px] font-black flex flex-wrap justify-between gap-1" style={{ color: col }}>
-                <span>CITED FACT TIER · {L8_FACT_SOURCE_SLOTS} tiles ({L8_GRID_COLS}×1)</span>
+                <span>NARRATIVE BAND · {L8_NARRATIVE_TILE_TOTAL} tiles · window around next slot</span>
                 <span className="font-mono opacity-80">L8 cell {CELL_PX[8]}×{CELL_PX[8]} px</span>
-            </div>
-            <div className="overflow-x-auto rounded-lg border p-1.5" style={{ borderColor: `${col}33`, background: isDark ? 'rgba(0,10,24,0.88)' : '#f1f5f9' }}>
-                <div
-                    className="grid gap-0.5"
-                    style={{
-                        gridTemplateColumns: `repeat(${L8_GRID_COLS}, minmax(14px, 18px))`,
-                        minWidth: L8_GRID_COLS * 17,
-                    }}
-                >
-                    {Array.from({ length: L8_FACT_SOURCE_SLOTS }, (_, i) => {
-                        const filled = i < citedDemoFilled
-                        return (
-                            <div
-                                key={`c-${i}`}
-                                className="h-5 rounded border text-[7px] font-mono flex items-center justify-center"
-                                style={{
-                                    borderColor: `${col}30`,
-                                    background: filled ? `${col}25` : (isDark ? 'rgba(15,23,42,0.4)' : '#fff'),
-                                    color: col,
-                                }}
-                                title={`Cited slot ${i + 1}`}
-                            >
-                                {i + 1}
-                            </div>
-                        )
-                    })}
-                </div>
-            </div>
-            <div className="text-[9px] font-black" style={{ color: col }}>
-                NARRATIVE BAND · {L8_NARRATIVE_TILE_TOTAL} tiles · window around next slot
             </div>
             <div
                 className="grid gap-0.5 rounded-lg p-1.5 border"
@@ -447,7 +420,37 @@ function PreviewL8Grid({ sortedSegments, col, isDark, highlightSlot, attachments
                 className="rounded-lg border px-2 py-2 text-[9px] text-center font-bold"
                 style={{ borderColor: `${col}35`, color: col, opacity: 0.85 }}
             >
-                Slot {L8_SEGMENT_COUNT} · FINAL · full stitched depth block (auto-composed on archive)
+                Slot {L8_FINAL_SEGMENT_INDEX + 1} · FINAL · full stitched depth block (auto-composed on archive)
+            </div>
+            <div className="text-[9px] font-black flex flex-wrap justify-between gap-1" style={{ color: col }}>
+                <span>CITED FACT TIER · {L8_FACT_SOURCE_SLOTS} tiles (bottom row · {L8_GRID_COLS}×1)</span>
+            </div>
+            <div className="overflow-x-auto rounded-lg border p-1.5" style={{ borderColor: `${col}33`, background: isDark ? 'rgba(0,10,24,0.88)' : '#f1f5f9' }}>
+                <div
+                    className="grid gap-0.5"
+                    style={{
+                        gridTemplateColumns: `repeat(${L8_GRID_COLS}, minmax(14px, 18px))`,
+                        minWidth: L8_GRID_COLS * 17,
+                    }}
+                >
+                    {Array.from({ length: L8_FACT_SOURCE_SLOTS }, (_, i) => {
+                        const filled = i < citedDemoFilled
+                        return (
+                            <div
+                                key={`c-${i}`}
+                                className="h-5 rounded border text-[7px] font-mono flex items-center justify-center"
+                                style={{
+                                    borderColor: `${col}30`,
+                                    background: filled ? `${col}25` : (isDark ? 'rgba(15,23,42,0.4)' : '#fff'),
+                                    color: col,
+                                }}
+                                title={`Cited slot ${i + 1} (layer slot ${L8_CITED_SEGMENT_START_INDEX + i + 1})`}
+                            >
+                                {i + 1}
+                            </div>
+                        )
+                    })}
+                </div>
             </div>
         </div>
     )
@@ -626,7 +629,7 @@ export default function SubmissionLayerGuide({
     const showSegmentHint =
         segmentHighlight != null &&
         ((previewLayer === 8 && segmentHighlight > L8_NARRATIVE_TILE_TOTAL) ||
-            (previewLayer === 7 && segmentHighlight > L7_SEGMENT_NAV_TOTAL))
+            (previewLayer === 7 && segmentHighlight > L7_NARRATIVE_SEGMENT_COUNT))
 
     return (
         <aside

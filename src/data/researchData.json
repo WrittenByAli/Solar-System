@@ -356,7 +356,7 @@
                     "content": "Zero-trust architecture protects all inter-hub communications. Quantum key distribution ensures theoretically unbreakable encryption. Distributed ledger technology provides immutable audit trails for resource allocation and governance decisions.",
                     "alternatePerspectives": [
                         { "hubId": "uranus", "label": "Society & ethics — governance of surveillance and trust" },
-                        { "hubId": "star", "label": "Foundation — attribution, provenance, and policy" }
+                        { "hubId": "star", "label": "North Star — attribution, provenance, and policy" }
                     ]
                 },
                 {
@@ -371,7 +371,7 @@
                     "title": "Knowledge Management",
                     "content": "The SOLAR Archive itself is managed by Jupiter. Coordinate-based indexing, semantic search, and automated summarization ensure knowledge is accessible. Multi-criteria decision analysis helps communities make complex trade-off decisions involving energy, water, food, and social factors.",
                     "alternatePerspectives": [
-                        { "hubId": "star", "label": "Foundation — canon, versioning, and institutional memory" },
+                        { "hubId": "star", "label": "North Star — canon, versioning, and institutional memory" },
                         { "hubId": "uranus", "label": "Society & ethics — education and knowledge justice" }
                     ]
                 }
@@ -463,7 +463,7 @@
                     "title": "Governance & Policy Systems",
                     "content": "Scalable, transparent, and participatory decision-making models that extend across all hubs. Liquid democracy enables flexible delegation. Constitutional frameworks protect minority rights while enabling rapid collective action. Policies ensure fair distribution of Saturn's food, Neptune's water, and Sun's energy.",
                     "alternatePerspectives": [
-                        { "hubId": "star", "label": "Foundation — charter, jurisdiction, and canon" },
+                        { "hubId": "star", "label": "North Star — charter, jurisdiction, and canon" },
                         { "hubId": "jupiter", "label": "AI & computing — decision-support and transparency tooling" }
                     ]
                 },
@@ -471,7 +471,7 @@
                     "title": "Ethical Frameworks",
                     "content": "Principles that protect equality, sustainability, and intergenerational responsibility. AI ethics boards oversee Jupiter's algorithms. Bioethics committees review Earth's genetic research. Environmental impact assessments required for all hub operations.",
                     "alternatePerspectives": [
-                        { "hubId": "star", "label": "Foundation — institutional ethics memoranda" },
+                        { "hubId": "star", "label": "North Star — institutional ethics memoranda" },
                         { "hubId": "jupiter", "label": "AI & computing — alignment and oversight of automation" },
                         { "hubId": "earth", "label": "Biology & medicine — bioethics and trials" }
                     ]
@@ -481,7 +481,7 @@
                     "content": "Lifelong learning programs connect to every research hub. Apprenticeship models build practical skills. Open-source curricula freely shared. Education flows in both directions: hub specialists teach communities, communities teach hubs what knowledge they need.",
                     "alternatePerspectives": [
                         { "hubId": "jupiter", "label": "AI & computing — archives, search, and personalization" },
-                        { "hubId": "star", "label": "Foundation — citation patterns and continuity" }
+                        { "hubId": "star", "label": "North Star — citation patterns and continuity" }
                     ]
                 },
                 {
@@ -489,7 +489,7 @@
                     "content": "Artistic expression reinforces morale, community identity, and shared values. Music, visual arts, storytelling, and performance documented and celebrated. Cultural diversity protected as a resource as valuable as biodiversity.",
                     "alternatePerspectives": [
                         { "hubId": "earth", "label": "Biology & medicine — culture and wellbeing" },
-                        { "hubId": "star", "label": "Foundation — stewardship of shared narrative" }
+                        { "hubId": "star", "label": "North Star — stewardship of shared narrative" }
                     ]
                 },
                 {
@@ -497,14 +497,14 @@
                     "content": "Restorative justice practices replace punitive systems. Mediation training for all community members. Social capital measurement tracks community health. Mutual aid networks formalized into hub-level support systems.",
                     "alternatePerspectives": [
                         { "hubId": "mars", "label": "Engineering — disaster response and mutual aid logistics" },
-                        { "hubId": "star", "label": "Foundation — procedural fairness memoranda" }
+                        { "hubId": "star", "label": "North Star — procedural fairness memoranda" }
                     ]
                 },
                 {
                     "title": "Intergenerational Responsibility",
                     "content": "Long-term planning horizons: 7-generation thinking embedded in all policy. Youth councils have formal advisory roles. Elder knowledge systematically documented and preserved. Time capsule programs ensure continuity of values and wisdom.",
                     "alternatePerspectives": [
-                        { "hubId": "star", "label": "Foundation — long-term stewardship & continuity" },
+                        { "hubId": "star", "label": "North Star — long-term stewardship & continuity" },
                         { "hubId": "neptune", "label": "Water systems — climate and oceans on century scales" }
                     ]
                 }
@@ -586,18 +586,18 @@
         },
         {
             "id": "star",
-            "planet": "Star",
-            "domain": "Foundation archive · memoranda, canon, and stewardship",
-            "shortDomain": "Foundation",
+            "planet": "North Star",
+            "domain": "North Star archive · memoranda, canon, and stewardship",
+            "shortDomain": "North Star",
             "color": "#f5a623",
             "glowColor": "rgba(245,166,35,0.55)",
             "chapter": 11,
-            "intro": "Star is the Foundation’s dedicated archive: institutional memoranda, canon, governance records, and stewardship documents that apply across every hub. It does not replace domain hubs; it anchors how knowledge is attributed, reviewed, and preserved for the long term.",
-            "description": "Where hub archives organize research by domain — energy, materials, water, and so on — Star holds the cross-cutting corpus that belongs to the institution itself: charters, submission policies, review criteria, attribution norms, and continuity plans. Entries here are cited by every other archive when procedures or canonical definitions matter.\n\nNavigate Star like any hub: coordinates and zoom levels map memoranda and records into the same SEG GRID experience so contributors encounter one consistent interface whether they are placing facts under Neptune or under Foundation stewardship.",
+            "intro": "North Star is the Foundation’s dedicated archive (route /archive/star): institutional memoranda, canon, governance records, and stewardship documents that apply across every hub. It does not replace domain hubs; it anchors how knowledge is attributed, reviewed, and preserved for the long term.",
+            "description": "Where hub archives organize research by domain — energy, materials, water, and so on — North Star holds the cross-cutting corpus that belongs to the institution itself: charters, submission policies, review criteria, attribution norms, and continuity plans. Entries here are cited by every other archive when procedures or canonical definitions matter.\n\nNavigate this archive like any hub: coordinates and zoom levels map memoranda and records into the same SEG GRID experience so contributors encounter one consistent interface whether they are placing facts under Neptune or under Foundation stewardship.",
             "sections": [
                 {
                     "title": "Charter & jurisdictional scope",
-                    "shortSummary": "Star documents what the archive is for and what it is not: institutional memory and binding canon for contributors, distinct from planet-scale research corpora. Scope covers governance memoranda, procedural amendments, and definitions that other hubs inherit by reference.\nWhen a hub policy cites “Foundation standards,” the authoritative text lives here at documented coordinates so reviewers and submitters share one source of truth.",
+                    "shortSummary": "North Star documents what the archive is for and what it is not: institutional memory and binding canon for contributors, distinct from planet-scale research corpora. Scope covers governance memoranda, procedural amendments, and definitions that other hubs inherit by reference.\nWhen a hub policy cites “Foundation standards,” the authoritative text lives here at documented coordinates so reviewers and submitters share one source of truth.",
                     "alternatePerspectives": [
                         { "hubId": "uranus", "label": "Society & ethics — governance norms behind the charter" },
                         { "hubId": "jupiter", "label": "AI & computing — tooling that enforces scope and policy" }
@@ -607,7 +607,7 @@
                 },
                 {
                     "title": "Submission intake & formatting",
-                    "shortSummary": "Memoranda submitted into Star follow the same coordinate and layer conventions as domain hubs, with additional tags for policy tier and revision lineage. Formatting rules ensure every entry can be diffed across revisions and linked from hub-side citations.\nTemplates distinguish institutional prose from research summaries so Grade queues and automated checks know which rubric applies.",
+                    "shortSummary": "Memoranda submitted into North Star follow the same coordinate and layer conventions as domain hubs, with additional tags for policy tier and revision lineage. Formatting rules ensure every entry can be diffed across revisions and linked from hub-side citations.\nTemplates distinguish institutional prose from research summaries so Grade queues and automated checks know which rubric applies.",
                     "alternatePerspectives": [
                         { "hubId": "earth", "label": "Biology hub — example domain corpus using the same grid" },
                         { "hubId": "jupiter", "label": "AI & computing — automation checks and parsing" }
@@ -617,7 +617,7 @@
                 },
                 {
                     "title": "Peer review & institutional grades",
-                    "shortSummary": "Foundation-facing material passes through review tracks aligned with the global leaderboard and grade workflow, with criteria weighted toward clarity, auditability, and cross-hub impact rather than experimental novelty.\nHigh-grade Star entries become canonical references; lower-tier drafts remain visible for transparency until superseded.",
+                    "shortSummary": "Foundation-facing material passes through review tracks aligned with the global leaderboard and grade workflow, with criteria weighted toward clarity, auditability, and cross-hub impact rather than experimental novelty.\nHigh-grade North Star entries become canonical references; lower-tier drafts remain visible for transparency until superseded.",
                     "alternatePerspectives": [
                         { "hubId": "jupiter", "label": "AI & computing — ranking, signals, and reviewer tooling" },
                         { "hubId": "uranus", "label": "Society & ethics — fairness and transparency in review" }
@@ -627,17 +627,17 @@
                 },
                 {
                     "title": "Attribution, provenance & versioning",
-                    "shortSummary": "Every Star cell records authorship, reviewer chain, and semantic version so downstream hubs can cite a stable identifier even when wording evolves. Provenance blocks link to supporting evidence in domain archives without duplicating full corpora.\nThis keeps institutional claims accountable while preserving lean storage in the Foundation layer.",
+                    "shortSummary": "Every North Star cell records authorship, reviewer chain, and semantic version so downstream hubs can cite a stable identifier even when wording evolves. Provenance blocks link to supporting evidence in domain archives without duplicating full corpora.\nThis keeps institutional claims accountable while preserving lean storage in the Foundation layer.",
                     "alternatePerspectives": [
                         { "hubId": "jupiter", "label": "AI & computing — knowledge graphs and citation graphs" },
-                        { "hubId": "sun", "label": "Energy hub — example domain entries Star cites" }
+                        { "hubId": "sun", "label": "Energy hub — example domain entries North Star cites" }
                     ],
                     "detailedSummary": "",
                     "fullDepth": ""
                 },
                 {
                     "title": "Long-term stewardship & continuity",
-                    "shortSummary": "Stewardship memoranda describe backup cadences, format migrations, and succession-of-custodian protocols — the boring infrastructure that keeps the grid intelligible across decades. Star cells hold runbooks that operators follow during outages or governance transitions.\nCross-links to Uranus (society & ethics) appear when memoranda touch civic norms; links to Jupiter when automation or tooling changes.",
+                    "shortSummary": "Stewardship memoranda describe backup cadences, format migrations, and succession-of-custodian protocols — the boring infrastructure that keeps the grid intelligible across decades. North Star cells hold runbooks that operators follow during outages or governance transitions.\nCross-links to Uranus (society & ethics) appear when memoranda touch civic norms; links to Jupiter when automation or tooling changes.",
                     "alternatePerspectives": [
                         { "hubId": "uranus", "label": "Society & ethics — civic norms and continuity" },
                         { "hubId": "jupiter", "label": "AI & computing — automation and migrations" }
@@ -647,61 +647,12 @@
                 },
                 {
                     "title": "Cross-hub linkage patterns",
-                    "shortSummary": "Hub articles reference Star for definitions; Star references hubs for empirical grounding. Standard linkage patterns are documented so parsers and human editors resolve citations consistently.\nThat symmetry is what makes the Foundation archive feel like part of the same map rather than a separate silo.",
+                    "shortSummary": "Hub articles reference North Star for definitions; it references hubs for empirical grounding. Standard linkage patterns are documented so parsers and human editors resolve citations consistently.\nThat symmetry is what makes the Foundation archive feel like part of the same map rather than a separate silo.",
                     "alternatePerspectives": [
                         { "hubId": "sun", "label": "Energy — sample domain archive for cross-links" },
                         { "hubId": "earth", "label": "Biology & medicine — sample research corpus" },
                         { "hubId": "neptune", "label": "Water systems — sample hydrological corpus" },
-                        { "hubId": "nexus", "label": "SOLAR Nexus — federated view across domains" }
-                    ],
-                    "detailedSummary": "",
-                    "fullDepth": ""
-                }
-            ],
-            "layerImages": {
-                "1": "",
-                "2": "",
-                "3": ""
-            }
-        },
-        {
-            "id": "nexus",
-            "planet": "SOLAR Nexus",
-            "domain": "Integration · Sustainable Off-grid Living-labs for Autonomy & Research",
-            "shortDomain": "Nexus",
-            "color": "#c084fc",
-            "glowColor": "rgba(192,132,252,0.55)",
-            "chapter": 12,
-            "intro": "The SOLAR Nexus is the tenth archive: it connects planetary hub data into one coherent grid so teams can host their own living-lab layouts. SOLAR stands for Sustainable Off-grid Living-labs for Autonomy and Research — a single nexus where energy, food, water, ethics, and tooling meet the same coordinate map you already use for every world.",
-            "description": "Where Star anchors institutional canon and each planet hub carries domain research, the Nexus is the integration layer: cross-reference lenses, shared indices, and room for visitor-hosted archives built on the same SEG GRID — including layouts defined from an image, where width × height in pixels becomes your cell space.\n\nThe Nexus does not replace domain hubs; it makes their relationships explicit, so a submission on Mars can point to Sun power regimes, Neptune water loops, and Uranus governance notes without leaving one navigation model.",
-            "sections": [
-                {
-                    "title": "Cross-hub integration",
-                    "shortSummary": "The Nexus treats every hub as a contributor to one research fabric. Alternate perspectives, federation IDs, and shared tags are gathered so reviewers and field builders see how an entry in one domain depends on another.\nThis is where “all the data of the planets” becomes a working map instead of nine separate silos.",
-                    "alternatePerspectives": [
-                        { "hubId": "star", "label": "Foundation — canon and attribution for cross-hub claims" },
-                        { "hubId": "jupiter", "label": "AI & computing — graphs, search, and routing across archives" },
-                        { "hubId": "sun", "label": "Energy — master resource tying labs to power reality" }
-                    ],
-                    "detailedSummary": "",
-                    "fullDepth": ""
-                },
-                {
-                    "title": "Host your own grid",
-                    "shortSummary": "Anyone can export or import a portable archive pack: upload a picture, let its dimensions define the grid, and deploy the layout on a static site. The Nexus narrative is the home for that pattern in the story world — off-grid labs documenting autonomy and research on terms they control.\nThe Host archive flow in this build is the technical hinge; the Nexus is its institutional name in S.O.L.A.R.",
-                    "alternatePerspectives": [
-                        { "hubId": "earth", "label": "Biology & medicine — clinic and field lab comparables" },
-                        { "hubId": "mars", "label": "Engineering — harsh-environment lab templates" }
-                    ],
-                    "detailedSummary": "",
-                    "fullDepth": ""
-                },
-                {
-                    "title": "Federation toward archive.solar",
-                    "shortSummary": "Today, listings stay in-browser; tomorrow, the Nexus label marks archives intended to register in a public federation directory. Packs you download here are designed to drop into the same open layout anywhere.\nThat path keeps the demo honest while naming where the client work is headed.",
-                    "alternatePerspectives": [
-                        { "hubId": "uranus", "label": "Society & ethics — open access and contributor rights" },
-                        { "hubId": "star", "label": "Foundation — policy hooks for external listing" }
+                        { "hubId": "jupiter", "label": "AI & computing — cross-hub search and graphs" }
                     ],
                     "detailedSummary": "",
                     "fullDepth": ""

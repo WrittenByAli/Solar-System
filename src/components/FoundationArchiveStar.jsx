@@ -38,8 +38,8 @@ export default function FoundationArchiveStar() {
                         ? '0 4px 24px rgba(0,0,0,0.45), 0 0 20px rgba(79,195,247,0.12)'
                         : '0 4px 20px rgba(15,23,42,0.12)',
                 }}
-                aria-label="Open the Foundation archive (Star hub)"
-                title="Foundation archive (Star) — curated knowledge and projects"
+                aria-label="Open the North Star archive — Foundation memoranda and projects"
+                title="North Star archive — Foundation memoranda and curated projects"
             >
                 <img
                     src={src}

@@ -1,0 +1,120 @@
+/* L7/L8 narrative tile gates and primary + Add control */
+
+.archive-segment-gate {
+  font-size: 10px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: #94a3b8;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.archive-root:not([data-theme='dark']) .archive-segment-gate,
+.archive-segment-gate--light {
+  color: #64748b;
+  border-color: rgba(100, 116, 139, 0.4);
+  background: rgba(248, 250, 252, 0.85);
+}
+
+.archive-segment-gate--hud {
+  font-size: 8px;
+  max-width: 100%;
+  line-height: 1.35;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.archive-segment-gate__short {
+  display: none;
+}
+
+.archive-segment-add-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  border-radius: 8px;
+  border: 1px solid;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.archive-segment-add-btn--tile {
+  font-size: 11px;
+  padding: 5px 12px;
+  box-shadow: 0 0 14px rgba(79, 195, 247, 0.25);
+}
+
+.archive-segment-add-btn--tile:hover {
+  transform: scale(1.04);
+}
+
+.archive-segment-add-btn--hud {
+  font-size: 9px;
+  padding: 4px 10px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.archive-empty-slot-frame {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  border: 2px dotted;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.archive-empty-slot-frame__corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.archive-empty-slot-frame__corner--tl {
+  top: 6px;
+  left: 8px;
+  border-top: 2px solid;
+  border-left: 2px solid;
+}
+
+.archive-empty-slot-frame__corner--tr {
+  top: 6px;
+  right: 8px;
+  border-top: 2px solid;
+  border-right: 2px solid;
+}
+
+.archive-empty-slot-frame__corner--bl {
+  bottom: 6px;
+  left: 8px;
+  border-bottom: 2px solid;
+  border-left: 2px solid;
+}
+
+.archive-empty-slot-frame__corner--br {
+  bottom: 6px;
+  right: 8px;
+  border-bottom: 2px solid;
+  border-right: 2px solid;
+}
+
+.archive-empty-slot-frame__hint {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.35;
+  pointer-events: none;
+  white-space: nowrap;
+}

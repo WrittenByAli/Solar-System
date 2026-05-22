@@ -250,13 +250,10 @@ export default function HostArchive() {
                         side). Download a single JSON pack you can carry to any static deployment of this app, or import a pack someone sent you.
                     </p>
                     <p className="text-xs max-w-lg mx-auto leading-relaxed mb-4" style={{ color: muted }}>
-                        In-setting, this is the{' '}
-                        <Link to="/archive/nexus" className="font-bold hover:underline" style={{ color: isDark ? '#d8b4fe' : '#7c3aed' }}>
-                            SOLAR Nexus
-                        </Link>
-                        {' '}archive — <strong style={{ color: ink }}>S</strong>ustainable <strong style={{ color: ink }}>O</strong>ff-grid{' '}
+                        <strong style={{ color: ink }}>S</strong>ustainable <strong style={{ color: ink }}>O</strong>ff-grid{' '}
                         <strong style={{ color: ink }}>L</strong>iving-labs for <strong style={{ color: ink }}>A</strong>utonomy and{' '}
-                        <strong style={{ color: ink }}>R</strong>esearch — tying every hub to one hostable layout.
+                        <strong style={{ color: ink }}>R</strong>esearch — this flow is for teams who want the same SEG GRID model on a layout they
+                        host themselves.
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-semibold">
                         <Link to="/create-archive" className="inline-flex items-center gap-1 hover:underline" style={{ color: isDark ? '#67e8f9' : '#0284c7' }}>

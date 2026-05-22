@@ -1,0 +1,165 @@
+/* ── Archive L1 stage (atmosphere + draggable globe) ── */
+
+.archive-l1-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Only the globe shell captures drag; atmosphere stays decorative */
+.archive-l1-atmosphere,
+.archive-l1-atmosphere * {
+  pointer-events: none !important;
+}
+
+.archive-l1-atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.archive-l1-atmosphere__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.archive-l1-atmosphere__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.archive-l1-atmosphere--dark .archive-l1-atmosphere__vignette {
+  background: radial-gradient(
+    ellipse 85% 75% at 50% 45%,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) 72%,
+    rgba(0, 0, 0, 0.65) 100%
+  );
+}
+
+.archive-l1-atmosphere--light .archive-l1-atmosphere__vignette {
+  background: radial-gradient(
+    ellipse 90% 80% at 50% 42%,
+    transparent 0%,
+    rgba(248, 250, 252, 0.5) 70%,
+    rgba(241, 245, 249, 0.92) 100%
+  );
+}
+
+/* Slow aurora bands (accent-tinted) */
+.archive-l1-atmosphere__aurora {
+  position: absolute;
+  width: 140%;
+  height: 55%;
+  left: -20%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.55;
+  filter: blur(48px);
+  mix-blend-mode: screen;
+  animation: l1-aurora-drift 22s ease-in-out infinite;
+}
+
+.archive-l1-atmosphere--light .archive-l1-atmosphere__aurora {
+  mix-blend-mode: multiply;
+  opacity: 0.35;
+  filter: blur(56px);
+}
+
+.archive-l1-atmosphere__aurora--a {
+  top: 8%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    color-mix(in srgb, var(--l1-accent, #4fc3f7) 35%, transparent) 35%,
+    color-mix(in srgb, #7c3aed 25%, transparent) 55%,
+    transparent 100%
+  );
+  animation-duration: 26s;
+  animation-delay: -4s;
+}
+
+.archive-l1-atmosphere__aurora--b {
+  bottom: 5%;
+  background: linear-gradient(
+    -75deg,
+    transparent 0%,
+    color-mix(in srgb, var(--l1-accent, #4fc3f7) 28%, transparent) 40%,
+    color-mix(in srgb, #0ea5e9 18%, transparent) 60%,
+    transparent 100%
+  );
+  animation-duration: 32s;
+  animation-direction: reverse;
+}
+
+@keyframes l1-aurora-drift {
+  0%,
+  100% {
+    transform: translateX(-4%) skewY(-2deg) scaleY(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateX(6%) skewY(2deg) scaleY(1.08);
+    opacity: 0.7;
+  }
+}
+
+/* Faint orbital rings */
+.archive-l1-atmosphere__ring {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--l1-accent, #4fc3f7) 22%, transparent);
+  pointer-events: none;
+  z-index: 0;
+  transform: translate(-50%, -50%);
+}
+
+.archive-l1-atmosphere__ring--1 {
+  width: min(92vmin, 820px);
+  height: min(92vmin, 820px);
+  animation: l1-ring-spin 120s linear infinite;
+  opacity: 0.22;
+}
+
+.archive-l1-atmosphere__ring--2 {
+  width: min(72vmin, 640px);
+  height: min(72vmin, 640px);
+  border-style: dashed;
+  border-width: 1px;
+  animation: l1-ring-spin 180s linear infinite reverse;
+  opacity: 0.14;
+}
+
+.archive-l1-atmosphere--light .archive-l1-atmosphere__ring {
+  opacity: 0.12;
+  border-color: color-mix(in srgb, var(--l1-accent, #0284c7) 18%, transparent);
+}
+
+@keyframes l1-ring-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archive-l1-atmosphere__aurora,
+  .archive-l1-atmosphere__ring {
+    animation: none !important;
+  }
+}

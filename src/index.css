@@ -75,34 +75,7 @@ textarea {
   max-width: 100%;
 }
 
-/* Archive grid top bar: safe areas + wraps on phones */
-.archive-header {
-  flex-wrap: wrap;
-  row-gap: 0.5rem;
-  column-gap: 0.35rem;
-  align-items: center;
-  padding-left: max(0.5rem, env(safe-area-inset-left));
-  padding-right: max(0.5rem, env(safe-area-inset-right));
-  padding-top: max(3.2rem, calc(env(safe-area-inset-top) + 2.1rem));
-  padding-bottom: 0.5rem;
-}
-
-@media (min-width: 768px) {
-  .archive-header {
-    flex-wrap: nowrap;
-    padding-top: max(3.4rem, calc(env(safe-area-inset-top) + 2.35rem));
-    padding-left: max(0.75rem, env(safe-area-inset-left));
-    padding-right: max(0.75rem, env(safe-area-inset-right));
-  }
-}
-
-@media (min-width: 1024px) {
-  .archive-header {
-    padding-top: max(3.6rem, calc(env(safe-area-inset-top) + 2.5rem));
-    padding-left: max(1rem, env(safe-area-inset-left));
-    padding-right: max(1rem, env(safe-area-inset-right));
-  }
-}
+/* Archive header layout — padding-top from archive-nav-responsive.css */
 
 .archive-tabs-scroll {
   -webkit-overflow-scrolling: touch;

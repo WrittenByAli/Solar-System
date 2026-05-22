@@ -9,7 +9,7 @@ export const ARCHIVE_LIBRARY_LS = 'solarArchiveLibrary'
 
 /** Map hubs — ids must match `/archive/:planetId` routes and MapView targets. */
 export const ARCHIVE_HUB_LOCATIONS = [
-    { id: 'star', label: 'Star', subtitle: 'Foundation archive · knowledge & projects' },
+    { id: 'star', label: 'North Star', subtitle: 'Foundation archive · memoranda & canon' },
     { id: 'sun', label: 'Sun', subtitle: 'Energy Research' },
     { id: 'mercury', label: 'Mercury', subtitle: 'Industrial Production' },
     { id: 'venus', label: 'Venus', subtitle: 'Agriculture & Food' },
@@ -19,8 +19,6 @@ export const ARCHIVE_HUB_LOCATIONS = [
     { id: 'saturn', label: 'Saturn', subtitle: 'Ecology & Waste' },
     { id: 'uranus', label: 'Uranus', subtitle: 'Society & Ethics' },
     { id: 'neptune', label: 'Neptune', subtitle: 'Oceans & Water' },
-    /** Meta hub: integrates all domains; name reflects client vision (SOLAR = Sustainable Off-grid Living-labs for Autonomy & Research). */
-    { id: 'nexus', label: 'SOLAR Nexus', subtitle: 'Connects all hubs · living-labs for autonomy & research' },
 ]
 
 export function normalizeHubId(raw) {

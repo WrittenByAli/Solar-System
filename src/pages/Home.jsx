@@ -16,7 +16,7 @@ const FEATURES = [
 ]
 
 const DOMAINS = [
-    { planet: 'Star', domain: 'Foundation', color: '#f5a623', emoji: '📜' },
+    { planet: 'North Star', domain: 'Foundation', color: '#f5a623', emoji: '📜' },
     { planet: 'Sun', domain: 'Energy', color: '#ff6b35', emoji: '☀️' },
     { planet: 'Mercury', domain: 'Industry', color: '#9ca3af', emoji: '⚙️' },
     { planet: 'Venus', domain: 'Agriculture', color: '#fbbf24', emoji: '🌾' },

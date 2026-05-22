@@ -8,7 +8,17 @@ import SubmissionLayerGuide from '../components/SubmissionLayerGuide.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { appendPendingSubmission, getSubmissions, migrateSubmission, normalizeSubmissionTags, MAX_TAGS_PER_SUBMISSION } from '../utils/submissionStorage.js'
 import { appendSegmentReport } from '../utils/segmentReports.js'
-import { parseSubmissionArchiveLayer, parsePositiveInt } from '../utils/archiveLayerSpecs.js'
+import {
+  parseSubmissionArchiveLayer,
+  parsePositiveInt,
+  isL7NarrativeBandComplete,
+  cellHasL5AndL6,
+  L56_NARRATIVE_GATE_MESSAGE,
+  L7_NARRATIVE_SEGMENT_COUNT,
+  getNarrativeSubmitState,
+} from '../utils/archiveLayerSpecs.js'
+import { buildMergedSectionEntries } from '../utils/archiveSectionEntries.js'
+import { readGridDimensionsFromStorage, normalizeHubId } from '../utils/archiveInstanceStorage.js'
 
 import fallbackData from '../data/researchData.json'
 
@@ -22,6 +32,49 @@ const PLANETS = researchData.planets.map(p => ({
 
 const MAX_ATTACHMENTS = 6
 const MAX_FILE_BYTES = 1_200_000
+
+const LAYER_GUIDE_ROWS = [
+    {
+        layer: 5,
+        title: 'Layer 5 — short summary (256 px scale)',
+        tips: [
+            'Write for a curious reader who is not yet a specialist; define jargon once.',
+            'State one main claim and keep it falsifiable; separate hypothesis from evidence.',
+            'Length targets match the living grid: summary field on submit (50–400 chars) feeds this scale.',
+            'Add one figure URL or sketch if it clarifies the claim — caption what it proves.',
+        ],
+    },
+    {
+        layer: 6,
+        title: 'Layer 6 — longer exposition (1024 px scale)',
+        tips: [
+            'Connect this cell to parents in the hierarchy: say which broader topic this elaborates.',
+            'Use short paragraphs; deep zoom readers skim on mobile — front-load structure.',
+            'Cite primary sources in attachments (graphs, papers); prefer stable URLs.',
+        ],
+    },
+    {
+        layer: 7,
+        title: 'Layer 7 — intermediate narrative segments',
+        tips: [
+            'Requires Layer 5 (short summary) and Layer 6 (detail) at the same coordinate before any L7 narrative tile can be authored.',
+            'Break the detail field into sentences (20–250 chars each); graders reorder them easiest → hardest (difficulty 1 fills L7 first).',
+            'Use the + Add control on the first empty TILE in the archive, or the HUD + Add / Full form on Layer 7.',
+            'The last two L7 segments are cited facts and grid references — they are not filled from submission text.',
+            'Layer 8 authoring for new narrative sentences is locked until all 30 L7 narrative tiles have sentences at that coordinate (catalog + approved submissions).',
+        ],
+    },
+    {
+        layer: 8,
+        title: 'Layer 8 — deep full text + citation lattice',
+        tips: [
+            'The bottom row holds cited / source slots; narrative fills the band above, then the single final stitch slot.',
+            'You must complete the 30 Layer 7 narrative tiles at the same coordinate before adding further sentences targeted at Layer 8 (same pool; harder reading order continues here).',
+            'Final slot stitches the narrative; keep tone consistent with L7 ordering.',
+            'If you attach imagery, label axes/units so reviewers can fact-check quickly.',
+        ],
+    },
+]
 
 const KIND_OPTIONS = [
     { value: 'image', label: 'Photo / figure' },
@@ -55,6 +108,34 @@ function Field({ label, children, required }) {
                 {label}{required && <span style={{ color: '#f87171' }}>*</span>}
             </label>
             {children}
+        </div>
+    )
+}
+
+function SubmissionGuidelinesPanel({ previewLayer, isDark }) {
+    const row = LAYER_GUIDE_ROWS.find((r) => r.layer === previewLayer) || LAYER_GUIDE_ROWS[0]
+    const border = isDark ? 'rgba(79,195,247,0.22)' : 'rgba(15,23,42,0.12)'
+    const cardBg = isDark ? 'rgba(15,23,42,0.55)' : 'rgba(241,245,249,0.96)'
+
+    return (
+        <div
+            className="mb-5 rounded-2xl text-xs overflow-hidden"
+            style={{ border: `1px solid ${border}`, background: cardBg }}
+        >
+            <details open className="group">
+                <summary
+                    className="cursor-pointer list-none px-4 py-3 font-bold flex items-center justify-between gap-2"
+                    style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}
+                >
+                    <span>Guidelines & tips · {row.title}</span>
+                    <ChevronDown size={16} className="shrink-0 opacity-70 group-open:rotate-180 transition-transform" aria-hidden />
+                </summary>
+                <ul className="px-4 pb-3 space-y-2 list-disc pl-5" style={{ color: isDark ? '#94a3b8' : '#475569' }}>
+                    {row.tips.map((t, i) => (
+                        <li key={i} className="leading-relaxed">{t}</li>
+                    ))}
+                </ul>
+            </details>
         </div>
     )
 }
@@ -174,6 +255,51 @@ export default function SubmitArchive() {
     const [attachmentCountSubmitted, setAttachmentCountSubmitted] = useState(0)
     const [previewLayer, setPreviewLayer] = useState(5)
     const [showRichPreview, setShowRichPreview] = useState(false)
+    const [submissionMergeTick, setSubmissionMergeTick] = useState(0)
+
+    useEffect(() => {
+        const bump = () => setSubmissionMergeTick((t) => t + 1)
+        window.addEventListener('solar-archive-submissions-updated', bump)
+        const onStorage = (ev) => {
+            if (ev.key === 'submittedArchiveEntries') bump()
+        }
+        window.addEventListener('storage', onStorage)
+        return () => {
+            window.removeEventListener('solar-archive-submissions-updated', bump)
+            window.removeEventListener('storage', onStorage)
+        }
+    }, [])
+
+    const hubIdForForm = normalizeHubId(form.planet || 'earth')
+    const gridDimsForMerge = useMemo(() => readGridDimensionsFromStorage(hubIdForForm), [hubIdForForm, submissionMergeTick])
+    const { halfW: mergeHalfW, halfH: mergeHalfH } = gridDimsForMerge
+
+    const planetDataForMerge = useMemo(() => {
+        if (!form.planet) return null
+        const id = String(form.planet).toLowerCase()
+        return researchData.planets.find((p) => p.id?.toLowerCase() === id || p.planet?.toLowerCase() === id) || null
+    }, [form.planet])
+
+    const mergedSectionEntries = useMemo(() => {
+        if (!planetDataForMerge || !form.planet) return {}
+        return buildMergedSectionEntries(planetDataForMerge, mergeHalfW, mergeHalfH)
+    }, [planetDataForMerge, form.planet, mergeHalfW, mergeHalfH, submissionMergeTick])
+
+    const submitMergeCellKey = useMemo(() => {
+        if (!form.coordX || !form.coordY) return null
+        const lx = parseInt(String(form.coordX).trim(), 10)
+        const ly = parseInt(String(form.coordY).trim(), 10)
+        if (!Number.isFinite(lx) || !Number.isFinite(ly)) return null
+        const gx = lx + mergeHalfW
+        const gy = mergeHalfH - ly
+        return `${gx},${gy}`
+    }, [form.coordX, form.coordY, mergeHalfW, mergeHalfH])
+
+    const mergedCellAtTarget = submitMergeCellKey ? mergedSectionEntries[submitMergeCellKey] : null
+    const l56GateBlocksNarrative = !cellHasL5AndL6(mergedCellAtTarget)
+    const l7GateBlocksL8 = !isL7NarrativeBandComplete(mergedCellAtTarget)
+    const narrativeStateL7 = getNarrativeSubmitState(7, mergedCellAtTarget)
+    const narrativeStateL8 = getNarrativeSubmitState(8, mergedCellAtTarget)
 
     const highlightSegmentSlot = useMemo(() => {
         const lyr = parseSubmissionArchiveLayer(searchParams.get('archiveLayer'))
@@ -183,11 +309,63 @@ export default function SubmitArchive() {
 
     useEffect(() => {
         const layerFromUrl = parseSubmissionArchiveLayer(searchParams.get('archiveLayer'))
+        if (!isSegmentReport && (layerFromUrl === 7 || layerFromUrl === 8) && l56GateBlocksNarrative) {
+            setPreviewLayer(6)
+            setSearchParams(
+                (prev) => {
+                    const next = new URLSearchParams(prev)
+                    next.set('archiveLayer', '6')
+                    next.delete('nextSegmentSlot')
+                    return next
+                },
+                { replace: true },
+            )
+            return
+        }
+        if (!isSegmentReport && layerFromUrl === 8 && l7GateBlocksL8) {
+            setPreviewLayer(7)
+            setSearchParams(
+                (prev) => {
+                    const next = new URLSearchParams(prev)
+                    next.set('archiveLayer', '7')
+                    next.delete('nextSegmentSlot')
+                    return next
+                },
+                { replace: true },
+            )
+            return
+        }
         if (layerFromUrl != null) setPreviewLayer(layerFromUrl)
-    }, [searchParams])
+    }, [searchParams, l7GateBlocksL8, l56GateBlocksNarrative, isSegmentReport, setSearchParams])
 
     const handlePreviewLayerChange = useCallback(
         (layer) => {
+            if (!isSegmentReport && (layer === 7 || layer === 8) && l56GateBlocksNarrative) {
+                setPreviewLayer(6)
+                setSearchParams(
+                    (prev) => {
+                        const next = new URLSearchParams(prev)
+                        next.set('archiveLayer', '6')
+                        next.delete('nextSegmentSlot')
+                        return next
+                    },
+                    { replace: true },
+                )
+                return
+            }
+            if (!isSegmentReport && layer === 8 && l7GateBlocksL8) {
+                setPreviewLayer(7)
+                setSearchParams(
+                    (prev) => {
+                        const next = new URLSearchParams(prev)
+                        next.set('archiveLayer', '7')
+                        next.delete('nextSegmentSlot')
+                        return next
+                    },
+                    { replace: true },
+                )
+                return
+            }
             setPreviewLayer(layer)
             setSearchParams(
                 (prev) => {
@@ -199,7 +377,7 @@ export default function SubmitArchive() {
                 { replace: true },
             )
         },
-        [setSearchParams],
+        [setSearchParams, l7GateBlocksL8, l56GateBlocksNarrative, isSegmentReport],
     )
 
     const set = useCallback((key, val) => setForm((f) => ({ ...f, [key]: val })), [])
@@ -374,6 +552,11 @@ export default function SubmitArchive() {
             }
         }
         if (String(form.tags || '').length > 600) errs.tags = 'Tags field is too long (use shorter comma-separated labels)'
+        if (!isSegmentReport && (previewLayer === 7 || previewLayer === 8) && l56GateBlocksNarrative) {
+            errs.previewLayer = L56_NARRATIVE_GATE_MESSAGE
+        } else if (!isSegmentReport && previewLayer === 8 && l7GateBlocksL8) {
+            errs.previewLayer = `Complete all ${L7_NARRATIVE_SEGMENT_COUNT} Layer 7 narrative tiles at this coordinate (catalog + approved submissions) before targeting Layer 8.`
+        }
         return errs
     }
 
@@ -426,11 +609,26 @@ export default function SubmitArchive() {
 
     const archiveLayerHint = searchParams.get('archiveLayer')
     const nextSegmentSlotHint = searchParams.get('nextSegmentSlot')
+    const archiveLayerNum = parseSubmissionArchiveLayer(archiveLayerHint)
+    const narrativeStateForHint =
+        archiveLayerNum === 7 ? narrativeStateL7 : archiveLayerNum === 8 ? narrativeStateL8 : { kind: 'none' }
     const showSegmentSlotHint =
         !isSegmentReport &&
-        (archiveLayerHint === '7' || archiveLayerHint === '8') &&
+        narrativeStateForHint.kind === 'ready' &&
         nextSegmentSlotHint &&
-        /^\d+$/.test(String(nextSegmentSlotHint).trim())
+        /^\d+$/.test(String(nextSegmentSlotHint).trim()) &&
+        String(narrativeStateForHint.slot) === String(nextSegmentSlotHint).trim()
+
+    const showL56GateBanner =
+        !isSegmentReport &&
+        (previewLayer === 7 || previewLayer === 8 || archiveLayerNum === 7 || archiveLayerNum === 8) &&
+        l56GateBlocksNarrative
+
+    const showL7GateBanner =
+        !isSegmentReport &&
+        (previewLayer === 8 || archiveLayerNum === 8) &&
+        !l56GateBlocksNarrative &&
+        l7GateBlocksL8
 
     const inputStyle = {
         padding: '10px 14px',
@@ -578,6 +776,49 @@ export default function SubmitArchive() {
                     </div>
                 )}
 
+                {showL56GateBanner && (
+                    <div
+                        className="mb-6 p-4 rounded-2xl text-sm flex gap-3 items-start"
+                        style={{
+                            border: '1px solid rgba(251,191,36,0.45)',
+                            background: isDark ? 'rgba(120,53,15,0.35)' : 'rgba(254,243,199,0.95)',
+                            color: isDark ? '#fde68a' : '#854d0e',
+                        }}
+                    >
+                        <AlertCircle size={18} className="shrink-0 mt-0.5" aria-hidden />
+                        <div>
+                            <p className="font-bold mb-1">Layer 7 / 8 locked — add L5 &amp; L6 first</p>
+                            <p className="text-xs leading-relaxed">{L56_NARRATIVE_GATE_MESSAGE}</p>
+                            <button
+                                type="button"
+                                className="mt-2 text-xs font-bold underline"
+                                onClick={() => handlePreviewLayerChange(5)}
+                            >
+                                Switch preview to Layer 5 (summary)
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {showL7GateBanner && !showL56GateBanner && (
+                    <div
+                        className="mb-6 p-4 rounded-2xl text-sm flex gap-3 items-start"
+                        style={{
+                            border: '1px solid rgba(251,191,36,0.45)',
+                            background: isDark ? 'rgba(120,53,15,0.35)' : 'rgba(254,243,199,0.95)',
+                            color: isDark ? '#fde68a' : '#854d0e',
+                        }}
+                    >
+                        <AlertCircle size={18} className="shrink-0 mt-0.5" aria-hidden />
+                        <div>
+                            <p className="font-bold mb-1">Layer 8 locked — complete Layer 7 narrative band</p>
+                            <p className="text-xs leading-relaxed">
+                                Finish all {L7_NARRATIVE_SEGMENT_COUNT} narrative tiles on Layer 7 at this coordinate before adding harder sentences on Layer 8.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {showSegmentSlotHint && (
                     <div
                         className="mb-6 p-4 rounded-2xl text-sm flex gap-3 items-start"
@@ -670,6 +911,61 @@ export default function SubmitArchive() {
                         )}
                         {errors.planet && <p className="text-xs" style={{ color: errorColor }}>{errors.planet}</p>}
                     </Field>
+
+                    {!isSegmentReport && (
+                        <>
+                            <Field label="Target layer (preview & URL)" required={false}>
+                                <select
+                                    value={previewLayer}
+                                    onChange={(e) => handlePreviewLayerChange(Number(e.target.value))}
+                                    style={{ ...inputStyle, cursor: 'pointer' }}
+                                    aria-label="Choose archive layer for preview and submission hints"
+                                >
+                                    <option value={5}>L5 — Short summary grid</option>
+                                    <option value={6}>L6 — Longer summary grid</option>
+                                    <option value={7} disabled={!isSegmentReport && l56GateBlocksNarrative}>
+                                        L7 — Segment / narrative tiles{!isSegmentReport && l56GateBlocksNarrative ? ' (needs L5+L6)' : ''}
+                                    </option>
+                                    <option value={8} disabled={!isSegmentReport && (l56GateBlocksNarrative || l7GateBlocksL8)}>
+                                        L8 — Deep lattice + citations
+                                        {!isSegmentReport && l56GateBlocksNarrative ? ' (needs L5+L6)' : !isSegmentReport && l7GateBlocksL8 ? ' (complete L7 first)' : ''}
+                                    </option>
+                                </select>
+                                <p className="text-xs mt-1" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
+                                    Updates the illustrated grid on the right and the <code className="text-[10px]">archiveLayer</code> query hint for reviewers.
+                                </p>
+                                {!isSegmentReport && (previewLayer === 7 || previewLayer === 8) && l56GateBlocksNarrative ? (
+                                    <p
+                                        className="text-xs mt-2 rounded-lg px-2 py-1.5"
+                                        style={{
+                                            color: isDark ? '#fde68a' : '#854d0e',
+                                            background: isDark ? 'rgba(120,53,15,0.35)' : 'rgba(254,243,199,0.95)',
+                                            border: `1px solid ${isDark ? 'rgba(251,191,36,0.35)' : 'rgba(180,83,9,0.25)'}`,
+                                        }}
+                                    >
+                                        {L56_NARRATIVE_GATE_MESSAGE}
+                                    </p>
+                                ) : null}
+                                {!isSegmentReport && previewLayer === 8 && !l56GateBlocksNarrative && l7GateBlocksL8 ? (
+                                    <p
+                                        className="text-xs mt-2 rounded-lg px-2 py-1.5"
+                                        style={{
+                                            color: isDark ? '#fde68a' : '#854d0e',
+                                            background: isDark ? 'rgba(120,53,15,0.35)' : 'rgba(254,243,199,0.95)',
+                                            border: `1px solid ${isDark ? 'rgba(251,191,36,0.35)' : 'rgba(180,83,9,0.25)'}`,
+                                        }}
+                                    >
+                                        Layer 8 is locked until this coordinate has{' '}
+                                        <strong>{L7_NARRATIVE_SEGMENT_COUNT} narrative sentences</strong> counted toward Layer&nbsp;7 (easiest-first pool shared with L8). Finish L7 tiles in the archive or submit more sentences at L7 first.
+                                    </p>
+                                ) : null}
+                                {errors.previewLayer ? (
+                                    <p className="text-xs mt-2" style={{ color: errorColor }}>{errors.previewLayer}</p>
+                                ) : null}
+                            </Field>
+                            <SubmissionGuidelinesPanel previewLayer={previewLayer} isDark={isDark} />
+                        </>
+                    )}
 
                     <Field label="Images, sketches, and graphs (optional)">
                         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
