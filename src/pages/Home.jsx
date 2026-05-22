@@ -34,7 +34,7 @@ export default function Home() {
     const isDark = theme === 'dark'
 
     return (
-        <div className="min-h-screen pt-16">
+        <div className="solar-page">
             {/* Hero Section */}
             <section className="relative flex flex-col items-center justify-center px-4 py-20 text-center overflow-hidden">
                 {/* Background gradient orb */}

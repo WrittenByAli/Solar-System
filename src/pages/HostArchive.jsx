@@ -214,15 +214,15 @@ export default function HostArchive() {
     const buildDisabled = phase !== 'ready'
 
     return (
-        <div className="min-h-screen pt-20 md:pt-24 pb-24 px-4 relative overflow-hidden">
+        <div className="solar-page relative overflow-hidden">
             <div className="absolute inset-0 pointer-events-none" style={{ background: ambient }} />
 
-            <div className="relative z-10 max-w-3xl mx-auto">
+            <div className="relative z-10 solar-page__inner solar-page__inner--md">
                 <motion.div
-                    initial={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.45 }}
-                    className="text-center mb-10 md:mb-14"
+                    className="solar-page__hero"
                 >
                     <motion.div
                         className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.2em] mb-8 md:mb-10"

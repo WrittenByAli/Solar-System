@@ -70,7 +70,7 @@ export default function MapView() {
   }
 
   return (
-    <div className="relative w-full min-h-screen flex flex-col items-center justify-start pt-16 overflow-hidden">
+    <div className="solar-page relative w-full flex flex-col items-center justify-start overflow-hidden">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}

@@ -54,7 +54,7 @@ export default function Navbar() {
 
     return (
         <nav
-            className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 min-h-[3.25rem] px-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] pb-2 sm:px-4 md:px-6 md:py-3"
+            className="solar-navbar fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 min-h-[3.25rem] px-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] pb-2 sm:px-4 md:px-6 md:py-3"
             style={{
                 background: isDark
                     ? 'rgba(2,4,8,0.85)'

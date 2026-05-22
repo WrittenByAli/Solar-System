@@ -114,7 +114,8 @@ export default function GradeSubmissions() {
 
     if (!isLoggedIn) {
         return (
-            <div className="min-h-screen pt-24 pb-16 px-4 flex flex-col items-center justify-center max-w-lg mx-auto text-center">
+            <div className="solar-page solar-page--center">
+                <div className="solar-page__inner max-w-lg mx-auto text-center w-full">
                 <ClipboardCheck size={40} color={isDark ? '#4fc3f7' : '#0284c7'} className="mb-4" />
                 <h1 className="text-2xl font-black mb-2" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
                     Sign in to review
@@ -129,6 +130,7 @@ export default function GradeSubmissions() {
                 >
                     Go to Join / Login
                 </Link>
+                </div>
             </div>
         )
     }
@@ -136,8 +138,9 @@ export default function GradeSubmissions() {
     if (!canAccessReviewerQueue) {
         const need = Math.max(0, MIN_POINTS_REVIEWER_ACCESS - points)
         return (
-            <div className="min-h-screen pt-24 pb-16 px-4 max-w-lg mx-auto">
-                <div className="text-center mb-8">
+            <div className="solar-page">
+                <div className="solar-page__inner max-w-lg mx-auto">
+                <div className="solar-page__hero text-center">
                     <motion.div
                         className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden"
                         style={{ background: 'linear-gradient(135deg, #f5a623, #ff6b35)' }}
@@ -183,17 +186,18 @@ export default function GradeSubmissions() {
                 >
                     View leaderboard
                 </Link>
+                </div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen pt-20 pb-16 px-4">
-            <div className="max-w-3xl mx-auto">
+        <div className="solar-page">
+            <div className="solar-page__inner solar-page__inner--md">
                 <motion.div
-                    initial={{ opacity: 0, y: -12 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-center mb-8"
+                    className="solar-page__hero"
                 >
                     <div className="flex items-center justify-center gap-2 mb-2">
                         <ClipboardCheck size={28} color={isDark ? '#4fc3f7' : '#0284c7'} />

@@ -667,7 +667,7 @@ export default function SubmitArchive() {
     if (submitted) {
         const wasSegmentReport = searchParams.get('intent') === 'segmentReport'
         return (
-            <div className="min-h-screen pt-20 flex items-center justify-center px-4">
+            <div className="solar-page solar-page--center">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -724,9 +724,9 @@ export default function SubmitArchive() {
     }
 
     return (
-        <div className="min-h-screen pt-20 pb-16 px-4">
-            <div className="max-w-6xl mx-auto">
-                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+        <div className="solar-page">
+            <div className="solar-page__inner solar-page__inner--lg">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="solar-page__hero">
                     <motion.div
                         whileHover={{ rotate: 360 }}
                         transition={{ duration: 0.65, ease: 'easeInOut' }}

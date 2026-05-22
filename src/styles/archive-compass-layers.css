@@ -12,8 +12,9 @@
   display: flex;
   align-items: stretch;
   justify-content: center;
-  padding: 8px 14px 92px;
+  padding: 8px 14px max(92px, calc(80px + env(safe-area-inset-bottom, 0px)));
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .cv-viewport > * {
@@ -160,18 +161,197 @@
 /* ── Empty state ── */
 .cv-layer--empty { align-items: center; justify-content: center; gap: 18px; }
 
-/* ── Responsive ── */
-@media (max-width: 640px) {
-  .cv-viewport { padding: 6px 8px 84px; }
-  .cv-layer { padding: 11px 11px 12px; border-radius: 16px; }
-  .cv-l2-grid, .cv-l3-grid { gap: 6px; }
-  .cv-domain-card { padding: 8px 9px 7px; }
-  .cv-l3-panel { padding: 7px 8px 6px; }
-  .cv-hub { width: clamp(60px, 8vw, 90px); height: clamp(60px, 8vw, 90px); }
-  .cv-l3-heading__name { font-size: 13px; }
-  .cv-hint { display: none; }
+/* ── Responsive: tablet ── */
+@media (max-width: 1024px) {
+  .cv-viewport {
+    align-items: flex-start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 12px max(88px, calc(76px + env(safe-area-inset-bottom, 0px)));
+  }
+
+  .cv-viewport > * {
+    max-width: 100%;
+  }
+
+  .cv-layer {
+    max-height: none;
+    height: auto;
+    min-height: 0;
+    padding: 12px 14px 14px;
+    overflow: visible;
+  }
+
+  .cv-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .cv-header__left {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .cv-header--l3 {
+    gap: 10px;
+  }
+
+  .cv-l3-heading {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .cv-l3-heading__name {
+    max-width: 100%;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    line-height: 1.2;
+  }
+
+  .cv-hint {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .cv-l2-wrapper,
+  .cv-l3-wrapper {
+    min-height: 0;
+    height: auto;
+  }
+
+  .cv-l2-grid,
+  .cv-l3-grid {
+    height: auto;
+    gap: 8px;
+  }
+
+  .cv-domain-card,
+  .cv-l3-panel {
+    min-height: 108px;
+  }
+
+  .cv-pair {
+    min-height: 44px;
+    gap: 6px;
+  }
+
+  .cv-divider-row__label,
+  .cv-l3-divider-row__label {
+    font-size: 9px;
+    max-width: 42%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cv-hub {
+    width: clamp(56px, 12vw, 88px);
+    height: clamp(56px, 12vw, 88px);
+    opacity: 0.85;
+  }
 }
-@media (max-width: 420px) {
-  .cv-l2-grid, .cv-l3-grid { grid-template-columns: 1fr; grid-template-rows: unset; overflow-y: auto; overscroll-behavior: contain; }
-  .cv-hub, .cv-l3-center-ring { display: none; }
+
+@media (max-width: 900px) and (min-width: 641px) {
+  .cv-l2-grid,
+  .cv-l3-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 10px;
+  }
+
+  .cv-hub,
+  .cv-l3-center-ring {
+    display: none;
+  }
+}
+
+/* ── Responsive: mobile ── */
+@media (max-width: 640px) {
+  .cv-viewport {
+    padding: 4px 8px max(84px, calc(72px + env(safe-area-inset-bottom, 0px)));
+  }
+
+  .cv-layer {
+    padding: 10px 10px 12px;
+    border-radius: 14px;
+  }
+
+  .cv-badge {
+    font-size: 9px;
+    padding: 3px 9px;
+  }
+
+  .cv-hub-name {
+    font-size: 11px;
+  }
+
+  .cv-discipline {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .cv-l2-grid,
+  .cv-l3-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 10px;
+  }
+
+  .cv-hub,
+  .cv-l3-center-ring {
+    display: none;
+  }
+
+  .cv-domain-card,
+  .cv-l3-panel {
+    min-height: 0;
+    padding: 10px 10px 9px;
+  }
+
+  .cv-pair {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    min-height: 40px;
+  }
+
+  .cv-sf-tile,
+  .cv-l3-tile {
+    padding: 8px 7px;
+    min-height: 36px;
+    align-items: center;
+  }
+
+  .cv-sf-tile__text,
+  .cv-l3-tile__text {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .cv-back-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 380px) {
+  .cv-pair {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .cv-divider-row,
+  .cv-l3-divider-row {
+    padding: 4px 0;
+  }
+
+  .cv-divider-row__label,
+  .cv-l3-divider-row__label {
+    max-width: 100%;
+    font-size: 8px;
+  }
 }

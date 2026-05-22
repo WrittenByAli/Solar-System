@@ -82,13 +82,13 @@ export default function Reviews() {
     const filtered = filter === 'All' ? REVIEWS : REVIEWS.filter(r => r.planet === filter)
 
     return (
-        <div className="min-h-screen pt-20 pb-16 px-4">
-            <div className="max-w-3xl mx-auto">
+        <div className="solar-page">
+            <div className="solar-page__inner solar-page__inner--md">
                 {/* Header */}
                 <motion.div
-                    initial={{ opacity: 0, y: -16 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-center mb-8"
+                    className="solar-page__hero"
                 >
                     <div className="flex items-center justify-center gap-3 mb-3">
                         <Star size={28} color="#f5a623" />

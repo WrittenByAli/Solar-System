@@ -37,9 +37,9 @@ export default function ArchiveDirectory() {
     const border = isDark ? 'rgba(79,195,247,0.15)' : 'rgba(15,23,42,0.1)'
 
     return (
-        <div className="min-h-screen pt-20 pb-16 px-4">
-            <div className="max-w-3xl mx-auto">
-                <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
+        <div className="solar-page">
+            <div className="solar-page__inner solar-page__inner--md">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="solar-page__hero">
                     <div className="flex items-center justify-center gap-2 mb-3">
                         <Globe size={28} color="#4fc3f7" />
                         <h1 className="text-3xl md:text-4xl font-black" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>

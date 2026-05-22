@@ -58,7 +58,7 @@ export default function Join() {
 
     if (submitted) {
         return (
-            <div className="min-h-screen pt-16 flex items-center justify-center px-4">
+            <div className="solar-page solar-page--center">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.85 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -91,7 +91,7 @@ export default function Join() {
     }
 
     return (
-        <div className="min-h-screen pt-16 flex items-center justify-center px-4 py-10">
+        <div className="solar-page solar-page--center">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

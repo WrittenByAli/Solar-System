@@ -56,6 +56,7 @@ import ArchiveL1Atmosphere from '../components/ArchiveL1Atmosphere.jsx'
 import ArchiveHubGlobe from '../components/ArchiveHubGlobe.jsx'
 import '../styles/archive-l1-atmosphere.css'
 import '../styles/archive-nav-responsive.css'
+import '../styles/planet-intro.css'
 import '../styles/archive-segment-gates.css'
 import {
   getHubTaxonomy,
@@ -1790,84 +1791,99 @@ function PlanetIntro({ planet, isDark, onEnter, gridDims, archiveCfg }) {
   const hostTitle = (archiveCfg?.instanceTitle || '').trim()
   const gridLabel = gridDims ? `${gridDims.gridW} × ${gridDims.gridH}` : ''
 
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 200,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      background: isDark
-        ? 'radial-gradient(ellipse at 50% 40%, #0a0819 0%, #020408 100%)'
-        : 'radial-gradient(ellipse at 50% 40%, #ffffff 0%, #f1f5f9 100%)',
-      opacity: out ? 0 : 1,
-      transform: out ? 'scale(1.05)' : 'scale(1)',
-      transition: 'opacity 0.65s, transform 0.65s',
-      pointerEvents: out ? 'none' : 'all',
-    }}>
-      {/* Ambient glow */}
-      <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: 450, height: 450, borderRadius: '50%', background: `radial-gradient(circle, ${col} 0%, transparent 70%)`, opacity: 0.15, pointerEvents: 'none' }} />
+  const titleGradient = `linear-gradient(135deg, ${col}, ${isDark ? '#fff' : '#0f172a'})`
 
-      <div style={{ textAlign: 'center', maxWidth: 680, padding: '0 24px' }}>
-        {/* Layer badge */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 18px', borderRadius: 4, border: `1px solid ${col}44`, background: `${col}14`, marginBottom: 30, fontFamily: '"JetBrains Mono", monospace', fontSize: 11, letterSpacing: '0.22em', color: col }}>
-          <BookOpen size={12} /> LAYER 1 &middot; ARCHIVE FRONT
+  return (
+    <div
+      className={`planet-intro${out ? ' planet-intro--exiting' : ''}`}
+      style={{
+        background: isDark
+          ? 'radial-gradient(ellipse at 50% 40%, #0a0819 0%, #020408 100%)'
+          : 'radial-gradient(ellipse at 50% 40%, #ffffff 0%, #f1f5f9 100%)',
+        pointerEvents: out ? 'none' : 'all',
+      }}
+    >
+      <div
+        className="planet-intro__glow"
+        style={{ background: `radial-gradient(circle, ${col} 0%, transparent 70%)` }}
+        aria-hidden
+      />
+
+      <div className="planet-intro__panel">
+        <div
+          className="planet-intro__badge"
+          style={{ border: `1px solid ${col}44`, background: `${col}14`, color: col }}
+        >
+          <BookOpen size={12} aria-hidden /> LAYER 1 &middot; ARCHIVE FRONT
         </div>
 
         {hostTitle && (
-          <div style={{ fontSize: 14, fontWeight: 800, color: isDark ? '#e2e8f0' : '#0f172a', marginBottom: 12, letterSpacing: '0.04em' }}>
+          <div className="planet-intro__host-title" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
             {hostTitle}
           </div>
         )}
 
-        {/* Classic CSS orb */}
-        <div style={{
-          width: 92, height: 92, borderRadius: '50%', margin: '0 auto 28px',
-          background: `radial-gradient(circle at 35% 35%, ${col}ee, ${col}55)`,
-          boxShadow: `0 0 40px ${col}, 0 0 80px ${col}55, inset 0 0 24px rgba(0,0,0,0.4)`,
-          animation: 'pulseOrb 3s ease-in-out infinite',
-        }} />
+        <div
+          className="planet-intro__orb"
+          style={{
+            background: `radial-gradient(circle at 35% 35%, ${col}ee, ${col}55)`,
+            boxShadow: `0 0 40px ${col}, 0 0 80px ${col}55, inset 0 0 24px rgba(0,0,0,0.4)`,
+            animation: 'pulseOrb 3s ease-in-out infinite',
+          }}
+          aria-hidden
+        />
 
-        <h1 style={{ fontFamily: '"Outfit", sans-serif', fontSize: 'clamp(44px, 9vw, 76px)', fontWeight: 900, letterSpacing: '-0.05em', background: `linear-gradient(135deg, ${col}, ${isDark ? '#fff' : '#0f172a'})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', margin: '0 0 4px', lineHeight: 1 }}>
+        <h1
+          className="planet-intro__title"
+          style={{
+            background: titleGradient,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
           {planet.planet}
         </h1>
 
-        <div style={{ marginBottom: 40 }}>
-          <div style={{ fontSize: 13, fontWeight: 900, color: col, letterSpacing: '0.2em', marginBottom: 8, opacity: 0.9 }}>
+        <div className="planet-intro__body">
+          <div className="planet-intro__domain" style={{ color: col }}>
             {planet.domain.toUpperCase()}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#94a3b8' : '#334155', letterSpacing: '0.05em', maxWidth: 600, lineHeight: 1.6 }}>
+          <p className="planet-intro__intro" style={{ color: isDark ? '#94a3b8' : '#334155' }}>
             {planet.intro}
-          </div>
+          </p>
           {gridLabel && (
-            <div style={{ marginTop: 18, fontSize: 11, fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: isDark ? '#64748b' : '#475569' }}>
+            <p className="planet-intro__meta" style={{ color: isDark ? '#64748b' : '#475569' }}>
               Coordinate grid &middot; {gridLabel} cells &mdash; size comes from your uploaded image (Start archive).
-            </div>
+            </p>
           )}
-          <div style={{ marginTop: 14, fontSize: 11, fontWeight: 600, color: isDark ? '#64748b' : '#475569', maxWidth: 520, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.55 }}>
-            Shared themes appear across hubs &mdash; when you zoom to deeper layers, entries can link to the same subject through another hub's scientific lens.
-          </div>
+          <p className="planet-intro__themes" style={{ color: isDark ? '#64748b' : '#475569' }}>
+            Shared themes appear across hubs &mdash; when you zoom to deeper layers, entries can link to the same subject through another hub&apos;s scientific lens.
+          </p>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center', marginBottom: 28 }}>
-          <Link to="/" style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textDecoration: 'underline', textUnderlineOffset: 3 }}>Home</Link>
-          <Link to="/map" style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#67e8f9' : '#0284c7', textDecoration: 'underline', textUnderlineOffset: 3 }}>Other domains (map)</Link>
-          <Link to="/create-archive" style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#fbbf24' : '#b45309', textDecoration: 'underline', textUnderlineOffset: 3 }}>Configure grid image</Link>
-        </div>
+        <nav className="planet-intro__nav" aria-label="Archive navigation">
+          <Link to="/" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Home</Link>
+          <Link to="/map" style={{ color: isDark ? '#67e8f9' : '#0284c7' }}>Other domains (map)</Link>
+          <Link to="/create-archive" style={{ color: isDark ? '#fbbf24' : '#b45309' }}>Configure grid image</Link>
+        </nav>
 
-        <p style={{ fontSize: 11, maxWidth: 420, margin: '0 auto 20px', lineHeight: 1.5, color: isDark ? '#64748b' : '#94a3b8' }}>
+        <p className="planet-intro__federation" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
           Public discovery at{' '}
-          <a href={ARCHIVE_SOLAR_PUBLIC_URL} target="_blank" rel="noopener noreferrer" style={{ color: col, fontWeight: 700 }}>archive.solar</a>{' '}
+          <a href={ARCHIVE_SOLAR_PUBLIC_URL} target="_blank" rel="noopener noreferrer" style={{ color: col, fontWeight: 700 }}>
+            archive.solar
+          </a>{' '}
           is planned as a federation directory (this build stays frontend-only).
         </p>
 
         <button
+          type="button"
           onClick={enter}
-          className="archive-enter-btn"
+          className="planet-intro__enter archive-enter-btn"
           style={{
-            marginTop: 8, padding: '16px 48px', borderRadius: 30, fontSize: 14, fontWeight: 900,
-            letterSpacing: '0.15em', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-            background: 'transparent', border: `2px solid ${col}`,
+            borderColor: col,
             color: isDark ? '#fff' : '#0f172a',
             boxShadow: `0 0 20px ${col}44`,
-            position: 'relative', overflow: 'hidden',
           }}
         >
           ENTER ARCHIVE

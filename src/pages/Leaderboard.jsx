@@ -56,12 +56,12 @@ export default function Leaderboard() {
     const muted = isDark ? '#64748b' : '#94a3b8'
 
     return (
-        <div className="min-h-screen pt-20 pb-16 px-4">
-            <div className="max-w-3xl mx-auto">
+        <div className="solar-page">
+            <div className="solar-page__inner solar-page__inner--md">
                 <motion.div
-                    initial={{ opacity: 0, y: -16 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-center mb-10"
+                    className="solar-page__hero"
                 >
                     <div className="flex items-center justify-center gap-3 mb-3">
                         <Trophy size={30} color="#f5a623" />
