@@ -113,6 +113,7 @@ temp/
 # Cursor / local AI tooling (can contain paths or snippets you don’t want public)
 .cursor/
 **/.cursor/
+.claude/
 
 # Agent / transcript exports (if ever copied into the repo)
 **/agent-transcripts/
