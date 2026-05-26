@@ -55,42 +55,47 @@ const ArchiveL1Atmosphere = memo(function ArchiveL1Atmosphere({
     const ro = new ResizeObserver(fitSize)
     ro.observe(canvas)
 
-    const STAR_COUNT = 420
+    const STAR_COUNT = isDark ? 620 : 780
     const STARS = Array.from({ length: STAR_COUNT }, (_, i) => {
       const hi = hash01(i + hubSeed, 1)
       const hj = hash01(i + hubSeed, 2)
       return {
         x: hi,
         y: hj,
-        r: 0.15 + hash01(i, 3) * 0.65,
+        r: isDark ? 0.15 + hash01(i, 3) * 0.65 : 0.35 + hash01(i, 3) * 0.85,
         speed: 0.35 + hash01(i, 4) * 1.8,
         offset: hash01(i, 5) * Math.PI * 2,
         layer: hash01(i, 6) < 0.22 ? 1 : 0,
         hue:
-          i % 17 === 0 ? '#fff9e8'
-            : i % 11 === 0 ? '#d4e4ff'
-              : i % 7 === 0 ? '#ffe8dc'
-                : isDark ? '#f8fafc' : '#64748b',
+          isDark
+            ? i % 17 === 0 ? '#fff9e8'
+              : i % 11 === 0 ? '#d4e4ff'
+                : i % 7 === 0 ? '#ffe8dc'
+                  : '#f8fafc'
+            : i % 13 === 0 ? `rgb(${R}, ${G}, ${B})`
+              : i % 7 === 0 ? '#0f766e'
+                : i % 5 === 0 ? '#0369a1'
+                  : '#334155',
       }
     })
 
-    const DUST = Array.from({ length: 110 }, (_, i) => ({
+    const DUST = Array.from({ length: isDark ? 165 : 240 }, (_, i) => ({
       x: hash01(i, 10),
       y: hash01(i, 11),
-      r: 0.25 + hash01(i, 12) * 0.55,
-      vx: (hash01(i, 13) - 0.5) * 0.00008,
-      vy: (hash01(i, 14) - 0.5) * 0.00008,
-      alpha: 0.08 + hash01(i, 15) * 0.22,
+      r: isDark ? 0.25 + hash01(i, 12) * 0.55 : 0.55 + hash01(i, 12) * 1.15,
+      vx: (hash01(i, 13) - 0.5) * (isDark ? 0.00008 : 0.00012),
+      vy: (hash01(i, 14) - 0.5) * (isDark ? 0.00008 : 0.00012),
+      alpha: isDark ? 0.08 + hash01(i, 15) * 0.22 : 0.16 + hash01(i, 15) * 0.28,
       phase: hash01(i, 16) * Math.PI * 2,
     }))
 
-    const BOKEH = Array.from({ length: 14 }, (_, i) => ({
+    const BOKEH = Array.from({ length: isDark ? 18 : 24 }, (_, i) => ({
       x: hash01(i, 20),
       y: hash01(i, 21),
       r: 28 + hash01(i, 22) * 52,
       vx: (hash01(i, 23) - 0.5) * 0.00004,
       vy: (hash01(i, 24) - 0.5) * 0.00004,
-      alpha: 0.018 + hash01(i, 25) * 0.035,
+      alpha: isDark ? 0.018 + hash01(i, 25) * 0.035 : 0.028 + hash01(i, 25) * 0.045,
       phase: hash01(i, 26) * Math.PI * 2,
     }))
 
@@ -102,7 +107,7 @@ const ArchiveL1Atmosphere = memo(function ArchiveL1Atmosphere({
       const W = rect.width
       const H = rect.height
       if (!W || !H) {
-        animRef.current = requestAnimationFrame(draw)
+        if (!reducedMotion) animRef.current = requestAnimationFrame(draw)
         return
       }
 
@@ -175,16 +180,16 @@ const ArchiveL1Atmosphere = memo(function ArchiveL1Atmosphere({
         const tw = 0.4 + 0.6 * Math.sin(t * s.speed + s.offset)
         const px = (s.x + parallax) * W
         const py = (s.y + parallax * 0.7) * H
-        const alpha = isDark ? 0.25 + tw * 0.7 : 0.15 + tw * 0.45
+        const alpha = isDark ? 0.25 + tw * 0.7 : 0.42 + tw * 0.42
         ctx.globalAlpha = alpha
         ctx.fillStyle = s.hue
         ctx.beginPath()
         ctx.arc(px, py, s.r, 0, Math.PI * 2)
         ctx.fill()
-        if (s.r > 0.55 && isDark) {
-          ctx.globalAlpha = (0.06 + tw * 0.12) * alpha
+        if (s.r > 0.55) {
+          ctx.globalAlpha = (isDark ? 0.06 + tw * 0.12 : 0.08 + tw * 0.1) * alpha
           ctx.beginPath()
-          ctx.arc(px, py, s.r * 1.6, 0, Math.PI * 2)
+          ctx.arc(px, py, s.r * (isDark ? 1.6 : 2.4), 0, Math.PI * 2)
           ctx.fill()
         }
       })
@@ -235,11 +240,13 @@ const ArchiveL1Atmosphere = memo(function ArchiveL1Atmosphere({
               SHOOTING.x - SHOOTING.vx * tail / 5,
               SHOOTING.y - SHOOTING.vy * tail / 5,
             )
-            grd.addColorStop(0, `rgba(255,255,255,${SHOOTING.life * 0.85})`)
-            grd.addColorStop(1, 'rgba(255,255,255,0)')
+            grd.addColorStop(0, isDark
+              ? `rgba(255,255,255,${SHOOTING.life * 0.85})`
+              : `rgba(${R},${G},${B},${SHOOTING.life * 0.72})`)
+            grd.addColorStop(1, isDark ? 'rgba(255,255,255,0)' : 'rgba(15,23,42,0)')
             ctx.globalAlpha = 1
             ctx.strokeStyle = grd
-            ctx.lineWidth = 0.8
+            ctx.lineWidth = isDark ? 0.8 : 1.2
             ctx.beginPath()
             ctx.moveTo(SHOOTING.x, SHOOTING.y)
             ctx.lineTo(
@@ -252,7 +259,7 @@ const ArchiveL1Atmosphere = memo(function ArchiveL1Atmosphere({
       }
 
       ctx.globalAlpha = 1
-      animRef.current = requestAnimationFrame(draw)
+      if (!reducedMotion) animRef.current = requestAnimationFrame(draw)
     }
 
     if (reducedMotion) {

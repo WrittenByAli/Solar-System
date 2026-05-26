@@ -217,6 +217,20 @@ function pad4(n) {
   return sign + String(abs).padStart(4, '0')
 }
 
+/** Per-layer zoom limits so text always stays readable on screen. */
+function getZoomLimits(layer) {
+  switch (layer) {
+    case 2: return { min: 0.5,  max: 8.0  }
+    case 3: return { min: 0.3,  max: 6.0  }
+    case 4: return { min: 0.4,  max: 4.0  }
+    case 5: return { min: 0.2,  max: 3.0  }
+    case 6: return { min: 0.15, max: 1.5  }
+    case 7: return { min: 0.10, max: 1.5  }
+    case 8: return { min: 0.02, max: 0.25 }
+    default: return { min: 0.1, max: 10.0 }
+  }
+}
+
 /** Parse "lx,ly" display coords (e.g. 0,0 or 100,-1 or -0005,0012) → grid gx,gy */
 function parseCoordinateSearchInput(raw, dims) {
   const { halfW, halfH, gridW, gridH } = dims
@@ -674,33 +688,58 @@ function SegmentReportLink({
 ══════════════════════════════════════════════ */
 
 // L4: 64px - Zone View (title + coords -- matches deeper layers' subject hierarchy)
-const L4Content = memo(function L4Content({ lx, ly, data, col, isDark }) {
+const L4Content = memo(function L4Content({ lx, ly, data, col, isDark, compassSelected }) {
   const sum = String(data?.shortSummary || '').trim()
   const title =
     String(data?.title || '').trim() ||
     (sum ? `${sum.slice(0, 72)}${sum.length > 72 ? '…' : ''}` : '')
+  const highlighted = compassSelected && !!data
   return (
-    <div style={{ padding: 3, display: 'flex', flexDirection: 'column', gap: 2, height: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
-      {title ? (
-        <div
-          title={title}
-          style={{
-            fontSize: 7,
-            fontWeight: 800,
-            color: isDark ? '#e2e8f0' : '#0f172a',
-            lineHeight: 1.15,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {title}
-        </div>
-      ) : (
-        <div style={{ fontSize: 7, fontWeight: 700, color: isDark ? '#64748b' : '#94a3b8' }}>Empty zone</div>
-      )}
-      <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 7, color: isDark ? `${col}cc` : `${col}dd`, marginTop: 'auto' }}>
+    <div style={{
+      padding: '3px 3px 2px',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      overflow: 'hidden',
+      boxSizing: 'border-box',
+      ...(highlighted ? {
+        background: `${col}18`,
+        borderRadius: 3,
+        boxShadow: `inset -2px -2px 0 0 ${col}44, 0 0 6px ${col}33`,
+        transform: 'translate(-1px, -1px)',
+        transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+      } : {}),
+    }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        {title ? (
+          <div
+            title={title}
+            style={{
+              fontSize: title.length > 72 ? 5.2 : title.length > 48 ? 5.8 : 6.5,
+              fontWeight: 800,
+              color: highlighted ? (isDark ? '#fff' : '#0f172a') : (isDark ? '#f8fafc' : '#0f172a'),
+              lineHeight: 1.08,
+              display: 'block',
+              maxHeight: 55,
+              overflow: 'visible',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
+              textShadow: highlighted ? `0 0 8px ${col}88` : 'none',
+            }}
+          >
+            {title}
+          </div>
+        ) : null}
+      </div>
+      <div style={{
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: 6,
+        color: isDark ? `${col}99` : `${col}bb`,
+        flexShrink: 0,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}>
         {pad4(lx)},{pad4(ly)}
       </div>
     </div>
@@ -713,8 +752,15 @@ const L5Content = memo(function L5Content({ lx, ly, data, col, isDark }) {
   return (
     <div style={{ padding: 12, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: col, marginBottom: 8, fontWeight: 800 }}>{pad4(lx)},{pad4(ly)} · SUMMARY</div>
-      <div style={{ fontWeight: 800, fontSize: 13, color: isDark ? '#e2e8f0' : '#0f172a', marginBottom: 8, lineHeight: 1.25 }}>{data?.title || 'Pending Entry'}</div>
-      <p style={{ fontSize: 11, color: isDark ? '#94a3b8' : '#334155', lineHeight: 1.6, flex: 1, overflow: 'hidden', minHeight: 0 }}>{data?.shortSummary || 'Waiting for contribution...'}</p>
+      <div style={{
+        fontWeight: 800, fontSize: 13, color: isDark ? '#f8fafc' : '#0f172a',
+        marginBottom: 6, lineHeight: 1.25, flexShrink: 0,
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+        overflow: 'hidden', wordBreak: 'break-word',
+      }}>{data?.title || 'Pending Entry'}</div>
+      <p style={{ fontSize: 11, color: isDark ? '#94a3b8' : '#334155', lineHeight: 1.5, flex: 1, overflow: 'hidden', minHeight: 0, margin: 0,
+        display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical',
+      }}>{data?.shortSummary || 'Waiting for contribution...'}</p>
       <AlternatePerspectivesLinks items={data?.alternatePerspectives} col={col} isDark={isDark} />
       {hasAtt && (
         <div style={{ marginTop: 'auto', paddingTop: 6, flexShrink: 0 }}>
@@ -824,7 +870,7 @@ const L6Content = memo(function L6Content({ lx, ly, data, col, isDark, planetId 
         </div>
         <div style={{ flex: 1, padding: 26, overflow: 'auto' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: col, marginBottom: 12, letterSpacing: '0.1em' }}>ARCHIVE OVERVIEW</div>
-          <div style={{ fontSize: 13, color: isDark ? '#94a3b8' : '#334155', lineHeight: 1.8 }}>{data?.shortSummary || placeholderText(400, lx + ly)}</div>
+          {data?.shortSummary && <div style={{ fontSize: 13, color: isDark ? '#94a3b8' : '#334155', lineHeight: 1.8 }}>{data.shortSummary}</div>}
           <AlternatePerspectivesLinks items={data?.alternatePerspectives} col={col} isDark={isDark} />
           <AttachmentFigures attachments={data?.attachments} col={col} isDark={isDark} variant="default" />
           <AttachmentLinks attachments={data?.attachments} col={col} isDark={isDark} title="DOWNLOADS" variant="default" />
@@ -836,61 +882,30 @@ const L6Content = memo(function L6Content({ lx, ly, data, col, isDark, planetId 
         </div>
         <div style={{ flex: 1, overflow: 'auto', padding: '4px 28px 24px' }}>
           {orderedSegments.length === 0 ? (
-            <SegmentHoverSurface
-              coordLabel={coordLabel}
-              difficulty={
-                data?.content?.trim()
-                  ? estimateSegmentDifficulty(data.content)
-                  : estimateSegmentDifficulty(placeholderText(1200, lx + ly))
-              }
-              accentColor={col}
-              isDark={isDark}
-              style={{ cursor: 'default' }}
-            >
-              <div style={{ fontSize: 12, lineHeight: 1.85, color: isDark ? '#94a3b8' : '#1e293b' }}>
-              {data?.content?.trim() ? (
-                <>
+            data?.content?.trim() ? (
+              <SegmentHoverSurface
+                coordLabel={coordLabel}
+                difficulty={estimateSegmentDifficulty(data.content)}
+                accentColor={col}
+                isDark={isDark}
+                style={{ cursor: 'default' }}
+              >
+                <div style={{ fontSize: 12, lineHeight: 1.85, color: isDark ? '#94a3b8' : '#1e293b' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: col }}>FULL TEXT</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <SegmentDifficultyBadge difficulty={estimateSegmentDifficulty(data.content)} isDark={isDark} fontSize={10} />
-                      <SegmentReportLink
-                        planetId={planetId}
-                        lx={lx}
-                        ly={ly}
-                        archiveLayer={6}
-                        segmentIndex="full"
-                        segmentLabel="FULL TEXT · single block"
-                        excerpt={data.content}
-                        col={col}
-                        isDark={isDark}
-                        compact
-                      />
+                      <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={6} segmentIndex="full" segmentLabel="FULL TEXT · single block" excerpt={data.content} col={col} isDark={isDark} compact />
                     </div>
                   </div>
                   {data.content}
-                </>
-              ) : (
-                <>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-                    <SegmentReportLink
-                      planetId={planetId}
-                      lx={lx}
-                      ly={ly}
-                      archiveLayer={6}
-                      segmentIndex="placeholder"
-                      segmentLabel="L6 · no segments (placeholder body)"
-                      excerpt={placeholderText(400, lx + ly)}
-                      col={col}
-                      isDark={isDark}
-                      compact
-                    />
-                  </div>
-                  {placeholderText(1200, lx + ly)}
-                </>
-              )}
+                </div>
+              </SegmentHoverSurface>
+            ) : (
+              <div style={{ padding: '24px 0', color: isDark ? '#334155' : '#94a3b8', fontSize: 11, fontStyle: 'italic' }}>
+                No segments submitted yet.
               </div>
-            </SegmentHoverSurface>
+            )
           ) : (
             orderedSegments.map((seg, idx) => (
               <SegmentHoverSurface
@@ -964,7 +979,7 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
                   {pad4(row.lx)},{pad4(row.ly)}
                 </span>
                 {' · '}
-                <strong style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>{row.title}</strong>
+                <strong style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>{row.title}</strong>
                 {row.summary ? (
                   <div style={{ marginTop: 4, fontSize: 9, opacity: 0.92 }}>{row.summary}</div>
                 ) : null}
@@ -1180,7 +1195,7 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
                         </div>
                       </div>
                       <div style={{ fontSize: 10, fontFamily: '"JetBrains Mono", monospace', color: col, opacity: 0.95, marginTop: 6 }}>{slot.coordLabel}</div>
-                      <div style={{ fontSize: 11, fontWeight: 800, color: isDark ? '#e2e8f0' : '#0f172a', marginTop: 4, lineHeight: 1.25 }}>{slot.title}</div>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', marginTop: 4, lineHeight: 1.25 }}>{slot.title}</div>
                       <p style={{
                         margin: '8px 0 0',
                         fontSize: 10,
@@ -1222,8 +1237,13 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
   )
 })
 
+// Lightweight tile wrapper for L8 — replaces SegmentHoverSurface to avoid 2700 stateful instances
+function L8Tile({ children, style }) {
+  return <div style={{ cursor: 'default', overflow: 'hidden', minWidth: 0, ...style }}>{children}</div>
+}
+
 // L8: 16384px - Deep Full
-const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactSources, planetId }) {
+const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactSources, planetId, visYMin = 0, visYMax = Infinity }) {
   const citations = deepFactSources || []
   const entryDiff = data?.consensusDifficulty ?? data?.difficulty ?? null
   const orderedNarrativeSegs = useMemo(
@@ -1232,8 +1252,18 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactS
   )
   const narrativeSegCount = orderedNarrativeSegs.length
   const coordLabel = `${pad4(lx)},${pad4(ly)}`
+
+  // Row windowing constants for the narrative grid
+  const APPROX_HEADER_H = 1800  // padding + meta panels + intro text (px above the grid)
+  const APPROX_ROW_H    = 900   // minHeight(700) + gap(36) + overhead
+  const TOTAL_NARR_ROWS = Math.ceil((L8_NARRATIVE_TILE_TOTAL + 1) / L8_GRID_COLS) // +1 for final slot
+  const firstVisRow = Math.max(0, Math.floor((visYMin - APPROX_HEADER_H) / APPROX_ROW_H) - 1)
+  const lastVisRow  = Math.min(TOTAL_NARR_ROWS - 1, Math.ceil((visYMax - APPROX_HEADER_H) / APPROX_ROW_H) + 1)
+  const skipBefore  = firstVisRow
+  const skipAfter   = Math.max(0, TOTAL_NARR_ROWS - 1 - lastVisRow)
+
   return (
-    <div style={{ width: 16384, height: 16384, display: 'flex', flexDirection: 'column', background: isDark ? '#020208' : '#ffffff', padding: 320 }}>
+    <div style={{ width: 16384, height: 16384, display: 'flex', flexDirection: 'column', background: isDark ? '#020208' : '#ffffff', padding: 320, contain: 'layout style paint' }}>
       {/* 4x scaled MetaPanels to perfectly match L7's design array */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 120, marginBottom: 320 }}>
         <div style={{ padding: 48, border: `4px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
@@ -1283,334 +1313,135 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactS
         {' '}repeat sentences in <strong>difficulty order</strong> (easiest → hardest). The <strong style={{ color: col }}>final</strong> slot stitches the full-depth narrative block.
       </p>
 
-      {/* ── Narrative + Final grid (indices 0-419, 30 cols × 14 rows) ── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${L8_GRID_COLS}, 1fr)`,
-        gap: 36,
-        borderTop: `4px solid ${col}33`,
-        paddingTop: 120,
-        paddingBottom: 120,
-      }}
-      >
-        {Array.from({ length: L8_CITED_SEGMENT_START_INDEX }).map((_, i) => {
-          const citedIdx = i - L8_CITED_SEGMENT_START_INDEX   /* always < 0 here, unused */
-
-          if (i < L8_NARRATIVE_TILE_TOTAL) {
-            const nar = i
-            const narSeg = nar < orderedNarrativeSegs.length ? orderedNarrativeSegs[nar] : null
-            if (!narSeg) {
-              const l7Done = isL7NarrativeBandComplete(data)
-              const showAddHere = nar === narrativeSegCount && narrativeSegCount < L8_NARRATIVE_TILE_TOTAL && l7Done
-              const showL7Gate = nar === narrativeSegCount && narrativeSegCount < L8_NARRATIVE_TILE_TOTAL && !l7Done
-              return (
-                <SegmentHoverSurface
-                  key={i}
-                  coordLabel={coordLabel}
-                  difficulty={null}
-                  accentColor={col}
-                  isDark={isDark}
-                  style={{ display: 'flex', flexDirection: 'column', gap: 14, overflow: 'hidden', minWidth: 0, cursor: 'default' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 20, fontWeight: 900, color: col }}>SLOT {i + 1}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                      {showAddHere ? (
-                        <SegmentSubmitAddLink
-                          planetId={planetId}
-                          lx={lx}
-                          ly={ly}
-                          archiveLayer={8}
-                          nextSlot={nar + 1}
-                          col={col}
-                          isDark={isDark}
-                          compact
-                        />
-                      ) : null}
-                      <SegmentReportLink
-                        planetId={planetId}
-                        lx={lx}
-                        ly={ly}
-                        archiveLayer={8}
-                        segmentIndex={`narr-${i + 1}-empty`}
-                        segmentLabel={`L8 narrative slot ${i + 1} (empty)`}
-                        excerpt=""
-                        col={col}
-                        isDark={isDark}
-                        compact
-                      />
-                    </div>
-                  </div>
-                  <EmptySegmentSlotFrame col={col} isDark={isDark} minHeight={170} />
-                  {showL7Gate ? (
-                    <div
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 1.5,
-                        color: isDark ? '#a8a29e' : '#57534e',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Complete all {L7_NARRATIVE_SEGMENT_COUNT} Layer&nbsp;7 narrative tiles for this coordinate before drafting Layer&nbsp;8 sentences (same sentence pool; easier slots surface on L7 first).
-                    </div>
-                  ) : null}
-                </SegmentHoverSurface>
-              )
-            }
-            const rankInOrder = nar + 1
-            return (
-              <SegmentHoverSurface
-                key={i}
-                coordLabel={coordLabel}
-                difficulty={resolveSegmentDifficulty(narSeg)}
-                accentColor={col}
-                isDark={isDark}
-                style={{ display: 'flex', flexDirection: 'column', gap: 14, overflow: 'hidden', minWidth: 0, cursor: 'default' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 20, fontWeight: 900, color: col }}>
-                    RANK {rankInOrder}/{narrativeSegCount}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    <SegmentDifficultyBadge difficulty={segmentDifficultyValue(narSeg)} isDark={isDark} fontSize={15} />
-                    <SegmentReportLink
-                      planetId={planetId}
-                      lx={lx}
-                      ly={ly}
-                      archiveLayer={8}
-                      segmentIndex={`narr-${i + 1}`}
-                      segmentLabel={`L8 narrative · rank ${rankInOrder}`}
-                      excerpt={segmentText(narSeg)}
-                      col={col}
-                      isDark={isDark}
-                      compact
-                    />
-                  </div>
-                </div>
-                <div style={{
-                  fontSize: 16,
-                  color: isDark ? '#64748b' : '#475569',
-                  lineHeight: 1.65,
-                  display: '-webkit-box',
-                  WebkitBoxOrient: 'vertical',
-                  WebkitLineClamp: 12,
-                  overflow: 'hidden',
-                }}
-                >
-                  {segmentText(narSeg)}
-                </div>
-              </SegmentHoverSurface>
-            )
-          }
-
-          if (i === L8_FINAL_SEGMENT_INDEX) {
-            const allSegs = orderedNarrativeSegs
-            if (allSegs.length === 0) {
-              const hasBody = !!(data?.content && String(data.content).trim())
-              if (!hasBody) {
-                return (
-                  <SegmentHoverSurface
-                    key={i}
-                    coordLabel={coordLabel}
-                    difficulty={null}
-                    accentColor={col}
-                    isDark={isDark}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 14,
-                      overflow: 'hidden',
-                      minWidth: 0,
-                      minHeight: 0,
-                      cursor: 'default',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 20, fontWeight: 900, color: col }}>FINAL SLOT · FULL TEXT</span>
-                      <SegmentReportLink
-                        planetId={planetId}
-                        lx={lx}
-                        ly={ly}
-                        archiveLayer={8}
-                        segmentIndex={`final-${L8_FINAL_SEGMENT_INDEX + 1}-empty`}
-                        segmentLabel="L8 final slot (empty · no body)"
-                        excerpt=""
-                        col={col}
-                        isDark={isDark}
-                        compact
-                      />
-                    </div>
-                    <EmptySegmentSlotFrame col={col} isDark={isDark} minHeight={280} />
-                  </SegmentHoverSurface>
-                )
-              }
-              const blob = data.content
-              return (
-                <SegmentHoverSurface
-                  key={i}
-                  coordLabel={coordLabel}
-                  difficulty={estimateSegmentDifficulty(blob)}
-                  accentColor={col}
-                  isDark={isDark}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 14,
-                    overflow: 'hidden',
-                    minWidth: 0,
-                    minHeight: 0,
-                    cursor: 'default',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 20, fontWeight: 900, color: col }}>FINAL SLOT · FULL TEXT</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                      <SegmentDifficultyBadge difficulty={estimateSegmentDifficulty(blob)} isDark={isDark} fontSize={15} />
-                      <SegmentReportLink
-                        planetId={planetId}
-                        lx={lx}
-                        ly={ly}
-                        archiveLayer={8}
-                        segmentIndex={`final-${L8_FINAL_SEGMENT_INDEX + 1}-full`}
-                        segmentLabel="L8 final slot · full text block"
-                        excerpt={blob}
-                        col={col}
-                        isDark={isDark}
-                        compact
-                      />
-                    </div>
-                  </div>
-                  <div style={{
-                    fontSize: 16,
-                    color: isDark ? '#64748b' : '#475569',
-                    lineHeight: 1.65,
-                    overflow: 'auto',
-                    flex: 1,
-                    minHeight: 0,
-                  }}
-                  >
-                    {blob}
-                  </div>
-                </SegmentHoverSurface>
-              )
-            }
-            return (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 20,
-                  overflow: 'hidden',
-                  minWidth: 0,
-                  minHeight: 0,
-                  cursor: 'default',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 20, fontWeight: 900, color: col }}>
-                    ALL SEGMENTS · EASIEST → HARDEST ({allSegs.length})
-                  </span>
-                </div>
-                <div style={{ flex: 1, overflow: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 28 }}>
-                  {allSegs.map((seg, si) => (
-                    <SegmentHoverSurface
-                      key={si}
-                      coordLabel={coordLabel}
-                      difficulty={resolveSegmentDifficulty(seg)}
-                      accentColor={col}
-                      isDark={isDark}
-                      style={{
-                        paddingBottom: 24,
-                        borderBottom: `2px solid ${isDark ? 'rgba(79,195,247,0.15)' : `${col}33`}`,
-                        cursor: 'default',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 10 }}>
-                        <span style={{ fontSize: 17, fontWeight: 900, color: col }}>#{si + 1}</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                          <SegmentDifficultyBadge difficulty={segmentDifficultyValue(seg)} isDark={isDark} fontSize={15} />
-                          <SegmentReportLink
-                            planetId={planetId}
-                            lx={lx}
-                            ly={ly}
-                            archiveLayer={8}
-                            segmentIndex={`final-aggregate-${si + 1}`}
-                            segmentLabel={`L8 final slot · aggregate list · #${si + 1}`}
-                            excerpt={segmentText(seg)}
-                            col={col}
-                            isDark={isDark}
-                            compact
-                          />
+      {/* ── Narrative + Final grid — row-windowed for performance ── */}
+      <div style={{ borderTop: `4px solid ${col}33`, paddingTop: 120, paddingBottom: 120 }}>
+        {skipBefore > 0 && <div style={{ height: skipBefore * APPROX_ROW_H }} />}
+        {Array.from({ length: Math.max(0, lastVisRow - firstVisRow + 1) }, (_, ri) => {
+          const row = firstVisRow + ri
+          const rowStart = row * L8_GRID_COLS
+          const rowEnd = Math.min(rowStart + L8_GRID_COLS, L8_CITED_SEGMENT_START_INDEX)
+          return (
+            <div key={row} style={{ display: 'grid', gridTemplateColumns: `repeat(${L8_GRID_COLS}, 1fr)`, gap: 36, marginBottom: 36 }}>
+              {Array.from({ length: rowEnd - rowStart }, (_, ci) => {
+                const i = rowStart + ci
+                if (i < L8_NARRATIVE_TILE_TOTAL) {
+                  const nar = i
+                  const narSeg = nar < orderedNarrativeSegs.length ? orderedNarrativeSegs[nar] : null
+                  if (!narSeg) {
+                    const l7Done = isL7NarrativeBandComplete(data)
+                    const showAddHere = nar === narrativeSegCount && narrativeSegCount < L8_NARRATIVE_TILE_TOTAL && l7Done
+                    const showL7Gate = nar === narrativeSegCount && narrativeSegCount < L8_NARRATIVE_TILE_TOTAL && !l7Done
+                    return (
+                      <L8Tile key={i} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 20, fontWeight: 900, color: col }}>SLOT {i + 1}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                            {showAddHere && <SegmentSubmitAddLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} nextSlot={nar + 1} col={col} isDark={isDark} compact />}
+                            <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} segmentIndex={`narr-${i + 1}-empty`} segmentLabel={`L8 narrative slot ${i + 1} (empty)`} excerpt="" col={col} isDark={isDark} compact />
+                          </div>
+                        </div>
+                        <EmptySegmentSlotFrame col={col} isDark={isDark} minHeight={700} />
+                        {showL7Gate && <div style={{ fontSize: 14, lineHeight: 1.5, color: isDark ? '#a8a29e' : '#57534e', fontWeight: 600 }}>Complete all {L7_NARRATIVE_SEGMENT_COUNT} Layer&nbsp;7 narrative tiles for this coordinate before drafting Layer&nbsp;8 sentences.</div>}
+                      </L8Tile>
+                    )
+                  }
+                  return (
+                    <L8Tile key={i} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 20, fontWeight: 900, color: col }}>RANK {nar + 1}/{narrativeSegCount}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                          <SegmentDifficultyBadge difficulty={segmentDifficultyValue(narSeg)} isDark={isDark} fontSize={15} />
+                          <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} segmentIndex={`narr-${i + 1}`} segmentLabel={`L8 narrative · rank ${nar + 1}`} excerpt={segmentText(narSeg)} col={col} isDark={isDark} compact />
                         </div>
                       </div>
-                      <p style={{ margin: 0, fontSize: 16, lineHeight: 1.65, color: isDark ? '#64748b' : '#475569' }}>
-                        {segmentText(seg)}
-                      </p>
-                    </SegmentHoverSurface>
-                  ))}
-                </div>
-              </div>
-            )
-          }
-
-          return null
+                      <div style={{ fontSize: 16, color: isDark ? '#64748b' : '#475569', lineHeight: 1.65, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 44, overflow: 'hidden', minHeight: 600 }}>{segmentText(narSeg)}</div>
+                    </L8Tile>
+                  )
+                }
+                if (i === L8_FINAL_SEGMENT_INDEX) {
+                  const allSegs = orderedNarrativeSegs
+                  if (allSegs.length === 0) {
+                    const hasBody = !!(data?.content && String(data.content).trim())
+                    if (!hasBody) {
+                      return (
+                        <L8Tile key={i} style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 20, fontWeight: 900, color: col }}>FINAL SLOT · FULL TEXT</span>
+                            <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} segmentIndex={`final-${L8_FINAL_SEGMENT_INDEX + 1}-empty`} segmentLabel="L8 final slot (empty · no body)" excerpt="" col={col} isDark={isDark} compact />
+                          </div>
+                          <EmptySegmentSlotFrame col={col} isDark={isDark} minHeight={900} />
+                        </L8Tile>
+                      )
+                    }
+                    const blob = data.content
+                    return (
+                      <L8Tile key={i} style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 20, fontWeight: 900, color: col }}>FINAL SLOT · FULL TEXT</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                            <SegmentDifficultyBadge difficulty={estimateSegmentDifficulty(blob)} isDark={isDark} fontSize={15} />
+                            <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} segmentIndex={`final-${L8_FINAL_SEGMENT_INDEX + 1}-full`} segmentLabel="L8 final slot · full text block" excerpt={blob} col={col} isDark={isDark} compact />
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 16, color: isDark ? '#64748b' : '#475569', lineHeight: 1.65, overflow: 'auto', flex: 1, minHeight: 0 }}>{blob}</div>
+                      </L8Tile>
+                    )
+                  }
+                  return (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 20, overflow: 'hidden', minWidth: 0, minHeight: 0, cursor: 'default' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 20, fontWeight: 900, color: col }}>ALL SEGMENTS · EASIEST → HARDEST ({allSegs.length})</span>
+                      </div>
+                      <div style={{ flex: 1, overflow: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 28 }}>
+                        {allSegs.map((seg, si) => (
+                          <L8Tile key={si} style={{ paddingBottom: 24, borderBottom: `2px solid ${isDark ? 'rgba(79,195,247,0.15)' : `${col}33`}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 10 }}>
+                              <span style={{ fontSize: 17, fontWeight: 900, color: col }}>#{si + 1}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                                <SegmentDifficultyBadge difficulty={segmentDifficultyValue(seg)} isDark={isDark} fontSize={15} />
+                                <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} segmentIndex={`final-aggregate-${si + 1}`} segmentLabel={`L8 final slot · aggregate list · #${si + 1}`} excerpt={segmentText(seg)} col={col} isDark={isDark} compact />
+                              </div>
+                            </div>
+                            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.65, color: isDark ? '#64748b' : '#475569' }}>{segmentText(seg)}</p>
+                          </L8Tile>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+                return null
+              })}
+            </div>
+          )
         })}
+        {skipAfter > 0 && <div style={{ height: skipAfter * APPROX_ROW_H }} />}
       </div>
 
-      {/* ── Cited Facts & Sources -- separate section at the BOTTOM ── */}
+      {/* ── Cited Facts & Sources ── */}
       <div style={{ marginTop: 160, paddingTop: 100, borderTop: `6px solid ${col}44` }}>
-        {/* Section header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 48, marginBottom: 100, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
             <Database size={52} style={{ color: col, flexShrink: 0 }} />
             <div>
-              <div style={{ fontSize: 44, fontWeight: 900, color: col, letterSpacing: '0.05em', lineHeight: 1 }}>
-                CITED FACTS & SOURCES
-              </div>
-              <div style={{ fontSize: 28, color: isDark ? '#64748b' : '#94a3b8', marginTop: 12 }}>
-                {L8_FACT_SOURCE_SLOTS} citation slots · primary references for this coordinate
-              </div>
+              <div style={{ fontSize: 44, fontWeight: 900, color: col, letterSpacing: '0.05em', lineHeight: 1 }}>CITED FACTS & SOURCES</div>
+              <div style={{ fontSize: 28, color: isDark ? '#64748b' : '#94a3b8', marginTop: 12 }}>{L8_FACT_SOURCE_SLOTS} citation slots · primary references for this coordinate</div>
             </div>
           </div>
         </div>
-
-        {/* 10-col × 3-row cited grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(10, 1fr)',
-          gap: 40,
-        }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 40 }}>
           {Array.from({ length: L8_FACT_SOURCE_SLOTS }).map((_, citedIdx) => {
             const slot = citations[citedIdx]
             const isReserve = !slot || String(slot.coordLabel || '').trim() === '--'
+            const tileStyle = { display: 'flex', flexDirection: 'column', gap: 12, overflow: 'hidden', minWidth: 0, border: `1px solid ${col}28`, borderRadius: 8, padding: 14, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(248,250,252,0.88)' }
             if (isReserve) {
               return (
-                <SegmentHoverSurface
-                  key={`cited-${citedIdx}`}
-                  coordLabel={coordLabel}
-                  difficulty={null}
-                  accentColor={col}
-                  isDark={isDark}
-                  style={{
-                    display: 'flex', flexDirection: 'column', gap: 12,
-                    overflow: 'hidden', minWidth: 0,
-                    border: `1px solid ${col}28`, borderRadius: 8, padding: 14,
-                    background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(248,250,252,0.88)',
-                    cursor: 'default',
-                  }}
-                >
+                <L8Tile key={`cited-${citedIdx}`} style={tileStyle}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <div style={{ fontSize: 16, fontWeight: 900, color: col }}>CITED {citedIdx + 1}</div>
-                    <SegmentReportLink
-                      planetId={planetId} lx={lx} ly={ly} archiveLayer={8}
-                      segmentIndex={`cited-${citedIdx + 1}-empty`}
-                      segmentLabel={`L8 cited fact slot ${citedIdx + 1} (empty)`}
-                      excerpt="" col={col} isDark={isDark} compact
-                    />
+                    <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} segmentIndex={`cited-${citedIdx + 1}-empty`} segmentLabel={`L8 cited fact slot ${citedIdx + 1} (empty)`} excerpt="" col={col} isDark={isDark} compact />
                   </div>
-                  <EmptySegmentSlotFrame col={col} isDark={isDark} minHeight={130} />
-                </SegmentHoverSurface>
+                  <EmptySegmentSlotFrame col={col} isDark={isDark} minHeight={500} />
+                </L8Tile>
               )
             }
             const href = slot.sourceHref ? resolveAttachmentUrl(slot.sourceHref) : ''
@@ -1618,51 +1449,22 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactS
             const external = hasLink && isCrossOriginHttp(href)
             const accent = isDark ? '#7dd3fc' : '#0369a1'
             return (
-              <SegmentHoverSurface
-                key={`cited-${citedIdx}`}
-                coordLabel={slot.coordLabel || coordLabel}
-                difficulty={estimateSegmentDifficulty(slot.fact)}
-                accentColor={col}
-                isDark={isDark}
-                style={{
-                  display: 'flex', flexDirection: 'column', gap: 12,
-                  overflow: 'hidden', minWidth: 0,
-                  border: `1px solid ${col}28`, borderRadius: 8, padding: 14,
-                  background: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(248,250,252,0.95)',
-                  cursor: 'default',
-                }}
-              >
+              <L8Tile key={`cited-${citedIdx}`} style={{ ...tileStyle, background: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(248,250,252,0.95)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                   <div style={{ fontSize: 16, fontWeight: 900, color: col }}>CITED {citedIdx + 1}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <SegmentDifficultyBadge difficulty={estimateSegmentDifficulty(slot.fact)} isDark={isDark} fontSize={13} />
-                    <SegmentReportLink
-                      planetId={planetId} lx={lx} ly={ly} archiveLayer={8}
-                      segmentIndex={`cited-${citedIdx + 1}`}
-                      segmentLabel={`L8 cited fact ${citedIdx + 1}`}
-                      excerpt={[slot.title, slot.fact].filter(Boolean).join(' -- ')}
-                      col={col} isDark={isDark} compact
-                    />
+                    <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} segmentIndex={`cited-${citedIdx + 1}`} segmentLabel={`L8 cited fact ${citedIdx + 1}`} excerpt={[slot.title, slot.fact].filter(Boolean).join(' -- ')} col={col} isDark={isDark} compact />
                   </div>
                 </div>
                 <div style={{ fontSize: 13, fontFamily: '"JetBrains Mono", monospace', color: col, opacity: 0.95 }}>{slot.coordLabel}</div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: isDark ? '#e2e8f0' : '#0f172a', lineHeight: 1.25 }}>{slot.title}</div>
-                <p style={{ margin: 0, fontSize: 13, color: isDark ? '#94a3b8' : '#475569',
-                  lineHeight: 1.65, display: '-webkit-box', WebkitBoxOrient: 'vertical',
-                  WebkitLineClamp: 8, overflow: 'hidden' }}>
-                  {slot.fact}
-                </p>
+                <div style={{ fontSize: 15, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', lineHeight: 1.25 }}>{slot.title}</div>
+                <p style={{ margin: 0, fontSize: 13, color: isDark ? '#94a3b8' : '#475569', lineHeight: 1.65, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 8, overflow: 'hidden' }}>{slot.fact}</p>
                 <div style={{ fontSize: 12, fontWeight: 900, color: col, letterSpacing: '0.08em', marginTop: 'auto' }}>SOURCE</div>
-                {hasLink ? (
-                  <a href={href} onClick={(e) => e.stopPropagation()}
-                    {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                    style={{ fontSize: 12, fontWeight: 600, color: accent, wordBreak: 'break-word' }}>
-                    {slot.sourceLabel || href}
-                  </a>
-                ) : (
-                  <span style={{ fontSize: 12, color: isDark ? '#64748b' : '#94a3b8' }}>{slot.sourceLabel || '--'}</span>
-                )}
-              </SegmentHoverSurface>
+                {hasLink
+                  ? <a href={href} onClick={(e) => e.stopPropagation()} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})} style={{ fontSize: 12, fontWeight: 600, color: accent, wordBreak: 'break-word' }}>{slot.sourceLabel || href}</a>
+                  : <span style={{ fontSize: 12, color: isDark ? '#64748b' : '#94a3b8' }}>{slot.sourceLabel || '--'}</span>}
+              </L8Tile>
             )
           })}
         </div>
@@ -1672,12 +1474,131 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactS
 })
 
 /* ══════════════════════════════════════════════
+   ADJACENCY ERROR TOAST
+   Rendered at fixed position in the main component; triggered via callback.
+══════════════════════════════════════════════ */
+function AdjacencyErrorMessage({ isDark, onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4200)
+    return () => clearTimeout(t)
+  }, [onClose])
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 140,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 99999,
+        maxWidth: 380,
+        width: '90vw',
+        padding: '16px 20px',
+        borderRadius: 18,
+        background: isDark
+          ? 'linear-gradient(135deg, rgba(120,20,20,0.97), rgba(160,50,10,0.97))'
+          : 'linear-gradient(135deg, rgba(255,235,235,0.99), rgba(255,245,220,0.99))',
+        border: `2px solid ${isDark ? 'rgba(248,113,113,0.6)' : 'rgba(220,38,38,0.45)'}`,
+        color: isDark ? '#fca5a5' : '#7f1d1d',
+        boxShadow: `0 20px 48px rgba(0,0,0,0.35), 0 0 0 1px ${isDark ? 'rgba(248,113,113,0.15)' : 'rgba(220,38,38,0.08)'}`,
+        backdropFilter: 'blur(18px)',
+        animation: 'adjErrorSlideUp 0.32s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}
+      onClick={onClose}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 13 }}>
+        <div style={{ fontSize: 22, flexShrink: 0, lineHeight: 1, marginTop: 1 }}>⚠</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 5, letterSpacing: '0.02em' }}>
+            Non-Adjacent Cell
+          </div>
+          <div style={{ fontSize: 12, lineHeight: 1.6, opacity: 0.92 }}>
+            You can only submit to cells <strong>directly adjacent</strong> (up, down, left, or right) to an existing filled grid entry. Move to a cell next to filled content first.
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            marginLeft: 4, flexShrink: 0, color: 'currentColor', opacity: 0.55,
+            fontSize: 16, lineHeight: 1, padding: '2px 4px',
+            background: 'none', border: 'none', cursor: 'pointer', borderRadius: 6,
+          }}
+        >✕</button>
+      </div>
+    </div>
+  )
+}
+
+/* ── Small floating + button for empty L5/L6 cells ── */
+/* ── Unified + button for adjacent empty cells L4–L8 ── */
+function EmptyAddButton({ col, isDark, layer }) {
+  // Size and font scale with layer cell size
+  const cfg = {
+    4: { sz: 14, fs: 9,  bw: 1.5, top: 3, right: 3, centered: false },
+    5: { sz: 42, fs: 22, bw: 2,   centered: true },
+    6: { sz: 112, fs: 54, bw: 3, centered: true },
+    7: { sz: 260, fs: 124, bw: 5, centered: true },
+    8: { sz: 420, fs: 190, bw: 7, centered: true },
+  }
+  const { sz, fs, bw, centered, top, right } = cfg[layer] || cfg[5]
+  const pos = centered
+    ? { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+    : { top, right }
+  return (
+    <div style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none', ...pos }}>
+      {/* Outer glow ring */}
+      <div style={{
+        position: 'absolute',
+        inset: -sz * 0.18,
+        borderRadius: '50%',
+        background: `radial-gradient(circle, ${col}22 0%, transparent 70%)`,
+        filter: `blur(${sz * 0.15}px)`,
+      }} />
+      {/* Main circle */}
+      <div style={{
+        position: 'relative',
+        width: sz,
+        height: sz,
+        borderRadius: '50%',
+        border: `${bw}px solid ${col}dd`,
+        background: isDark
+          ? `radial-gradient(circle at 38% 32%, ${col}30 0%, ${col}0c 60%, transparent 100%)`
+          : `radial-gradient(circle at 38% 32%, ${col}22 0%, ${col}08 60%, transparent 100%)`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: col,
+        fontSize: fs,
+        fontWeight: 900,
+        lineHeight: 1,
+        boxShadow: [
+          `0 0 ${sz * 0.55}px ${col}44`,
+          `0 0 ${sz * 0.22}px ${col}77`,
+          `inset 0 0 ${sz * 0.35}px ${col}18`,
+          `inset 0 1px 0 ${col}44`,
+        ].join(', '),
+        letterSpacing: '-0.02em',
+        textShadow: `0 0 ${sz * 0.4}px ${col}, 0 0 ${sz * 0.15}px #fff8`,
+        pointerEvents: 'none',
+      }}>
+        +
+      </div>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════
    OPTIMIZED GRID CELL
    gx/gy = internal absolute indices
    lx/ly = displayed centered coordinates
 ══════════════════════════════════════════════ */
-const GridCell = memo(function GridCell({ gx, gy, lx, ly, cpx, cpy, cp, layer, data, col, isDark, navigate, planetId, gridFactsCatalog, deepFactSources }) {
+const GridCell = memo(function GridCell({
+  gx, gy, lx, ly, cpx, cpy, cp, layer, data, col, isDark, navigate, planetId,
+  gridFactsCatalog, deepFactSources, compassSelected, isAdjacentToFilled,
+  onAdjacencyError, visYMin, visYMax, onDrillFilled,
+}) {
   const isEmpty = !data
+
   const cellStyle = {
     position: 'absolute',
     transform: `translate(${cpx}px, ${cpy}px)`,
@@ -1690,19 +1611,34 @@ const GridCell = memo(function GridCell({ gx, gy, lx, ly, cpx, cpy, cp, layer, d
     background: isEmpty
       ? (isDark ? 'rgba(7,5,15,0.4)' : 'rgba(240,245,250,0.4)')
       : (isDark ? '#06040e' : '#ffffff'),
+    cursor: (isEmpty && layer >= 5 && layer <= 8) ? 'pointer' : 'default',
   }
-  // Only L4 and L5 cells are clickable for submission (when empty)
-  const canClick = layer >= 4 && layer <= 5 && isEmpty
+
+  const handleCellClick = useCallback(() => {
+    if (!isEmpty) {
+      if (layer < TOTAL_LAYERS) onDrillFilled?.(gx, gy, layer + 1)
+      return
+    }
+    if (layer < 4 || layer > 8) return
+    if (!isAdjacentToFilled) return  // all layers L4-L8: silently block non-adjacent
+    const url = `/submit?planet=${planetId}&coordX=${lx}&coordY=${ly}&archiveLayer=${layer}`
+    navigate(url)
+  }, [isEmpty, layer, isAdjacentToFilled, navigate, planetId, lx, ly, gx, gy, onDrillFilled])
+
   return (
     <div
       style={cellStyle}
-      onClick={() => canClick && navigate(`/submit?planet=${planetId}&coordX=${lx}&coordY=${ly}`)}
+      onClick={handleCellClick}
     >
-      {layer === 4 && <L4Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} />}
+      {/* + button: only on adjacent empty cells, L4–L8 */}
+      {isEmpty && layer >= 4 && layer <= 8 && !!isAdjacentToFilled && (
+        <EmptyAddButton col={col} isDark={isDark} layer={layer} />
+      )}
+      {layer === 4 && <L4Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} compassSelected={compassSelected} />}
       {layer === 5 && <L5Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} />}
-      {layer === 6 && <L6Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} planetId={planetId} />}
-      {layer === 7 && <L7Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} gridFactsCatalog={gridFactsCatalog} deepFactSources={deepFactSources} planetId={planetId} />}
-      {layer === 8 && <L8Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} deepFactSources={deepFactSources} planetId={planetId} />}
+      {layer === 6 && !isEmpty && <L6Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} planetId={planetId} />}
+      {layer === 7 && !isEmpty && <L7Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} gridFactsCatalog={gridFactsCatalog} deepFactSources={deepFactSources} planetId={planetId} />}
+      {layer === 8 && !isEmpty && <L8Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} deepFactSources={deepFactSources} planetId={planetId} visYMin={visYMin} visYMax={visYMax} />}
     </div>
   )
 })
@@ -1710,7 +1646,10 @@ const GridCell = memo(function GridCell({ gx, gy, lx, ly, cpx, cpy, cp, layer, d
 /* ══════════════════════════════════════════════
    INTERACTIVE GRID (FRACTIONAL TRANSFORM)
 ══════════════════════════════════════════════ */
-function InteractiveGrid({ layer, viewX, viewY, vpW, vpH, planet, isDark, navigate, sectionEntries, zoom, gridDims, hubId }) {
+function InteractiveGrid({
+  layer, viewX, viewY, vpW, vpH, planet, isDark, navigate, sectionEntries, zoom, gridDims, hubId,
+  compassDomainId, compassSubfieldId, onAdjacencyError, onDrillFilled,
+}) {
   const cp = CELL_PX[layer]
   const col = planet.color
   const sx = Math.floor(viewX)
@@ -1720,12 +1659,38 @@ function InteractiveGrid({ layer, viewX, viewY, vpW, vpH, planet, isDark, naviga
   const cols = Math.ceil(vpW / (cp * zoom)) + 1
   const rows = Math.ceil(vpH / (cp * zoom)) + 1
 
+  const compassSelected = !!(compassDomainId || compassSubfieldId)
+
   const gridFactsCatalog = useMemo(() => buildGridFactsCatalog(sectionEntries, gridDims), [sectionEntries, gridDims])
   const deepFactSources = useMemo(() => buildDeepFactSourceSlots(sectionEntries, gridDims), [sectionEntries, gridDims])
 
+  /* Compute set of EMPTY cells adjacent to at least one filled cell (for L5-L8 + button) */
+  const filledCellSet = useMemo(() => {
+    const set = new Set()
+    Object.keys(sectionEntries).forEach((key) => {
+      if (sectionEntries[key]) set.add(key)
+    })
+    return set
+  }, [sectionEntries])
+
+  const adjacentToFilledSet = useMemo(() => {
+    if (layer < 4) return null
+    const { gridW, gridH } = gridDims
+    const adj = new Set()
+    filledCellSet.forEach((key) => {
+      const parts = key.split(',')
+      const fx = parseInt(parts[0], 10)
+      const fy = parseInt(parts[1], 10)
+      ;[[fx - 1, fy], [fx + 1, fy], [fx, fy - 1], [fx, fy + 1]].forEach(([nx, ny]) => {
+        if (nx >= 0 && ny >= 0 && nx < gridW && ny < gridH) adj.add(`${nx},${ny}`)
+      })
+    })
+    return adj
+  }, [layer, filledCellSet, gridDims])
+
   const cells = useMemo(() => {
     const arr = []
-    const { gridW, gridH, halfW, halfH } = gridDims
+    const { gridW, gridH } = gridDims
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const gx = sx + c
@@ -1757,23 +1722,39 @@ function InteractiveGrid({ layer, viewX, viewY, vpW, vpH, planet, isDark, naviga
         transformOrigin: 'top left',
         willChange: 'transform',
       }}>
-        {cells.map(({ gx, gy, cpx, cpy }) => (
-          <GridCell
-            key={`${gx},${gy}`}
-            gx={gx} gy={gy}
-            lx={gx - gridDims.halfW} ly={gridDims.halfH - gy}
-            cpx={cpx} cpy={cpy}
-            cp={cp}
-            layer={layer}
-            data={sectionEntries[`${gx},${gy}`]}
-            col={col}
-            isDark={isDark}
-            navigate={navigate}
-            planetId={hubId}
-            gridFactsCatalog={gridFactsCatalog}
-            deepFactSources={deepFactSources}
-          />
-        ))}
+        {cells.map(({ gx, gy, cpx, cpy }) => {
+          // For L8: compute visible Y range within the cell to allow windowed rendering
+          let visYMin = 0, visYMax = Infinity
+          if (layer === 8) {
+            const BUFFER = 2400
+            const cellLocalOffset = (viewY - gy) * cp
+            visYMin = Math.max(0, cellLocalOffset - BUFFER)
+            visYMax = cellLocalOffset + vpH / zoom + BUFFER
+          }
+          return (
+            <GridCell
+              key={`${gx},${gy}`}
+              gx={gx} gy={gy}
+              lx={gx - gridDims.halfW} ly={gridDims.halfH - gy}
+              cpx={cpx} cpy={cpy}
+              cp={cp}
+              layer={layer}
+              data={sectionEntries[`${gx},${gy}`]}
+              col={col}
+              isDark={isDark}
+              navigate={navigate}
+              planetId={hubId}
+              gridFactsCatalog={gridFactsCatalog}
+              deepFactSources={deepFactSources}
+              compassSelected={compassSelected}
+              isAdjacentToFilled={adjacentToFilledSet ? adjacentToFilledSet.has(`${gx},${gy}`) && !filledCellSet.has(`${gx},${gy}`) : true}
+              onAdjacencyError={onAdjacencyError}
+              visYMin={visYMin}
+              visYMax={visYMax}
+              onDrillFilled={onDrillFilled}
+            />
+          )
+        })}
       </div>
     </div>
   )
@@ -1790,6 +1771,8 @@ function PlanetIntro({ planet, isDark, onEnter, gridDims, archiveCfg }) {
   const enter = () => { setOut(true); setTimeout(() => { setGone(true); onEnter() }, 650) }
   const hostTitle = (archiveCfg?.instanceTitle || '').trim()
   const gridLabel = gridDims ? `${gridDims.gridW} × ${gridDims.gridH}` : ''
+  const focusAreas = (planet.sections || []).slice(0, 5).map((s) => s.title).filter(Boolean)
+  const sectionCount = (planet.sections || []).length
 
   const titleGradient = `linear-gradient(135deg, ${col}, ${isDark ? '#fff' : '#0f172a'})`
 
@@ -1818,7 +1801,7 @@ function PlanetIntro({ planet, isDark, onEnter, gridDims, archiveCfg }) {
         </div>
 
         {hostTitle && (
-          <div className="planet-intro__host-title" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
+          <div className="planet-intro__host-title" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
             {hostTitle}
           </div>
         )}
@@ -1854,8 +1837,21 @@ function PlanetIntro({ planet, isDark, onEnter, gridDims, archiveCfg }) {
           </p>
           {gridLabel && (
             <p className="planet-intro__meta" style={{ color: isDark ? '#64748b' : '#475569' }}>
-              Coordinate grid &middot; {gridLabel} cells &mdash; size comes from your uploaded image (Start archive).
+              Coordinate grid &middot; {gridLabel} cells
+              {sectionCount ? ` · ${sectionCount} indexed topics` : ''} &mdash; size comes from your uploaded image (Start archive).
             </p>
+          )}
+          {focusAreas.length > 0 && (
+            <div className="planet-intro__focus" style={{ '--planet-color': col }}>
+              <div className="planet-intro__focus-label" style={{ color: col }}>Focus areas</div>
+              <div className="planet-intro__focus-list">
+                {focusAreas.map((area) => (
+                  <span key={area} className="planet-intro__focus-pill">
+                    {area}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
           <p className="planet-intro__themes" style={{ color: isDark ? '#64748b' : '#475569' }}>
             Shared themes appear across hubs &mdash; when you zoom to deeper layers, entries can link to the same subject through another hub&apos;s scientific lens.
@@ -2208,7 +2204,7 @@ function SearchBar({
         style={{
           background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.5)',
           border: `1px solid ${col}44`,
-          color: isDark ? '#e2e8f0' : '#0f172a',
+          color: isDark ? '#f8fafc' : '#0f172a',
         }}
       />
       {isOpen && results.length > 0 && (
@@ -2236,7 +2232,7 @@ function SearchBar({
               <div style={{ fontSize: 10, fontFamily: '"JetBrains Mono", monospace', color: col, fontWeight: 800, marginBottom: 2 }}>
                 {pad4(r.lx)},{pad4(r.ly)}
               </div>
-              <div style={{ fontSize: 11, color: isDark ? '#e2e8f0' : '#0f172a', lineHeight: 1.4 }}>{r.title}</div>
+              <div style={{ fontSize: 11, color: isDark ? '#f8fafc' : '#0f172a', lineHeight: 1.4 }}>{r.title}</div>
               {r.subtitle && (
                 <div style={{ fontSize: 9, color: isDark ? '#64748b' : '#94a3b8', marginTop: 4 }}>{r.subtitle}</div>
               )}
@@ -2247,6 +2243,214 @@ function SearchBar({
     </div>
   )
 }
+
+/* ══════════════════════════════════════════════
+   LAYER TRANSITION OVERLAY (L3 → L4)
+══════════════════════════════════════════════ */
+const LayerTransitionOverlay = memo(function LayerTransitionOverlay({ col, fromLayer, toLayer, onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 2000)
+    return () => clearTimeout(t)
+  }, [onDone])
+
+  const particles = useMemo(() =>
+    Array.from({ length: 52 }, (_, i) => ({
+      id: i,
+      angle: (i / 52) * 360 + (i % 4) * 7,
+      dist: 100 + (i % 8) * 45,
+      size: 1 + (i % 3) * 0.7,
+      delay: (i % 14) * 0.035,
+      dur: 0.65 + (i % 7) * 0.12,
+    })),
+  [])
+
+  const rings = [160, 260, 360, 470, 580, 700]
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 99992,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden',
+      background: 'radial-gradient(ellipse at 50% 48%, rgba(6,2,16,0.98) 0%, #000 100%)',
+      animation: 'ltOverlayAnim 2.0s ease forwards',
+      pointerEvents: 'all',
+    }}>
+      {/* Zooming perspective grid */}
+      <div style={{
+        position: 'absolute', inset: '-50%',
+        backgroundImage: `linear-gradient(${col}18 1px, transparent 1px), linear-gradient(90deg, ${col}18 1px, transparent 1px)`,
+        backgroundSize: '72px 72px',
+        transformOrigin: 'center center',
+        animation: 'ltGridZoom 2.0s cubic-bezier(0.3, 0, 0.7, 1) forwards',
+      }} />
+
+      {/* Radial vignette over grid */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: `radial-gradient(ellipse at center, transparent 15%, rgba(0,0,0,0.88) 75%)`,
+      }} />
+
+      {/* Expanding rings */}
+      {rings.map((size, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          width: size, height: size,
+          borderRadius: '50%',
+          border: `1px solid ${col}`,
+          opacity: 0,
+          animation: `ltRingExpand 1.4s cubic-bezier(0.15, 0.8, 0.35, 1) ${i * 0.08}s forwards`,
+        }} />
+      ))}
+
+      {/* Second wave of rings (slightly delayed, smaller) */}
+      {[100, 190, 290].map((size, i) => (
+        <div key={`r2-${i}`} style={{
+          position: 'absolute',
+          width: size, height: size,
+          borderRadius: '50%',
+          border: `1px solid ${col}55`,
+          opacity: 0,
+          animation: `ltRingExpand 1.1s cubic-bezier(0.15, 0.8, 0.35, 1) ${0.55 + i * 0.1}s forwards`,
+        }} />
+      ))}
+
+      {/* Particles flying outward */}
+      {particles.map((p) => (
+        <div key={p.id} style={{
+          position: 'absolute', top: '50%', left: '50%',
+          width: p.size, height: p.size,
+          borderRadius: '50%',
+          background: col,
+          marginTop: -p.size / 2, marginLeft: -p.size / 2,
+          boxShadow: `0 0 ${p.size * 4}px ${col}`,
+          opacity: 0,
+          '--lt-angle': `${p.angle}deg`,
+          '--lt-dist': `${p.dist}px`,
+          animation: `ltParticle ${p.dur}s ease-out ${0.18 + p.delay}s forwards`,
+        }} />
+      ))}
+
+      {/* Central glowing core */}
+      <div style={{
+        position: 'absolute',
+        width: 16, height: 16,
+        borderRadius: '50%',
+        background: `radial-gradient(circle, #fff 0%, ${col} 60%)`,
+        boxShadow: `0 0 24px ${col}, 0 0 60px ${col}88, 0 0 120px ${col}44`,
+        animation: 'ltCoreGlow 2.0s ease forwards',
+      }} />
+
+      {/* Targeting reticle SVG */}
+      <svg viewBox="0 0 140 140" style={{
+        position: 'absolute', width: 140, height: 140,
+        opacity: 0, animation: 'ltFadeHold 2.0s ease 0.3s forwards',
+      }}>
+        <circle cx="70" cy="70" r="58" fill="none" stroke={col} strokeWidth="0.6" strokeOpacity="0.35" strokeDasharray="10 5" />
+        <circle cx="70" cy="70" r="38" fill="none" stroke={col} strokeWidth="0.4" strokeOpacity="0.2" />
+        <line x1="70" y1="4"  x2="70" y2="28" stroke={col} strokeWidth="1.2" strokeOpacity="0.8" />
+        <line x1="70" y1="112" x2="70" y2="136" stroke={col} strokeWidth="1.2" strokeOpacity="0.8" />
+        <line x1="4"  y1="70" x2="28" y2="70" stroke={col} strokeWidth="1.2" strokeOpacity="0.8" />
+        <line x1="112" y1="70" x2="136" y2="70" stroke={col} strokeWidth="1.2" strokeOpacity="0.8" />
+        <circle cx="70" cy="70" r="5" fill="none" stroke={col} strokeWidth="1.5" />
+        <circle cx="70" cy="70" r="1.5" fill={col} />
+      </svg>
+
+      {/* HUD corner brackets */}
+      {[
+        { pos: { top: 28, left: 28 },     r: '0deg'   },
+        { pos: { top: 28, right: 28 },    r: '90deg'  },
+        { pos: { bottom: 28, right: 28 }, r: '180deg' },
+        { pos: { bottom: 28, left: 28 },  r: '270deg' },
+      ].map(({ pos, r }, i) => (
+        <svg key={i} viewBox="0 0 32 32" style={{
+          position: 'absolute', ...pos, width: 32, height: 32,
+          '--lt-r': r,
+          opacity: 0, animation: `ltBracketIn 0.45s cubic-bezier(0.2, 1, 0.3, 1) ${0.2 + i * 0.07}s forwards`,
+        }}>
+          <path d="M2 20 L2 2 L20 2" fill="none" stroke={col} strokeWidth="1.8" strokeOpacity="0.7" strokeLinecap="square" />
+        </svg>
+      ))}
+
+      {/* Horizontal scanline sweeping down */}
+      <div style={{
+        position: 'absolute', left: 0, right: 0, height: 1,
+        background: `linear-gradient(90deg, transparent 0%, ${col}55 15%, ${col} 50%, ${col}55 85%, transparent 100%)`,
+        boxShadow: `0 0 10px ${col}, 0 0 3px #fff`,
+        animation: 'ltScanline 1.2s linear 0.25s forwards',
+        opacity: 0,
+      }} />
+
+      {/* Main text group */}
+      <div style={{
+        position: 'relative', zIndex: 2,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+        textAlign: 'center',
+      }}>
+        {/* Layer route chip */}
+        <div style={{
+          fontSize: 9, letterSpacing: '0.5em', fontWeight: 800,
+          color: `${col}bb`, fontFamily: 'monospace', textTransform: 'uppercase',
+          opacity: 0, animation: 'ltTextSlideUp 0.5s ease 0.38s forwards',
+        }}>
+          L{fromLayer} &nbsp;→&nbsp; L{toLayer}
+        </div>
+
+        {/* Giant layer title */}
+        <div style={{
+          fontSize: 88, fontWeight: 900, lineHeight: 0.9,
+          fontFamily: "'Impact', 'Arial Black', 'Arial Narrow', sans-serif",
+          letterSpacing: '0.06em',
+          color: '#fff',
+          textShadow: `0 0 50px ${col}99, 0 0 100px ${col}44, 0 2px 0 rgba(0,0,0,0.8)`,
+          opacity: 0, animation: 'ltTitleReveal 0.65s cubic-bezier(0.1, 0.9, 0.2, 1) 0.46s forwards',
+        }}>
+          L{toLayer}
+        </div>
+
+        {/* Layer name label */}
+        <div style={{
+          fontSize: 13, letterSpacing: '0.38em', fontWeight: 700,
+          color: '#fff', fontFamily: 'monospace', textTransform: 'uppercase',
+          textShadow: `0 0 20px ${col}`,
+          opacity: 0, animation: 'ltTextSlideUp 0.5s ease 0.54s forwards',
+        }}>
+          {(LAYER_LABELS[toLayer]?.split('·')[1]?.trim() || `Layer ${toLayer}`).toUpperCase()}
+        </div>
+
+        {/* Horizontal rule */}
+        <div style={{
+          width: 0, height: 1,
+          background: `linear-gradient(90deg, transparent, ${col}, transparent)`,
+          opacity: 0, animation: 'ltLineWiden 0.55s ease 0.6s forwards',
+        }} />
+
+        {/* Subtitle */}
+        <div style={{
+          fontSize: 9, letterSpacing: '0.45em', fontWeight: 700,
+          color: `${col}99`, fontFamily: 'monospace', textTransform: 'uppercase',
+          opacity: 0, animation: 'ltTextSlideUp 0.5s ease 0.72s forwards',
+        }}>
+          {CELL_PX[toLayer]} × {CELL_PX[toLayer]} px &nbsp;·&nbsp; ENTERING ARCHIVE
+        </div>
+
+        {/* Progress bar */}
+        <div style={{
+          marginTop: 18, width: 200, height: 2,
+          background: `${col}1a`, borderRadius: 1,
+          overflow: 'hidden',
+          opacity: 0, animation: 'ltFadeHold 2.0s ease 0.7s forwards',
+        }}>
+          <div style={{
+            height: '100%', width: '0%', borderRadius: 1,
+            background: `linear-gradient(90deg, ${col}88 0%, ${col} 100%)`,
+            boxShadow: `0 0 8px ${col}`,
+            animation: 'ltProgressFill 1.1s cubic-bezier(0.4, 0, 0.2, 1) 0.75s forwards',
+          }} />
+        </div>
+      </div>
+    </div>
+  )
+})
 
 /* ══════════════════════════════════════════════
    MAIN ARCHIVE GRID
@@ -2294,6 +2498,37 @@ export default function ArchiveGrid() {
   /** 4:4:4 compass -- active domain (L3) and subfield highlight */
   const [compassDomainId, setCompassDomainId] = useState(null)
   const [compassSubfieldId, setCompassSubfieldId] = useState(null)
+  const [adjacencyErrorVisible, setAdjacencyErrorVisible] = useState(false)
+  const adjacencyErrorTimerRef = useRef(null)
+  const showAdjacencyError = useCallback(() => {
+    setAdjacencyErrorVisible(true)
+    if (adjacencyErrorTimerRef.current) clearTimeout(adjacencyErrorTimerRef.current)
+    adjacencyErrorTimerRef.current = window.setTimeout(() => setAdjacencyErrorVisible(false), 4200)
+  }, [])
+
+  const panAnimRef = useRef(null)
+  const [layerTrans, setLayerTrans] = useState(null) // { from, to }
+
+  const animatePanTo = useCallback((targetX, targetY, duration = 650) => {
+    if (panAnimRef.current) cancelAnimationFrame(panAnimRef.current)
+    const startTime = performance.now()
+    const startX = viewXYRef.current.x
+    const startY = viewXYRef.current.y
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3)
+    const tick = (now) => {
+      const t = Math.min(1, (now - startTime) / duration)
+      const e = easeOutCubic(t)
+      setViewX(startX + (targetX - startX) * e)
+      setViewY(startY + (targetY - startY) * e)
+      if (t < 1) {
+        panAnimRef.current = requestAnimationFrame(tick)
+      } else {
+        panAnimRef.current = null
+      }
+    }
+    panAnimRef.current = requestAnimationFrame(tick)
+  }, [])
+
   const hubTaxonomy = useMemo(() => getHubTaxonomy(hubId), [hubId])
   const hasCompassTaxonomy = !!hubTaxonomy
   /** pan = drag / touch moves grid; select = text selection & copy (no drag-pan on viewport) */
@@ -2401,6 +2636,20 @@ export default function ArchiveGrid() {
   vpSizeRef.current = vpSize
   const viewportInteractModeRef = useRef(viewportInteractMode)
   viewportInteractModeRef.current = viewportInteractMode
+
+  // When compass selection changes while already on L4, smoothly pan so first filled cell is top-left
+  useEffect(() => {
+    if (layer !== 4) return
+    if (!compassDomainId && !compassSubfieldId) return
+    const entries = Object.keys(sectionEntries)
+      .filter((k) => !!sectionEntries[k])
+      .map((k) => k.split(',').map(Number))
+      .sort((a, b) => a[1] - b[1] || a[0] - b[0])
+    if (entries.length === 0) return
+    const [firstGx, firstGy] = entries[0]
+    const { x, y } = clamp(firstGx - 1, firstGy - 1, 4, zoom)
+    animatePanTo(x, y, 650)
+  }, [compassDomainId, compassSubfieldId, layer]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /** When viewport centers on a different archive cell on L7/L8, snap to segment tile 0 there. */
   useEffect(() => {
@@ -2537,38 +2786,57 @@ export default function ArchiveGrid() {
   const switchLayer = useCallback((nl) => {
     nl = Math.max(1, Math.min(TOTAL_LAYERS, nl))
 
-    // Calculate the center of the current viewport in absolute grid coordinates
+    // Calculate ALL target state now (before async fade delay, so closures stay valid)
     const oldCp = CELL_PX[layer] * zoom
     const centerGX = viewX + (vpSize.w / 2) / oldCp
     const centerGY = viewY + (vpSize.h / 2) / oldCp
 
-    setLayer(nl)
-    
     let defaultZoom = 1.0
     if (nl === 7) defaultZoom = 0.60
     if (nl === 8) defaultZoom = 0.08
-    setZoom(defaultZoom)
 
     const cp = CELL_PX[nl] * defaultZoom
     const offsetX = (vpSize.w / cp) / 2
     const offsetY = (vpSize.h / cp) / 2
 
-    if (focusedCell) {
-      const { x, y } = clamp(focusedCell.x - offsetX, focusedCell.y - offsetY, nl, defaultZoom)
-      setViewX(x)
-      setViewY(y)
-      return
+    let targetX, targetY
+    if (nl === 4 && (compassDomainId || compassSubfieldId)) {
+      const entries = Object.keys(sectionEntries)
+        .filter((k) => !!sectionEntries[k])
+        .map((k) => k.split(',').map(Number))
+        .sort((a, b) => a[1] - b[1] || a[0] - b[0])
+      if (entries.length > 0) {
+        const [firstGx, firstGy] = entries[0]
+        const clamped = clamp(firstGx - 1, firstGy - 1, nl, defaultZoom)
+        targetX = clamped.x; targetY = clamped.y
+      }
+    }
+    if (targetX === undefined) {
+      if (focusedCell) {
+        const clamped = clamp(focusedCell.x - offsetX, focusedCell.y - offsetY, nl, defaultZoom)
+        targetX = clamped.x; targetY = clamped.y
+      } else {
+        const clamped = clamp(centerGX - offsetX, centerGY - offsetY, nl, defaultZoom)
+        targetX = clamped.x; targetY = clamped.y
+      }
     }
 
-    // Stay centered on the same grid position across layer switches
-    const { x, y } = clamp(centerGX - offsetX, centerGY - offsetY, nl, defaultZoom)
-    setViewX(x)
-    setViewY(y)
-  }, [clamp, focusedCell, vpSize, viewX, viewY, layer, zoom])
+    // Cancel any ongoing pan animation
+    if (panAnimRef.current) { cancelAnimationFrame(panAnimRef.current); panAnimRef.current = null }
+
+    // Show cinematic overlay; apply all state changes immediately (hidden beneath overlay)
+    const fromLayer = layer
+    setLayer(nl)
+    setZoom(defaultZoom)
+    setViewX(targetX)
+    setViewY(targetY)
+    setLayerTrans({ from: fromLayer, to: nl })
+  }, [clamp, focusedCell, vpSize, viewX, viewY, layer, zoom, compassDomainId, compassSubfieldId, sectionEntries])
 
   /** Center viewport on absolute grid cell (gx, gy) at layer nl -- used by L2/L3 static map and drill. */
   const focusSubjectCell = useCallback(
     (gx, gy, nl) => {
+      const fromLayer = layerRef.current
       let nl2 = Math.max(1, Math.min(TOTAL_LAYERS, nl))
       let defaultZoom = 1.0
       if (nl2 === 7) defaultZoom = 0.60
@@ -2582,6 +2850,7 @@ export default function ArchiveGrid() {
       const { x, y } = clamp(gx - offsetX, gy - offsetY, nl2, defaultZoom)
       setViewX(x)
       setViewY(y)
+      if (fromLayer !== nl2) setLayerTrans({ from: fromLayer, to: nl2 })
     },
     [clamp, vpSize.w, vpSize.h],
   )
@@ -2589,6 +2858,7 @@ export default function ArchiveGrid() {
   /** L2/L3: center a viewport sub-tile and step one layer deeper (matches 4× lattice drill). */
   const drillSubfield = useCallback(
     (row, col, subdiv) => {
+      const fromLayer = layer
       const cp = CELL_PX[layer] * zoom
       const gw = vpSize.w / cp
       const gh = vpSize.h / cp
@@ -2609,6 +2879,7 @@ export default function ArchiveGrid() {
       const { x, y } = clamp(centerGX - offsetX, centerGY - offsetY, nl, defaultZoom)
       setViewX(x)
       setViewY(y)
+      setLayerTrans({ from: fromLayer, to: nl })
     },
     [layer, zoom, viewX, viewY, vpSize, clamp],
   )
@@ -2630,13 +2901,15 @@ export default function ArchiveGrid() {
       if (viewportInteractModeRef.current === 'select') return
       e.preventDefault()
       const isPinch = e.ctrlKey
-      const factor = isPinch ? 0.05 : 0.2
-      const delta = e.deltaY < 0 ? factor : -factor
+      const ratio = e.deltaY < 0
+        ? (isPinch ? 1.04 : 1.12)
+        : (isPinch ? 1 / 1.04 : 1 / 1.12)
       if (isPinch || Math.abs(e.deltaY) > 40) {
         setFocusedCell(null)
         setZoom(prev => {
-          const nZ = Math.max(0.03, Math.min(10.0, prev + delta))
           const lay = layerRef.current
+          const { min: zMin, max: zMax } = getZoomLimits(lay)
+          const nZ = Math.max(zMin, Math.min(zMax, prev * ratio))
           const vp = vpSizeRef.current
           const { x: vx, y: vy } = viewXYRef.current
           // Zoom toward viewport center
@@ -2669,6 +2942,7 @@ export default function ArchiveGrid() {
       if (viewportInteractModeRef.current === 'select') return
       if (e.button !== 0) return
       const { x: vx, y: vy } = viewXYRef.current
+      if (panAnimRef.current) { cancelAnimationFrame(panAnimRef.current); panAnimRef.current = null }
       drag.current = { active: true, sx: e.clientX, sy: e.clientY, svx: vx, svy: vy }
       el.style.cursor = 'grabbing'
     }
@@ -2755,7 +3029,8 @@ export default function ArchiveGrid() {
         // Pinch-to-zoom with simultaneous pan
         const dist = getDist(touches)
         const scale = dist / ts.startDist
-        const nZ = Math.max(0.03, Math.min(10.0, ts.startZoom * scale))
+        const { min: zMin, max: zMax } = getZoomLimits(lay)
+        const nZ = Math.max(zMin, Math.min(zMax, ts.startZoom * scale))
 
         const midX = (touches[0].clientX + touches[1].clientX) / 2
         const midY = (touches[0].clientY + touches[1].clientY) / 2
@@ -2924,6 +3199,22 @@ export default function ArchiveGrid() {
     background: isDark ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)',
     border: `1px solid ${col}44`,
   }
+  const controlButtonStyle = {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    touchAction: 'manipulation',
+    background: isDark
+      ? `linear-gradient(145deg, rgba(15,23,42,0.92), ${col}22)`
+      : `linear-gradient(145deg, rgba(255,255,255,0.96), ${col}20)`,
+    border: `2px solid ${col}66`,
+    color: isDark ? '#f8fafc' : '#0f172a',
+    textShadow: isDark ? '0 1px 10px rgba(0,0,0,0.45)' : '0 1px 0 rgba(255,255,255,0.85)',
+    boxShadow: isDark
+      ? '0 12px 30px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.08)'
+      : '0 12px 28px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.9)',
+    backdropFilter: 'blur(12px) saturate(1.25)',
+  }
 
   const statusLine = segNavMode
     ? `${pad4(hudDispX)},${pad4(hudDispY)} · SEG ${segmentNavIndex + 1}/${segNavTotal}${
@@ -2936,7 +3227,7 @@ export default function ArchiveGrid() {
       className={`archive-root${segNavMode ? ' archive-root--seg-hud' : ''}`}
       style={{
         background: isDark ? '#06040C' : '#f8fafc',
-        color: isDark ? '#e2e8f0' : '#0f172a',
+        color: isDark ? '#f8fafc' : '#0f172a',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -3106,6 +3397,7 @@ export default function ArchiveGrid() {
             <label
               className="archive-lens-picker"
               title="One shared coordinate grid. Each lens loads a different research corpus at the same cell addresses."
+              style={{ '--lens-color': col }}
             >
               <span className="archive-lens-picker__label" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
                 <span className="archive-lens-picker__label-long">RESEARCH LENS</span>
@@ -3119,9 +3411,13 @@ export default function ArchiveGrid() {
                   aria-label="Switch research lens (shared grid)"
                   onChange={(e) => navigate(`/archive/${e.target.value}`)}
                   style={{
-                    border: `1px solid ${col}44`,
-                    background: isDark ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.95)',
-                    color: isDark ? '#e2e8f0' : '#0f172a',
+                    '--lens-color': col,
+                    border: `1px solid ${col}66`,
+                    background: isDark
+                      ? `linear-gradient(135deg, rgba(15,23,42,0.96), ${col}18)`
+                      : `linear-gradient(135deg, rgba(255,255,255,0.98), ${col}16)`,
+                    color: isDark ? '#f8fafc' : '#0f172a',
+                    boxShadow: isDark ? `0 8px 24px ${col}18` : '0 8px 22px rgba(15,23,42,0.1)',
                   }}
                 >
                   {ARCHIVE_HUB_LOCATIONS.map((h) => (
@@ -3220,12 +3516,14 @@ export default function ArchiveGrid() {
                   onSelectSubfield={(subfieldId) => {
                     setCompassSubfieldId(subfieldId)
                   }}
-                  onDrillToL3={() => setLayer(3)}
+                  onDrillToL3={() => switchLayer(3)}
                   onBackToL2={() => {
                     setCompassDomainId(null)
                     setCompassSubfieldId(null)
                     setLayer(2)
                   }}
+                  onExitToL1={() => switchLayer(1)}
+                  onAdvanceToL4={() => switchLayer(4)}
                 />
               )}
               <SubjectLatticeOverlay
@@ -3246,7 +3544,14 @@ export default function ArchiveGrid() {
               />
             </>
           ) : (
-            <InteractiveGrid layer={layer} viewX={viewX} viewY={viewY} vpW={vpSize.w} vpH={vpSize.h} planet={planet} isDark={isDark} navigate={navigate} sectionEntries={sectionEntries} zoom={zoom} gridDims={gridDims} hubId={hubId} />
+            <InteractiveGrid
+              layer={layer} viewX={viewX} viewY={viewY} vpW={vpSize.w} vpH={vpSize.h}
+              planet={planet} isDark={isDark} navigate={navigate} sectionEntries={sectionEntries}
+              zoom={zoom} gridDims={gridDims} hubId={hubId}
+              compassDomainId={compassDomainId} compassSubfieldId={compassSubfieldId}
+              onAdjacencyError={showAdjacencyError}
+              onDrillFilled={focusSubjectCell}
+            />
           )}
           {!(hasCompassTaxonomy && (layer === 2 || layer === 3)) && (
             <div className="archive-crosshair" style={{
@@ -3259,20 +3564,20 @@ export default function ArchiveGrid() {
         </div>
 
         {/* MOBILE OVERHAUL: Navigation "+" shape and search below */}
-        <div style={{ 
+        <div className="archive-controls-overlay" style={{ 
           position: 'absolute', bottom: 30, left: '50%', transform: 'translateX(-50%)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, zIndex: 1000
         }}>
           
           {/* Navigation Controls: D-Pad & Zoom */}
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <div className="archive-controls-overlay__pad-row" style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             
             {/* Z-Axis (Layer) Controls -- hidden on L2/L3 compass */}
             {!(hasCompassTaxonomy && (layer === 2 || layer === 3)) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <button
                 className="archive-pan-btn"
-                style={{ width: 56, height: 56, borderRadius: 14, background: `${col}15`, border: `2px solid ${col}44` }}
+                style={controlButtonStyle}
                 onClick={() => { setFocusedCell(null); if(layer < TOTAL_LAYERS) switchLayer(layer + 1); }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -3281,7 +3586,7 @@ export default function ArchiveGrid() {
               </button>
               <button
                 className="archive-pan-btn"
-                style={{ width: 56, height: 56, borderRadius: 14, background: `${col}15`, border: `2px solid ${col}44` }}
+                style={controlButtonStyle}
                 onClick={() => { setFocusedCell(null); if(layer > 1) switchLayer(layer - 1); }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -3297,7 +3602,7 @@ export default function ArchiveGrid() {
               <div />
               <button 
                 className="archive-pan-btn" 
-                style={{ width: 56, height: 56, borderRadius: 14, touchAction: 'manipulation' }} 
+                style={controlButtonStyle} 
                 type="button"
                 title={segNavMode ? 'Previous segment row' : 'Pan +Y (planet toward top)'}
                 onPointerDown={(e) => handlePadPointerDown(e, 0, 1)}
@@ -3313,7 +3618,7 @@ export default function ArchiveGrid() {
 
               <button 
                 className="archive-pan-btn" 
-                style={{ width: 56, height: 56, borderRadius: 14, touchAction: 'manipulation' }} 
+                style={controlButtonStyle} 
                 type="button"
                 title={segNavMode ? 'Previous segment column' : 'Pan −X (planet toward left)'}
                 onPointerDown={(e) => handlePadPointerDown(e, 1, 0)}
@@ -3330,7 +3635,7 @@ export default function ArchiveGrid() {
 
               <button 
                 className="archive-pan-btn" 
-                style={{ width: 56, height: 56, borderRadius: 14, touchAction: 'manipulation' }} 
+                style={controlButtonStyle} 
                 type="button"
                 title={segNavMode ? 'Next segment column' : 'Pan +X (planet toward right)'}
                 onPointerDown={(e) => handlePadPointerDown(e, -1, 0)}
@@ -3346,7 +3651,7 @@ export default function ArchiveGrid() {
               <div />
               <button 
                 className="archive-pan-btn" 
-                style={{ width: 56, height: 56, borderRadius: 14, touchAction: 'manipulation' }} 
+                style={controlButtonStyle} 
                 type="button"
                 title={segNavMode ? 'Next segment row' : 'Pan −Y (planet toward bottom)'}
                 onPointerDown={(e) => handlePadPointerDown(e, 0, -1)}
@@ -3367,11 +3672,12 @@ export default function ArchiveGrid() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <button
                 className="archive-pan-btn"
-                style={{ width: 56, height: 56, borderRadius: 14, background: `${col}15`, border: `2px solid ${col}44` }}
+                style={controlButtonStyle}
                 onClick={() => {
                   setFocusedCell(null)
                   setZoom(prev => {
-                    const nZ = Math.min(10.0, prev + 0.25)
+                    const { max: zMax } = getZoomLimits(layer)
+                    const nZ = Math.min(zMax, prev * 1.25)
                     const cpX = viewX + (vpSize.w / 2) / (CELL_PX[layer] * prev)
                     const cpY = viewY + (vpSize.h / 2) / (CELL_PX[layer] * prev)
                     const { x, y } = clamp(cpX - (vpSize.w / 2) / (CELL_PX[layer] * nZ), cpY - (vpSize.h / 2) / (CELL_PX[layer] * nZ), layer, nZ)
@@ -3386,11 +3692,12 @@ export default function ArchiveGrid() {
               </button>
               <button
                 className="archive-pan-btn"
-                style={{ width: 56, height: 56, borderRadius: 14, background: `${col}15`, border: `2px solid ${col}44` }}
+                style={controlButtonStyle}
                 onClick={() => {
                   setFocusedCell(null)
                   setZoom(prev => {
-                    const nZ = Math.max(0.15, prev - 0.25)
+                    const { min: zMin } = getZoomLimits(layer)
+                    const nZ = Math.max(zMin, prev / 1.25)
                     const cpX = viewX + (vpSize.w / 2) / (CELL_PX[layer] * prev)
                     const cpY = viewY + (vpSize.h / 2) / (CELL_PX[layer] * prev)
                     const { x, y } = clamp(cpX - (vpSize.w / 2) / (CELL_PX[layer] * nZ), cpY - (vpSize.h / 2) / (CELL_PX[layer] * nZ), layer, nZ)
@@ -3409,7 +3716,7 @@ export default function ArchiveGrid() {
           </div>
 
           {/* Search Bar & Reset Row */}
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div className="archive-controls-overlay__utility-row" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             {!isLarge && (
               <SearchBar 
                 col={col} isDark={isDark}
@@ -3451,11 +3758,89 @@ export default function ArchiveGrid() {
       <style>{`
         .archive-tabs-scroll::-webkit-scrollbar { display: none; }
         .archive-tabs-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes pulseOrb { 
-          0%, 100% { box-shadow: 0 0 40px ${col}, 0 0 80px ${col}55, inset 0 0 24px rgba(0,0,0,0.4); } 
-          50% { box-shadow: 0 0 60px ${col}, 0 0 120px ${col}44, inset 0 0 24px rgba(0,0,0,0.4); } 
+        @keyframes pulseOrb {
+          0%, 100% { box-shadow: 0 0 40px ${col}, 0 0 80px ${col}55, inset 0 0 24px rgba(0,0,0,0.4); }
+          50% { box-shadow: 0 0 60px ${col}, 0 0 120px ${col}44, inset 0 0 24px rgba(0,0,0,0.4); }
+        }
+        @keyframes adjErrorSlideUp {
+          from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes ltOverlayAnim {
+          0%   { opacity: 1; }
+          72%  { opacity: 1; }
+          100% { opacity: 0; }
+        }
+        @keyframes ltGridZoom {
+          0%   { transform: scale(1);   opacity: 0.25; }
+          60%  { transform: scale(2.8); opacity: 0.18; }
+          100% { transform: scale(5);   opacity: 0; }
+        }
+        @keyframes ltRingExpand {
+          0%   { transform: scale(0.15); opacity: 0.9; }
+          60%  { opacity: 0.4; }
+          100% { transform: scale(2.8); opacity: 0; }
+        }
+        @keyframes ltParticle {
+          0%   { opacity: 0;   transform: rotate(var(--lt-angle)) translateX(8px); }
+          18%  { opacity: 1; }
+          100% { opacity: 0;   transform: rotate(var(--lt-angle)) translateX(var(--lt-dist)); }
+        }
+        @keyframes ltCoreGlow {
+          0%   { transform: scale(0.4); opacity: 0; }
+          20%  { transform: scale(1.5); opacity: 1; }
+          55%  { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(2.4); opacity: 0; }
+        }
+        @keyframes ltFadeHold {
+          0%   { opacity: 0; }
+          15%  { opacity: 0.8; }
+          72%  { opacity: 0.8; }
+          100% { opacity: 0; }
+        }
+        @keyframes ltBracketIn {
+          from { opacity: 0; transform: rotate(var(--lt-r, 0deg)) scale(0.6); }
+          to   { opacity: 0.85; transform: rotate(var(--lt-r, 0deg)) scale(1); }
+        }
+        @keyframes ltScanline {
+          0%   { top: -2px; opacity: 0; }
+          8%   { opacity: 1; }
+          92%  { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+        @keyframes ltTextSlideUp {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes ltTitleReveal {
+          from { opacity: 0; transform: translateY(20px) scale(0.92); letter-spacing: 0.18em; }
+          to   { opacity: 1; transform: translateY(0)   scale(1);    letter-spacing: 0.06em; }
+        }
+        @keyframes ltLineWiden {
+          from { width: 0;   opacity: 0; }
+          to   { width: 220px; opacity: 0.7; }
+        }
+        @keyframes ltProgressFill {
+          from { width: 0%; }
+          to   { width: 100%; }
         }
       `}</style>
+
+      {/* Adjacency error toast — rendered at root level to escape scaled containers */}
+      {adjacencyErrorVisible && (
+        <AdjacencyErrorMessage isDark={isDark} onClose={() => setAdjacencyErrorVisible(false)} />
+      )}
+
+      {/* Layer transition cinematic overlay */}
+      {layerTrans && (
+        <LayerTransitionOverlay
+          col={col}
+          fromLayer={layerTrans.from}
+          toLayer={layerTrans.to}
+          onDone={() => setLayerTrans(null)}
+        />
+      )}
     </div>
   )
 }
+

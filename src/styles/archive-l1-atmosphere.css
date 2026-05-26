@@ -32,6 +32,38 @@
   display: block;
 }
 
+.archive-hub-globe__body {
+  isolation: isolate;
+}
+
+.archive-hub-globe__surface {
+  position: absolute;
+  top: -8%;
+  bottom: -8%;
+  left: -85%;
+  width: 270%;
+  border-radius: 50%;
+  mix-blend-mode: soft-light;
+  opacity: 0.72;
+  pointer-events: none;
+  transform: translateX(0);
+}
+
+.archive-hub-globe__surface--slow {
+  animation: archive-globe-surface-drift 38s linear infinite;
+}
+
+.archive-hub-globe__surface--fast {
+  opacity: 0.48;
+  filter: blur(1px);
+  animation: archive-globe-surface-drift 24s linear infinite reverse;
+}
+
+@keyframes archive-globe-surface-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(33.333%); }
+}
+
 .archive-l1-atmosphere__vignette {
   position: absolute;
   inset: 0;
@@ -144,8 +176,8 @@
 }
 
 .archive-l1-atmosphere--light .archive-l1-atmosphere__ring {
-  opacity: 0.12;
-  border-color: color-mix(in srgb, var(--l1-accent, #0284c7) 18%, transparent);
+  opacity: 0.2;
+  border-color: color-mix(in srgb, var(--l1-accent, #0284c7) 28%, transparent);
 }
 
 @keyframes l1-ring-spin {
@@ -159,7 +191,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .archive-l1-atmosphere__aurora,
-  .archive-l1-atmosphere__ring {
+  .archive-l1-atmosphere__ring,
+  .archive-hub-globe__surface {
     animation: none !important;
   }
 }

@@ -1,0 +1,109 @@
+/* ── Solar Archive design tokens — Stripe / Linear inspired ── */
+
+:root,
+.dark {
+  --sa-bg: #020408;
+  --sa-bg-elevated: #040c18;
+  --sa-bg-subtle: #071428;
+  --sa-bg-card: rgba(6, 10, 22, 0.72);
+  --sa-bg-card-solid: #0a1220;
+  --sa-bg-input: rgba(2, 6, 18, 0.6);
+
+  --sa-border-subtle: rgba(255, 255, 255, 0.06);
+  --sa-border-default: rgba(255, 255, 255, 0.1);
+  --sa-border-strong: rgba(125, 211, 252, 0.18);
+
+  --sa-text: #f1f5f9;
+  --sa-text-secondary: #94a3b8;
+  --sa-text-muted: #64748b;
+  --sa-text-faint: #475569;
+
+  --sa-accent: #0ea5e9;
+  --sa-accent-hover: #38bdf8;
+  --sa-accent-subtle: rgba(14, 165, 233, 0.12);
+  --sa-accent-border: rgba(14, 165, 233, 0.28);
+  --sa-accent-gold: #f5a623;
+
+  --sa-btn-solid-bg: #ffffff;
+  --sa-btn-solid-text: #0f172a;
+  --sa-btn-solid-hover: #f1f5f9;
+
+  --sa-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --sa-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32);
+  --sa-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.4);
+
+  --sa-nav-bg: linear-gradient(135deg, rgba(2, 6, 18, 0.88), rgba(7, 14, 32, 0.72));
+  --sa-nav-glass: rgba(6, 10, 24, 0.62);
+  --sa-nav-glass-border: rgba(255, 255, 255, 0.08);
+  --sa-nav-text: #cbd5e1;
+  --sa-nav-text-active: #38bdf8;
+
+  --sa-home-veil: radial-gradient(ellipse at 50% 45%, rgba(1, 1, 8, 0.06) 0%, rgba(0, 0, 0, 0.55) 100%);
+  --sa-home-vignette: radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.65) 100%);
+  --sa-home-title: #f8fafc;
+  --sa-home-panel: linear-gradient(145deg, rgba(6, 10, 22, 0.72), rgba(4, 8, 18, 0.58));
+}
+
+.light {
+  --sa-bg: #f4f8fc;
+  --sa-bg-elevated: #ffffff;
+  --sa-bg-subtle: #eaf1f8;
+  --sa-bg-card: rgba(255, 255, 255, 0.78);
+  --sa-bg-card-solid: #ffffff;
+  --sa-bg-input: #ffffff;
+
+  --sa-border-subtle: rgba(15, 23, 42, 0.08);
+  --sa-border-default: rgba(15, 23, 42, 0.13);
+  --sa-border-strong: rgba(15, 23, 42, 0.18);
+
+  --sa-text: #08111f;
+  --sa-text-secondary: #263244;
+  --sa-text-muted: #475569;
+  --sa-text-faint: #64748b;
+
+  --sa-accent: #075985;
+  --sa-accent-hover: #0284c7;
+  --sa-accent-subtle: rgba(14, 165, 233, 0.1);
+  --sa-accent-border: rgba(14, 165, 233, 0.3);
+  --sa-accent-gold: #b45309;
+
+  --sa-btn-solid-bg: #111827;
+  --sa-btn-solid-text: #ffffff;
+  --sa-btn-solid-hover: #1f2937;
+
+  --sa-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --sa-shadow-md: 0 14px 34px rgba(15, 23, 42, 0.09);
+  --sa-shadow-lg: 0 26px 70px rgba(15, 23, 42, 0.12);
+
+  --sa-nav-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(248, 249, 251, 0.88));
+  --sa-nav-glass: rgba(255, 255, 255, 0.74);
+  --sa-nav-glass-border: rgba(15, 23, 42, 0.08);
+  --sa-nav-text: #4b5563;
+  --sa-nav-text-active: #0369a1;
+
+  --sa-home-veil: radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.08) 0%, rgba(232, 241, 250, 0.48) 100%);
+  --sa-home-vignette: radial-gradient(ellipse at center, transparent 48%, rgba(215, 228, 241, 0.7) 100%);
+  --sa-home-title: #07111f;
+  --sa-home-panel: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(238, 246, 255, 0.64));
+
+  /* Legacy aliases */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fb;
+  --bg-card: #ffffff;
+  --border-color: rgba(15, 23, 42, 0.1);
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --accent-blue: #0369a1;
+  --accent-gold: #b45309;
+}
+
+.dark {
+  --bg-primary: #020408;
+  --bg-secondary: #040c18;
+  --bg-card: #071428;
+  --border-color: rgba(79, 195, 247, 0.15);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent-blue: #0ea5e9;
+  --accent-gold: #f5a623;
+}

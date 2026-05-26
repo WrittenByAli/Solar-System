@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+﻿import React, { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -26,10 +26,10 @@ const baseNavLinks = [
     { label: 'Home', path: '/', icon: Home },
     { label: 'Map', path: '/map', icon: Map },
     { label: 'Leaderboard', path: '/leaderboard', icon: Trophy },
-    { label: 'Reviews', path: '/reviews', icon: Star },
+    { label: 'Host', path: '/host-archive', icon: Package },
     { label: 'Submit', path: '/submit', icon: Upload },
     { label: 'Directory', path: '/directory', icon: Library },
-    { label: 'Host', path: '/host-archive', icon: Package },
+    { label: 'Reviews', path: '/reviews', icon: Star },
 ]
 
 export default function Navbar() {
@@ -49,75 +49,79 @@ export default function Navbar() {
 
     const isDark = theme === 'dark'
     const isArchive = location.pathname.startsWith('/archive/')
+    const isHome = location.pathname === '/'
 
     if (isArchive) return null
 
+    const isNavActive = (path) => {
+        if (path === '/') return location.pathname === '/'
+        return location.pathname === path || location.pathname.startsWith(`${path}/`)
+    }
+
+    const navSurface = isHome
+        ? {
+            backdropFilter: 'blur(28px) saturate(1.6)',
+            WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+            borderBottom: 'none',
+            boxShadow: 'none',
+        }
+        : {
+            background: 'var(--sa-nav-bg)',
+            backdropFilter: 'blur(20px) saturate(1.3)',
+            WebkitBackdropFilter: 'blur(20px) saturate(1.3)',
+            borderBottom: '1px solid var(--sa-border-default)',
+            boxShadow: 'var(--sa-shadow-md)',
+        }
+
     return (
         <nav
-            className="solar-navbar fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 min-h-[3.25rem] px-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] pb-2 sm:px-4 md:px-6 md:py-3"
-            style={{
-                background: isDark
-                    ? 'rgba(2,4,8,0.85)'
-                    : 'rgba(240,244,248,0.92)',
-                backdropFilter: 'blur(16px)',
-                borderBottom: `1px solid ${isDark ? 'rgba(79,195,247,0.12)' : 'rgba(15,23,42,0.12)'}`,
-            }}
+            className={`solar-navbar fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 min-h-[3.25rem] px-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] pb-2 sm:px-4 md:px-6 md:py-3 ${isHome ? 'solar-navbar--premium' : ''}`}
+            style={navSurface}
         >
+            {isHome && (
+                <>
+                    <div className="solar-navbar__premium-glow" aria-hidden="true" />
+                    <div className="solar-navbar__premium-border" aria-hidden="true" />
+                </>
+            )}
             {/* Logo */}
             <Link
                 to="/"
                 aria-label="THE SOLAR ARCHIVE — Home"
-                className="flex items-center gap-1.5 sm:gap-2 group select-none shrink-0 min-w-0 max-w-[calc(100vw-5.5rem)] md:max-w-none"
+                className="solar-navbar__logo-link flex items-center gap-2 sm:gap-2.5 group select-none shrink-0 min-w-0 max-w-[calc(100vw-5.5rem)] md:max-w-none"
             >
                 <motion.div
                     whileHover={{ rotate: 360 }}
                     transition={{ duration: 0.6, ease: 'easeInOut' }}
                     className="w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center overflow-hidden shrink-0"
-                    style={{ background: 'linear-gradient(135deg, #f5a623, #ff6b35)' }}
+                    style={{
+                        background: 'linear-gradient(135deg, #f5a623, #ff6b35)',
+                        boxShadow: isDark ? '0 0 24px rgba(245,166,35,0.3)' : '0 12px 28px rgba(245,166,35,0.22)',
+                    }}
                 >
                     <FoundationLogo fillCircle alt="" />
                 </motion.div>
-                <span
-                    className="font-solar font-black text-[clamp(0.62rem,2.5vw,1rem)] xs:text-sm md:text-base tracking-tight uppercase inline-flex items-center flex-wrap min-w-0 leading-tight gap-x-[0.3em] gap-y-0.5"
-                    style={{ color: isDark ? '#4fc3f7' : '#0284c7' }}
-                >
-                    <span className="shrink-0">THE</span>
-                    <SolarWordCore className="shrink-0" />
-                    <span className="shrink-0">ARCHIVE</span>
+                <span className="solar-navbar__brand">
+                    <span className="solar-navbar__brand-the">THE</span>
+                    <SolarWordCore className="solar-navbar__brand-solar" />
+                    <span className="solar-navbar__brand-archive">ARCHIVE</span>
                 </span>
             </Link>
 
             {/* Desktop Nav */}
             <div className="hidden lg:flex items-center gap-0.5 xl:gap-1 flex-wrap justify-end flex-1 min-w-0">
                 {navLinks.map(({ label, path, icon: Icon }) => {
-                    const isActive = location.pathname === path || (path === '/map' && location.pathname === '/map')
+                    const isActive = isNavActive(path)
                     return (
                         <Link key={path} to={path} className="shrink-0">
                             <motion.div
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.97 }}
-                                className="flex items-center gap-1 xl:gap-1.5 px-2 xl:px-3 py-1.5 rounded-full text-xs xl:text-sm font-medium transition-all duration-200 relative"
-                                style={{
-                                    background: isActive
-                                        ? isDark ? 'rgba(79,195,247,0.15)' : 'rgba(2,132,199,0.12)'
-                                        : 'transparent',
-                                    color: isActive
-                                        ? isDark ? '#4fc3f7' : '#0284c7'
-                                        : isDark ? '#94a3b8' : '#64748b',
-                                }}
+                                className="sa-nav-link flex items-center gap-1 xl:gap-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-all duration-200 relative"
+                                data-active={isActive ? 'true' : 'false'}
                             >
                                 <Icon size={14} className="shrink-0" aria-hidden />
                                 <span className="whitespace-nowrap">{label}</span>
-                                {isActive && (
-                                    <motion.div
-                                        layoutId="active-pill"
-                                        className="absolute inset-0 rounded-full"
-                                        style={{
-                                            border: `1px solid ${isDark ? 'rgba(79,195,247,0.35)' : 'rgba(2,132,199,0.35)'}`,
-                                        }}
-                                        transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
-                                    />
-                                )}
                             </motion.div>
                         </Link>
                     )
@@ -127,11 +131,11 @@ export default function Navbar() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={toggleTheme}
-                    className="ml-1 p-2 rounded-full shrink-0"
+                    className="ml-1 p-2 rounded-lg shrink-0"
                     style={{
-                        background: isDark ? 'rgba(79,195,247,0.1)' : 'rgba(2,132,199,0.1)',
-                        border: `1px solid ${isDark ? 'rgba(79,195,247,0.3)' : 'rgba(2,132,199,0.3)'}`,
-                        color: isDark ? '#4fc3f7' : '#0284c7',
+                        background: 'var(--sa-accent-subtle)',
+                        border: '1px solid var(--sa-accent-border)',
+                        color: 'var(--sa-accent)',
                     }}
                     title={isDark ? 'Switch to Light' : 'Switch to Dark'}
                     type="button"
@@ -170,11 +174,11 @@ export default function Navbar() {
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-1.5 px-3 xl:px-4 py-1.5 rounded-full text-xs xl:text-sm font-semibold"
+                            className="flex items-center gap-1.5 px-3 xl:px-4 py-1.5 rounded-lg text-xs xl:text-sm font-semibold"
                             style={{
-                                background: 'linear-gradient(135deg, #7c3aed, #4fc3f7)',
-                                color: 'white',
-                                boxShadow: '0 0 16px rgba(124,58,237,0.4)',
+                                background: 'var(--sa-accent)',
+                                color: '#ffffff',
+                                boxShadow: 'var(--sa-shadow-sm)',
                             }}
                             type="button"
                         >
@@ -188,7 +192,7 @@ export default function Navbar() {
             {/* Tablet: icon strip — horizontal scroll so every route stays reachable */}
             <div className="hidden md:flex lg:hidden items-center gap-0.5 flex-1 min-w-0 justify-end overflow-x-auto overscroll-x-contain py-0.5 [scrollbar-width:thin]">
                 {navLinks.map(({ label, path, icon: Icon }) => {
-                    const isActive = location.pathname === path
+                    const isActive = isNavActive(path)
                     return (
                         <Link key={path} to={path} title={label} className="shrink-0">
                             <span
@@ -261,7 +265,7 @@ export default function Navbar() {
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setMobileOpen((o) => !o)}
                     className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg"
-                    style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}
+                    style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
                     aria-expanded={mobileOpen}
                     aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
                 >
@@ -284,7 +288,7 @@ export default function Navbar() {
                         }}
                     >
                         {navLinks.map(({ label, path, icon: Icon }) => {
-                            const isActive = location.pathname === path
+                            const isActive = isNavActive(path)
                             return (
                                 <Link
                                     key={path}
@@ -342,3 +346,4 @@ export default function Navbar() {
         </nav>
     )
 }
+

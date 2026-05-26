@@ -2,6 +2,11 @@
 
 :root {
   --solar-nav-offset: calc(5rem + env(safe-area-inset-top, 0px));
+  --solar-page-heading-size: clamp(2.35rem, 8vw, 5.15rem);
+  --solar-page-heading-size-mobile: clamp(2.2rem, 11vw, 4.2rem);
+  --solar-page-heading-line-height: 0.95;
+  --solar-page-heading-top-gap: 0.25rem;
+  --solar-page-heading-margin-top: 40px;
 }
 
 @media (min-width: 768px) {
@@ -47,14 +52,44 @@
 .solar-page__hero {
   text-align: center;
   margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
-  padding-top: 0.25rem;
+  padding-top: var(--solar-page-heading-top-gap);
 }
 
 .solar-page__hero h1 {
-  font-size: clamp(1.5rem, 5vw, 2.25rem);
-  line-height: 1.15;
+  font-size: var(--solar-page-heading-size) !important;
+  line-height: var(--solar-page-heading-line-height);
   font-weight: 900;
+  text-transform: uppercase;
   overflow-wrap: anywhere;
+}
+
+.solar-join-title {
+  font-family: 'Anton', 'Impact', sans-serif;
+  font-size: clamp(2.05rem, 9.5vw, 3.4rem) !important;
+  line-height: var(--solar-page-heading-line-height);
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.solar-page__hero h1,
+.solar-join-title,
+.sa-dir-hero__title,
+.sa-create-title,
+.sa-host-hero__title,
+.lb-title,
+.sa-hero__title,
+.sa-reviews-hero h1,
+.solar-map__title {
+  margin-top: var(--solar-page-heading-margin-top) !important;
+}
+
+@media (max-width: 768px) {
+  .solar-page__hero h1 {
+    font-size: var(--solar-page-heading-size-mobile) !important;
+  }
 }
 
 .solar-page__hero p {
@@ -78,4 +113,129 @@
 
 .solar-page__footer-space {
   padding-bottom: max(3rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* ── Global Footer ── */
+
+.sa-footer {
+  position: relative;
+  overflow: hidden;
+  padding: 56px 24px 36px;
+  background: rgba(2, 4, 8, 0.96);
+  border-top: 1px solid rgba(79, 195, 247, 0.07);
+}
+
+.sa-footer__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.sa-footer__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 640px) {
+  .sa-footer__grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+.sa-footer__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.sa-footer__logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sa-footer__brand-text {
+  font-family: 'Anton', 'Impact', sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sa-footer__tagline {
+  font-size: 13px;
+  line-height: 1.7;
+  max-width: 300px;
+}
+
+.sa-footer__col-label {
+  font-size: 9.5px;
+  color: #4fc3f7;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  margin-bottom: 16px;
+}
+
+.sa-footer__links {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.sa-footer__link {
+  font-size: 13px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s;
+}
+
+.sa-footer__link-arrow {
+  color: rgba(79, 195, 247, 0.28);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+}
+
+.sa-footer__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-top: 24px;
+}
+
+.sa-footer__copy {
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.sa-footer__tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sa-footer__tag {
+  font-size: 9.5px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 2px 9px;
+  border-radius: 4px;
+  letter-spacing: 0.07em;
+}
+
+/* Light mode overrides */
+
+.light .sa-footer {
+  background: rgba(240, 246, 252, 0.98);
+  border-top-color: rgba(15, 23, 42, 0.08);
 }

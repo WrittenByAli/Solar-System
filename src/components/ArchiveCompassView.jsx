@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   displayToGrid,
   leavesForSubfieldGrid,
@@ -18,59 +18,109 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } },
 }
 
+function starLines(subject) {
+  const clean = String(subject || 'SOLAR').replace(/\s+/g, ' ').trim()
+  const words = clean.split(' ')
+  if (words.length <= 1) return [clean, null]
+  const mid = Math.ceil(words.length / 2)
+  return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')]
+}
+
+function compactBadgeText(text) {
+  const clean = String(text || '').trim()
+  if (clean.length <= 13) return clean
+  return `${clean.slice(0, 12)}…`
+}
+
 /* ═══════════════════════════════════════════
-   COMPASS STAR HUB — 4-pointed polygon
-   ViewBox 320x320, centre (160,160)
+   COMPASS STAR HUB
+   Full-wrapper SVG arms (edge-to-edge) +
+   separate centered circle badge
 ═══════════════════════════════════════════ */
 function CompassHub({ taxonomy, isDark }) {
   const color = taxonomy.accentColor
-  const label = taxonomy.centerLabel || 'SOLAR'
-  const short = label.length > 8 ? label.slice(0, 8) : label
+  const subject = taxonomy.discipline || taxonomy.centerLabel || 'SOLAR'
   const circleBg = isDark ? 'rgba(4,9,22,0.97)' : 'rgba(248,250,255,0.98)'
-  const STAR = '160,6 187,133 314,160 187,187 160,314 133,187 6,160 133,133'
+  const [line1, line2] = starLines(subject)
+  // Arms in 100×100 viewBox, preserveAspectRatio="none" so they always reach panel edges
+  // Each arm is a thin triangle: tip at panel edge, base joins center area (~46-54%)
+  const ARM_W = 2.2 // half-width of arm at the center join, in viewBox units
 
   return (
     <div className="cv-hub" style={{ '--accent': color }} aria-hidden>
-      <div className="cv-hub__halo" />
+      {/* ── Full-span arms SVG ── */}
       <svg
-        className="cv-hub__svg"
-        viewBox="0 0 320 320"
+        className="cv-hub__arms-svg"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
         xmlns="http://www.w3.org/2000/svg"
-        overflow="visible"
       >
         <defs>
-          <radialGradient id="cvStarFill" cx="50%" cy="50%" r="50%" gradientUnits="userSpaceOnUse" fx="160" fy="160">
-            <stop offset="0%"   stopColor={color} stopOpacity="0.15" />
-            <stop offset="28%"  stopColor={color} stopOpacity="0.92" />
-            <stop offset="72%"  stopColor={color} stopOpacity="1"    />
-            <stop offset="100%" stopColor={color} stopOpacity="0.55" />
-          </radialGradient>
-          <radialGradient id="cvStarAmbient" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"   stopColor={color} stopOpacity="0.18" />
-            <stop offset="100%" stopColor={color} stopOpacity="0"    />
-          </radialGradient>
-          <filter id="cvStarBloom" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="5" result="b" />
+          <filter id={`bloom-${color.replace('#','')}`} x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="1.4" result="b" />
             <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
+          <radialGradient id={`amb-${color.replace('#','')}`} cx="50%" cy="50%" r="32%">
+            <stop offset="0%"   stopColor={color} stopOpacity="0.18" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </radialGradient>
         </defs>
-        <circle cx="160" cy="160" r="130" fill="url(#cvStarAmbient)" />
-        <polygon points={STAR} fill={color} fillOpacity="0.45" filter="url(#cvStarBloom)" />
-        <polygon points={STAR} fill="url(#cvStarFill)" />
-        <circle cx="160" cy="160" r="17" fill={circleBg} />
-        <circle cx="160" cy="160" r="17" fill="none" stroke={color} strokeWidth="1.5" strokeOpacity="0.7" />
-        <text x="160" y="165" textAnchor="middle" fontSize="9" fontWeight="900"
-          letterSpacing="0.1em" fill={color} fontFamily="Inter, system-ui, sans-serif">
-          {short}
-        </text>
+
+        {/* ambient centre glow */}
+        <rect x="0" y="0" width="100" height="100" fill={`url(#amb-${color.replace('#','')})`} />
+
+        {/* bloom shadows (behind) */}
+        <polygon points={`50,0 ${50+ARM_W},${50-ARM_W} ${50-ARM_W},${50-ARM_W}`}
+          fill={color} fillOpacity="0.18" filter={`url(#bloom-${color.replace('#','')})`} />
+        <polygon points={`50,100 ${50+ARM_W},${50+ARM_W} ${50-ARM_W},${50+ARM_W}`}
+          fill={color} fillOpacity="0.18" filter={`url(#bloom-${color.replace('#','')})`} />
+        <polygon points={`0,50 ${50-ARM_W},${50-ARM_W} ${50-ARM_W},${50+ARM_W}`}
+          fill={color} fillOpacity="0.18" filter={`url(#bloom-${color.replace('#','')})`} />
+        <polygon points={`100,50 ${50+ARM_W},${50-ARM_W} ${50+ARM_W},${50+ARM_W}`}
+          fill={color} fillOpacity="0.18" filter={`url(#bloom-${color.replace('#','')})`} />
+
+        {/* main solid arms */}
+        <polygon points={`50,0 ${50+ARM_W},${50-ARM_W} ${50-ARM_W},${50-ARM_W}`}
+          fill={color} fillOpacity="0.88" />
+        <polygon points={`50,100 ${50+ARM_W},${50+ARM_W} ${50-ARM_W},${50+ARM_W}`}
+          fill={color} fillOpacity="0.88" />
+        <polygon points={`0,50 ${50-ARM_W},${50-ARM_W} ${50-ARM_W},${50+ARM_W}`}
+          fill={color} fillOpacity="0.88" />
+        <polygon points={`100,50 ${50+ARM_W},${50-ARM_W} ${50+ARM_W},${50+ARM_W}`}
+          fill={color} fillOpacity="0.88" />
       </svg>
+
+      {/* ── Glowing tip dots at panel edges ── */}
+      <span className="cv-hub__tip cv-hub__tip--top"    style={{ background: color, boxShadow: `0 0 10px 3px ${color}` }} />
+      <span className="cv-hub__tip cv-hub__tip--right"  style={{ background: color, boxShadow: `0 0 10px 3px ${color}` }} />
+      <span className="cv-hub__tip cv-hub__tip--bottom" style={{ background: color, boxShadow: `0 0 10px 3px ${color}` }} />
+      <span className="cv-hub__tip cv-hub__tip--left"   style={{ background: color, boxShadow: `0 0 10px 3px ${color}` }} />
+
+      {/* ── Centre badge ── */}
+      <div
+        className="cv-hub__badge"
+        style={{
+          background: circleBg,
+          border: `1.8px solid ${color}aa`,
+          boxShadow: `0 0 24px ${color}55, 0 0 6px ${color}33, inset 0 0 10px ${color}1a`,
+        }}
+      >
+        <span className="cv-hub__badge-ring" style={{ borderColor: `${color}33` }} />
+        {line2 ? (
+          <>
+            <span className="cv-hub__label" style={{ color }}>{compactBadgeText(line1).toUpperCase()}</span>
+            <span className="cv-hub__label" style={{ color }}>{compactBadgeText(line2).toUpperCase()}</span>
+          </>
+        ) : (
+          <span className="cv-hub__label" style={{ color }}>{compactBadgeText(line1).toUpperCase()}</span>
+        )}
+      </div>
     </div>
   )
 }
 
 /* ═══════════════════════════════════════════
    L2 DOMAIN CARD
-   [top pair] / [-- DOMAIN --] / [bottom pair]
 ═══════════════════════════════════════════ */
 function L2DomainCard({ domain, taxonomy, onSubfieldClick }) {
   const sorted = [...subfieldsForDomain(taxonomy, domain.id)].sort(
@@ -124,9 +174,9 @@ function L2DomainCard({ domain, taxonomy, onSubfieldClick }) {
 }
 
 /* ═══════════════════════════════════════════
-   L2 VIEW — 2x2 grid + compass hub
+   L2 VIEW
 ═══════════════════════════════════════════ */
-function CompassL2({ taxonomy, isDark, onSubfieldClick }) {
+function CompassL2({ taxonomy, isDark, onSubfieldClick, onExitToL1, onDrillToL3 }) {
   const color = taxonomy.accentColor
 
   return (
@@ -142,7 +192,7 @@ function CompassL2({ taxonomy, isDark, onSubfieldClick }) {
             <span className="cv-discipline">{taxonomy.discipline}</span>
           )}
         </div>
-        <span className="cv-hint">4 domains - 16 subfields - click any tile to drill deeper</span>
+        <span className="cv-hint">4 domains · 16 subfields · click any tile to drill deeper</span>
       </div>
 
       <div className="cv-l2-wrapper">
@@ -158,13 +208,41 @@ function CompassL2({ taxonomy, isDark, onSubfieldClick }) {
         </motion.div>
         <CompassHub taxonomy={taxonomy} isDark={isDark} />
       </div>
+
+      {/* ── Layer navigation bar ── */}
+      <div className="cv-nav-bar">
+        <motion.button
+          type="button"
+          className="cv-nav-btn cv-nav-btn--back"
+          onClick={onExitToL1}
+          whileHover={{ x: -2 }} whileTap={{ scale: 0.95 }}
+        >
+          <ChevronLeft size={14} />
+          <span>L1 Overview</span>
+        </motion.button>
+
+        <div className="cv-nav-pips">
+          <span className="cv-nav-pip cv-nav-pip--active" style={{ background: color, boxShadow: `0 0 8px ${color}` }} />
+          <span className="cv-nav-pip" />
+        </div>
+
+        <motion.button
+          type="button"
+          className="cv-nav-btn cv-nav-btn--fwd"
+          onClick={onDrillToL3}
+          whileHover={{ x: 2 }} whileTap={{ scale: 0.95 }}
+          style={{ color, borderColor: `${color}44`, background: `${color}12` }}
+        >
+          <span>Subfields</span>
+          <ChevronRight size={14} />
+        </motion.button>
+      </div>
     </motion.div>
   )
 }
 
 /* ═══════════════════════════════════════════
-   L3 SUBFIELD PANEL — mirrors L2 card
-   [top pair] / [-- SUBFIELD --] / [bottom pair]
+   L3 SUBFIELD PANEL
 ═══════════════════════════════════════════ */
 function L3SubfieldPanel({ subfield, domain, taxonomy, isActive, onTopicClick }) {
   const leaves     = leavesForSubfieldGrid(taxonomy, subfield.id)
@@ -218,15 +296,22 @@ function L3SubfieldPanel({ subfield, domain, taxonomy, isActive, onTopicClick })
 }
 
 /* ═══════════════════════════════════════════
-   L3 VIEW — 2x2 subfield panels + centre ring
+   L3 VIEW
 ═══════════════════════════════════════════ */
-function CompassL3({ taxonomy, isDark, activeSubfieldId, onBack, onTopicClick }) {
+function CompassL3({ taxonomy, isDark, activeSubfieldId, onBack, onTopicClick, onAdvanceToL4 }) {
   const domain = taxonomy.domains.find((d) => d.id === taxonomy._activeDomainId)
   if (!domain) return null
 
   const sorted = [...subfieldsForDomain(taxonomy, domain.id)].sort(
     (a, b) => L3_SLOT_ORDER.indexOf(a.l3Slot) - L3_SLOT_ORDER.indexOf(b.l3Slot),
   )
+
+  // Reuse CompassHub with the domain's taxonomy-like object
+  const domainTaxonomy = {
+    accentColor: domain.color,
+    discipline: domain.label,
+    centerLabel: domain.label,
+  }
 
   return (
     <motion.div
@@ -236,10 +321,6 @@ function CompassL3({ taxonomy, isDark, activeSubfieldId, onBack, onTopicClick })
       transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="cv-header cv-header--l3">
-        <button type="button" className="cv-back-btn" onClick={onBack}>
-          <ChevronLeft size={15} aria-hidden />
-          <span>All domains</span>
-        </button>
         <motion.div
           className="cv-l3-heading"
           initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
@@ -273,18 +354,37 @@ function CompassL3({ taxonomy, isDark, activeSubfieldId, onBack, onTopicClick })
           ))}
         </motion.div>
 
-        <div
-          className="cv-l3-center-ring"
-          style={{
-            borderColor: domain.color,
-            boxShadow: `0 0 18px ${domain.color}88, inset 0 0 10px ${domain.color}44`,
-          }}
+        {/* Same full-span star for L3 */}
+        <CompassHub taxonomy={domainTaxonomy} isDark={isDark} />
+      </div>
+
+      {/* ── Layer navigation bar ── */}
+      <div className="cv-nav-bar">
+        <motion.button
+          type="button"
+          className="cv-nav-btn cv-nav-btn--back"
+          onClick={onBack}
+          whileHover={{ x: -2 }} whileTap={{ scale: 0.95 }}
         >
-          <div
-            className="cv-l3-center-ring__inner"
-            style={{ background: domain.color, boxShadow: `0 0 10px ${domain.color}` }}
-          />
+          <ChevronLeft size={14} />
+          <span>All domains</span>
+        </motion.button>
+
+        <div className="cv-nav-pips">
+          <span className="cv-nav-pip" />
+          <span className="cv-nav-pip cv-nav-pip--active" style={{ background: domain.color, boxShadow: `0 0 8px ${domain.color}` }} />
         </div>
+
+        <motion.button
+          type="button"
+          className="cv-nav-btn cv-nav-btn--fwd"
+          onClick={onAdvanceToL4}
+          whileHover={{ x: 2 }} whileTap={{ scale: 0.95 }}
+          style={{ color: domain.color, borderColor: `${domain.color}44`, background: `${domain.color}12` }}
+        >
+          <span>Open L4</span>
+          <ChevronRight size={14} />
+        </motion.button>
       </div>
     </motion.div>
   )
@@ -303,6 +403,8 @@ export default function ArchiveCompassView({
   onSelectSubfield,
   onDrillToL3,
   onBackToL2,
+  onExitToL1,
+  onAdvanceToL4,
   focusSubjectCell,
   halfW,
   halfH,
@@ -334,6 +436,8 @@ export default function ArchiveCompassView({
             taxonomy={taxonomy}
             isDark={isDark}
             onSubfieldClick={handleSubfieldL2}
+            onExitToL1={onExitToL1}
+            onDrillToL3={onDrillToL3}
           />
         )}
         {layer === 3 && activeDomainId && (
@@ -344,6 +448,7 @@ export default function ArchiveCompassView({
             activeSubfieldId={activeSubfieldId}
             onBack={onBackToL2}
             onTopicClick={handleTopic}
+            onAdvanceToL4={onAdvanceToL4}
           />
         )}
         {layer === 3 && !activeDomainId && (

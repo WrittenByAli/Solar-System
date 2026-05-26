@@ -71,6 +71,8 @@ pids/
 coverage/
 *.lcov
 .nyc_output/
+test-results/
+verify_submit*
 
 # Dependency directories
 jspm_packages/

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ClipboardCheck, ShieldCheck, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
@@ -117,7 +117,7 @@ export default function GradeSubmissions() {
             <div className="solar-page solar-page--center">
                 <div className="solar-page__inner max-w-lg mx-auto text-center w-full">
                 <ClipboardCheck size={40} color={isDark ? '#4fc3f7' : '#0284c7'} className="mb-4" />
-                <h1 className="text-2xl font-black mb-2" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
+                <h1 className="font-solar text-2xl font-black mb-2" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
                     Sign in to review
                 </h1>
                 <p className="text-sm mb-6" style={{ color: muted }}>
@@ -147,7 +147,7 @@ export default function GradeSubmissions() {
                     >
                         <FoundationLogo fillCircle alt="" />
                     </motion.div>
-                    <h1 className="text-2xl font-black mb-2" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
+                    <h1 className="font-solar text-2xl font-black mb-2" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
                         Reviewer access locked
                     </h1>
                     <p className="text-sm" style={{ color: muted }}>
@@ -159,7 +159,7 @@ export default function GradeSubmissions() {
                     className="p-5 rounded-2xl mb-6"
                     style={{ background: cardBg, border: `1px solid ${border}` }}
                 >
-                    <div className="flex justify-between text-sm mb-2" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
+                    <div className="flex justify-between text-sm mb-2" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
                         <span>Your points</span>
                         <span className="font-black tabular-nums">{points.toLocaleString()}</span>
                     </div>
@@ -201,7 +201,7 @@ export default function GradeSubmissions() {
                 >
                     <div className="flex items-center justify-center gap-2 mb-2">
                         <ClipboardCheck size={28} color={isDark ? '#4fc3f7' : '#0284c7'} />
-                        <h1 className="text-3xl font-black" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
+                        <h1 className="font-solar text-3xl font-black" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
                             Grade submissions
                         </h1>
                     </div>
@@ -240,7 +240,7 @@ export default function GradeSubmissions() {
                                         onClick={() => setExpandedId(open ? null : s.id)}
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <div className="font-bold text-sm truncate" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
+                                            <div className="font-bold text-sm truncate" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
                                                 {s.subject || 'Untitled'}
                                             </div>
                                             <div className="text-xs truncate flex flex-wrap items-center gap-x-2 gap-y-1" style={{ color: muted }}>
@@ -288,11 +288,11 @@ export default function GradeSubmissions() {
                                                 <div className="p-4 flex flex-col gap-4">
                                                     {(s.summary || s.detail) && (
                                                         <div className="text-xs leading-relaxed rounded-xl p-3" style={{ background: isDark ? 'rgba(2,4,8,0.45)' : 'rgba(240,244,248,0.9)', color: isDark ? '#cbd5e1' : '#475569' }}>
-                                                            {s.summary && <p className="font-semibold mb-1 text-[13px]" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>Summary</p>}
+                                                            {s.summary && <p className="font-semibold mb-1 text-[13px]" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>Summary</p>}
                                                             {s.summary && <p className="mb-2">{s.summary}</p>}
                                                             {s.detail && (
                                                                 <>
-                                                                    <p className="font-semibold mb-1 text-[13px]" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>Detail</p>
+                                                                    <p className="font-semibold mb-1 text-[13px]" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>Detail</p>
                                                                     <p className="whitespace-pre-wrap">{s.detail}</p>
                                                                 </>
                                                             )}
@@ -322,7 +322,7 @@ export default function GradeSubmissions() {
                                                         </div>
                                                     )}
                                                     <form onSubmit={submitReview} className="flex flex-col gap-3">
-                                                        <label className="flex items-start gap-2 text-sm cursor-pointer" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
+                                                        <label className="flex items-start gap-2 text-sm cursor-pointer" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
                                                             <input
                                                                 type="checkbox"
                                                                 checked={factOk}
@@ -363,7 +363,7 @@ export default function GradeSubmissions() {
                                                                 style={{
                                                                     background: isDark ? 'rgba(2,4,8,0.5)' : 'rgba(255,255,255,0.9)',
                                                                     border: `1px solid ${border}`,
-                                                                    color: isDark ? '#e2e8f0' : '#0f172a',
+                                                                    color: isDark ? '#f8fafc' : '#0f172a',
                                                                 }}
                                                                 placeholder="Suggest citations, clarity edits, or factual fixes — the author sees this with your grade."
                                                             />
@@ -400,3 +400,5 @@ export default function GradeSubmissions() {
         </div>
     )
 }
+
+

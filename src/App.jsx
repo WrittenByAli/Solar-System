@@ -1,7 +1,8 @@
 import React, { useState, useEffect, createContext, useContext } from 'react'
-import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { HashRouter as Router, Routes, Route, Navigate, useLocation, useMatch } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Navbar from './components/Navbar.jsx'
+import Footer from './components/Footer.jsx'
 import Home from './pages/Home.jsx'
 import MapView from './pages/MapView.jsx'
 import ArchiveGrid from './pages/ArchiveGrid.jsx'
@@ -26,7 +27,7 @@ function AnimatedRoutes() {
     return (
         <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
-                <Route path="/" element={<PageWrap><Home /></PageWrap>} />
+                <Route path="/" element={<PageWrap immersive><Home /></PageWrap>} />
                 <Route path="/map" element={<PageWrap><MapView /></PageWrap>} />
                 <Route path="/join" element={<PageWrap><Join /></PageWrap>} />
                 <Route path="/archive/beacon" element={<Navigate to="/archive/star" replace />} />
@@ -44,7 +45,11 @@ function AnimatedRoutes() {
     )
 }
 
-function PageWrap({ children }) {
+function PageWrap({ children, immersive = false }) {
+    if (immersive) {
+        return <div className="min-h-[100dvh] min-w-0 max-w-full overflow-x-hidden">{children}</div>
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -55,6 +60,21 @@ function PageWrap({ children }) {
         >
             {children}
         </motion.div>
+    )
+}
+
+function AppShell() {
+    const { theme } = useTheme()
+    const isHome = useMatch({ path: '/', end: true })
+
+    return (
+        <div className={`min-h-screen relative min-w-0 max-w-[100vw] overflow-x-hidden ${theme === 'dark' ? 'dark bg-[var(--sa-bg)] text-[var(--sa-text)]' : 'light bg-[var(--sa-bg)] text-[var(--sa-text)]'}`}>
+            {!isHome && <StarField theme={theme} />}
+            <Navbar />
+            <FoundationArchiveStar />
+            <AnimatedRoutes />
+            <Footer />
+        </div>
     )
 }
 
@@ -78,12 +98,7 @@ export default function App() {
         <ThemeContext.Provider value={{ theme, toggleTheme }}>
             <Router>
                 <AuthProvider>
-                    <div className={theme === 'dark' ? 'bg-[#020408] text-slate-100 min-h-screen relative min-w-0 max-w-[100vw] overflow-x-hidden' : 'bg-white text-slate-900 min-h-screen relative min-w-0 max-w-[100vw] overflow-x-hidden'}>
-                        <StarField theme={theme} />
-                        <FoundationArchiveStar />
-                        <Navbar />
-                        <AnimatedRoutes />
-                    </div>
+                    <AppShell />
                 </AuthProvider>
             </Router>
         </ThemeContext.Provider>

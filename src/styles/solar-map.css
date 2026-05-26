@@ -1,0 +1,818 @@
+/* ── Premium Solar System Map ── */
+
+.solar-map {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--sa-bg);
+  scroll-margin-top: 0;
+}
+
+/* ── Animated background layers ── */
+
+.solar-map__bg {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.solar-map__particles-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.solar-map__aurora-wrap {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  transition: transform 0.15s ease-out;
+}
+
+.solar-map__aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(72px);
+  will-change: transform;
+  animation: map-aurora-float 22s ease-in-out infinite;
+}
+
+.solar-map__aurora--1 {
+  width: min(70vmax, 820px);
+  height: min(70vmax, 820px);
+  top: -18%;
+  left: -12%;
+  background: radial-gradient(circle, rgba(79, 195, 247, 0.22) 0%, transparent 68%);
+  animation-duration: 24s;
+}
+
+.solar-map__aurora--2 {
+  width: min(55vmax, 640px);
+  height: min(55vmax, 640px);
+  bottom: -12%;
+  right: -8%;
+  background: radial-gradient(circle, rgba(245, 166, 35, 0.18) 0%, transparent 68%);
+  animation-duration: 19s;
+  animation-delay: -6s;
+}
+
+.solar-map__aurora--3 {
+  width: min(45vmax, 520px);
+  height: min(45vmax, 520px);
+  top: 38%;
+  right: 22%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.14) 0%, transparent 70%);
+  animation-duration: 28s;
+  animation-delay: -12s;
+}
+
+.light .solar-map__aurora--1 {
+  background: radial-gradient(circle, rgba(3, 105, 161, 0.12) 0%, transparent 68%);
+}
+
+.light .solar-map__aurora--2 {
+  background: radial-gradient(circle, rgba(180, 83, 9, 0.08) 0%, transparent 68%);
+}
+
+.light .solar-map__aurora--3 {
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.06) 0%, transparent 70%);
+}
+
+@keyframes map-aurora-float {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.75;
+  }
+  33% {
+    transform: translate3d(3%, -2%, 0) scale(1.06);
+    opacity: 1;
+  }
+  66% {
+    transform: translate3d(-2%, 3%, 0) scale(0.96);
+    opacity: 0.85;
+  }
+}
+
+.solar-map__rays {
+  position: absolute;
+  inset: -20%;
+  background: conic-gradient(
+    from 0deg at 58% 46%,
+    transparent 0deg,
+    rgba(255, 140, 50, 0.03) 18deg,
+    transparent 36deg,
+    rgba(79, 195, 247, 0.025) 72deg,
+    transparent 90deg,
+    rgba(245, 166, 35, 0.02) 130deg,
+    transparent 180deg,
+    rgba(79, 195, 247, 0.02) 220deg,
+    transparent 260deg,
+    rgba(255, 120, 40, 0.025) 300deg,
+    transparent 360deg
+  );
+  animation: map-rays-spin 120s linear infinite;
+  opacity: 0.9;
+}
+
+.light .solar-map__rays {
+  background: conic-gradient(
+    from 0deg at 58% 46%,
+    transparent 0deg,
+    rgba(3, 105, 161, 0.04) 20deg,
+    transparent 40deg,
+    rgba(180, 83, 9, 0.03) 100deg,
+    transparent 180deg,
+    rgba(3, 105, 161, 0.03) 260deg,
+    transparent 360deg
+  );
+}
+
+@keyframes map-rays-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.solar-map__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0, 0, 0, 0.45) 100%);
+  opacity: 0.55;
+}
+
+.light .solar-map__vignette {
+  background: radial-gradient(ellipse at 50% 45%, transparent 40%, rgba(243, 244, 246, 0.75) 100%);
+  opacity: 0.7;
+}
+
+.solar-map__ambient {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  will-change: transform;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 42%, rgba(79, 195, 247, 0.07) 0%, transparent 58%),
+    radial-gradient(ellipse 45% 40% at 18% 78%, rgba(245, 166, 35, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 35% at 88% 18%, rgba(167, 139, 250, 0.05) 0%, transparent 48%);
+  animation: map-ambient-pulse 8s ease-in-out infinite;
+}
+
+@keyframes map-ambient-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+.light .solar-map__ambient {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 42%, rgba(3, 105, 161, 0.05) 0%, transparent 58%),
+    radial-gradient(ellipse 45% 40% at 18% 78%, rgba(180, 83, 9, 0.04) 0%, transparent 50%);
+}
+
+.solar-map__grid {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.35;
+  will-change: transform;
+  background-image:
+    linear-gradient(var(--sa-border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--sa-border-subtle) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at 50% 45%, black 15%, transparent 72%);
+  animation: map-grid-drift 90s linear infinite;
+}
+
+@keyframes map-grid-drift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 56px 56px, 56px 56px; }
+}
+
+.solar-map__inner {
+  position: relative;
+  z-index: 2;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 clamp(12px, 2vw, 24px) clamp(24px, 4vh, 48px);
+}
+
+.solar-map__header {
+  text-align: center;
+  margin-bottom: clamp(16px, 2.5vh, 24px);
+}
+
+.solar-map__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--sa-accent-gold);
+  font-weight: 500;
+}
+
+.solar-map__kicker-line {
+  width: 24px;
+  height: 1px;
+  background: var(--sa-accent-gold);
+}
+
+.solar-map__title {
+  font-family: 'Anton', 'Impact', sans-serif;
+  font-size: var(--solar-page-heading-size) !important;
+  line-height: var(--solar-page-heading-line-height);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--sa-text);
+  margin-bottom: 8px;
+}
+
+.solar-map__subtitle {
+  font-size: clamp(0.8125rem, 1.8vw, 0.9375rem);
+  color: var(--sa-text-muted);
+  max-width: 36rem;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.solar-map__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: clamp(12px, 2vh, 20px);
+}
+
+.solar-map__hub-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0 auto clamp(14px, 2.2vh, 22px);
+  max-width: 920px;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(2, 6, 23, 0.7), rgba(15, 23, 42, 0.46));
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
+
+.solar-map__hub-select-btn {
+  --hub-color: var(--sa-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--hub-color) 36%, var(--sa-border-default));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--hub-color) 14%, transparent), rgba(15, 23, 42, 0.48));
+  color: var(--sa-text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  transition: transform 0.18s ease, color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.solar-map__hub-select-btn:hover,
+.solar-map__hub-select-btn[data-selected='true'] {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--hub-color) 72%, white);
+  color: var(--sa-text);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--hub-color) 28%, transparent), rgba(15, 23, 42, 0.72));
+}
+
+.solar-map__hub-select-orb {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--hub-color);
+  box-shadow: 0 0 12px var(--hub-color);
+  flex-shrink: 0;
+}
+
+.light .solar-map__hub-select-btn {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--hub-color) 14%, white), rgba(255, 255, 255, 0.9));
+  color: #334155;
+  border-color: color-mix(in srgb, var(--hub-color) 42%, rgba(15, 23, 42, 0.14));
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.light .solar-map__hub-selector {
+  border-color: rgba(15, 23, 42, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(241, 245, 249, 0.78));
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.light .solar-map__hub-select-btn:hover,
+.light .solar-map__hub-select-btn[data-selected='true'] {
+  color: #0f172a;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--hub-color) 22%, white), rgba(255, 255, 255, 0.96));
+}
+
+.solar-map__search-wrap {
+  position: relative;
+  flex: 1 1 280px;
+  max-width: 420px;
+}
+
+.solar-map__search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sa-text-muted);
+  pointer-events: none;
+}
+
+.solar-map__search {
+  width: 100%;
+  padding: 12px 16px 12px 40px;
+  border-radius: 12px;
+  border: 1px solid var(--sa-border-default);
+  background: var(--sa-bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--sa-text);
+  font-size: 0.875rem;
+  box-shadow: var(--sa-shadow-sm);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.solar-map__search:focus {
+  outline: none;
+  border-color: var(--sa-accent-border);
+  box-shadow: 0 0 0 3px var(--sa-accent-subtle);
+}
+
+.solar-map__search::placeholder {
+  color: var(--sa-text-faint);
+}
+
+.solar-map__go-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--sa-accent);
+  box-shadow: var(--sa-shadow-md);
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.light .solar-map__go-btn {
+  color: #ffffff;
+  background: #075985;
+  box-shadow: 0 12px 26px rgba(7, 89, 133, 0.2);
+}
+
+.light .solar-map__go-btn:hover {
+  background: #0369a1;
+}
+
+.solar-map__go-btn:hover {
+  background: var(--sa-accent-hover);
+}
+
+.solar-map__toolbar-form {
+  display: contents;
+}
+
+.solar-map__stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sa-text-secondary);
+  border: 1px solid var(--sa-border-default);
+  background: var(--sa-bg-card);
+  backdrop-filter: blur(12px);
+}
+
+.solar-map__stat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sa-accent);
+  box-shadow: 0 0 8px var(--sa-accent);
+  animation: map-pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes map-pulse-dot {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.solar-map__stage {
+  display: block;
+  min-height: min(52vh, 500px);
+}
+
+@media (max-width: 960px) {
+  .solar-map__canvas-wrap {
+    min-height: min(48vh, 440px);
+  }
+}
+
+.solar-map__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-self: start;
+}
+
+.solar-map__detail-card {
+  flex: 1;
+  padding: clamp(18px, 2.5vw, 24px);
+  padding-top: clamp(20px, 2.8vw, 26px);
+  border-radius: 16px;
+  border: 1px solid var(--sa-border-default);
+  background: var(--sa-bg-card);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  box-shadow: var(--sa-shadow-lg);
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.light .solar-map__detail-card {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(240, 249, 255, 0.86));
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+.solar-map__detail-card--filled {
+  border-color: color-mix(in srgb, var(--hub-color, var(--sa-accent)) 35%, var(--sa-border-default));
+}
+
+.solar-map__info-window-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 4vw, 32px);
+  background: rgba(2, 6, 18, 0.52);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.light .solar-map__info-window-backdrop {
+  background: rgba(241, 245, 249, 0.5);
+}
+
+.solar-map__info-window {
+  position: relative;
+  width: min(100%, 620px);
+  max-height: min(78dvh, 680px);
+  overflow-y: auto;
+  padding: clamp(22px, 4vw, 32px);
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--hub-color, var(--sa-accent)) 38%, var(--sa-border-default));
+  background:
+    linear-gradient(145deg, rgba(6, 10, 22, 0.94), rgba(15, 23, 42, 0.88)),
+    radial-gradient(ellipse 90% 120% at 10% 0%, color-mix(in srgb, var(--hub-color, var(--sa-accent)) 22%, transparent), transparent 62%);
+  color: var(--sa-text);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.45),
+    0 0 80px color-mix(in srgb, var(--hub-color, var(--sa-accent)) 12%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.light .solar-map__info-window {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(240, 249, 255, 0.9)),
+    radial-gradient(ellipse 90% 120% at 10% 0%, color-mix(in srgb, var(--hub-color, var(--sa-accent)) 18%, transparent), transparent 62%);
+  color: #0f172a;
+  box-shadow:
+    0 30px 90px rgba(15, 23, 42, 0.18),
+    0 0 80px color-mix(in srgb, var(--hub-color, var(--sa-accent)) 10%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.solar-map__info-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--hub-color, var(--sa-accent)) 30%, var(--sa-border-default));
+  background: rgba(15, 23, 42, 0.68);
+  color: var(--sa-text);
+  cursor: pointer;
+}
+
+.light .solar-map__info-close {
+  background: rgba(255, 255, 255, 0.88);
+  color: #0f172a;
+}
+
+.solar-map__detail-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 16px 16px 0 0;
+}
+
+.solar-map__detail-empty {
+  text-align: center;
+  color: var(--sa-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.solar-map__detail-empty-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  border: 1px dashed var(--sa-border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sa-accent);
+  opacity: 0.7;
+}
+
+.solar-map__detail-kicker {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sa-accent-gold);
+  margin-bottom: 8px;
+}
+
+.solar-map__detail-subject {
+  font-family: 'Anton', 'Impact', sans-serif;
+  font-size: clamp(1.35rem, 3.2vw, 1.85rem);
+  line-height: 1.05;
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+  color: var(--sa-text);
+}
+
+.solar-map__detail-planet {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sa-text-muted);
+  margin-bottom: 14px;
+}
+
+.solar-map__detail-desc {
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--sa-text-secondary);
+  margin-bottom: 16px;
+}
+
+.solar-map__detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.solar-map__detail-meta span {
+  padding: 4px 7px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--hub-color, var(--sa-accent)) 30%, var(--sa-border-default));
+  background: color-mix(in srgb, var(--hub-color, var(--sa-accent)) 10%, transparent);
+  color: var(--sa-text-secondary);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.solar-map__detail-topics-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sa-text-muted);
+  margin-bottom: 8px;
+}
+
+.solar-map__detail-topics ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solar-map__detail-topics li {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--sa-text-muted);
+  padding-left: 12px;
+  border-left: 2px solid var(--sa-accent-gold);
+}
+
+.solar-map__detail-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: auto;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--hub-color, var(--sa-accent)) 46%, transparent);
+  border-radius: 12px;
+  background: var(--sa-accent);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(2, 132, 199, 0.18);
+}
+
+.light .solar-map__detail-open {
+  background: #075985;
+  color: #ffffff;
+}
+
+.solar-map__canvas-wrap {
+  position: relative;
+  max-width: 980px;
+  margin: 0 auto;
+  border-radius: 20px;
+  border: 1px solid var(--sa-border-default);
+  background: linear-gradient(145deg, rgba(6, 10, 22, 0.55) 0%, rgba(2, 6, 18, 0.35) 100%);
+  backdrop-filter: blur(16px) saturate(1.25);
+  -webkit-backdrop-filter: blur(16px) saturate(1.25);
+  box-shadow: var(--sa-shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  min-height: min(52vh, 500px);
+  width: 100%;
+}
+
+.light .solar-map__canvas-wrap {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.78) 0%, rgba(248, 249, 251, 0.65) 100%);
+}
+
+.solar-map__canvas-shimmer {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.04) 48%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 52%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: map-shimmer 8s ease-in-out infinite;
+}
+
+@keyframes map-shimmer {
+  0%, 100% { background-position: 120% 0; opacity: 0.4; }
+  50% { background-position: -20% 0; opacity: 0.85; }
+}
+
+.solar-map__canvas-glow {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 48%, rgba(255, 107, 53, 0.12) 0%, transparent 42%);
+  mix-blend-mode: screen;
+}
+
+.light .solar-map__canvas-glow {
+  mix-blend-mode: multiply;
+  background: radial-gradient(circle at 50% 48%, rgba(3, 105, 161, 0.06) 0%, transparent 42%);
+}
+
+.solar-map__scanline {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.012) 2px,
+    rgba(255, 255, 255, 0.012) 4px
+  );
+  opacity: 0.5;
+}
+
+.solar-map__canvas-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  will-change: transform;
+  transition: transform 0.22s ease-out;
+}
+
+.solar-map__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.solar-map__orbit {
+  fill: none;
+  stroke-width: 1;
+  stroke-dasharray: 3 9;
+  animation: map-orbit-drift 90s linear infinite;
+}
+
+@keyframes map-orbit-drift {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -120; }
+}
+
+.solar-map__orbit--reverse {
+  animation-direction: reverse;
+  animation-duration: 120s;
+}
+
+.solar-map__hub-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+
+.solar-map__planet-spin,
+.solar-map__planet-ring-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-name: map-planet-self-spin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  pointer-events: none;
+}
+
+.solar-map__planet-ring-spin {
+  animation-duration: 18s;
+}
+
+@keyframes map-planet-self-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solar-map__orbit,
+  .solar-map__stat-dot,
+  .solar-map__aurora,
+  .solar-map__rays,
+  .solar-map__ambient,
+  .solar-map__grid,
+  .solar-map__canvas-shimmer,
+  .solar-map__planet-spin,
+  .solar-map__planet-ring-spin {
+    animation: none;
+  }
+
+  .solar-map__canvas-inner {
+    transition: none;
+  }
+}

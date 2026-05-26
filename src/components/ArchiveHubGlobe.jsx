@@ -181,7 +181,7 @@ const ArchiveHubGlobe = memo(function ArchiveHubGlobe({
         }} />
 
         {/* ── planet body ── */}
-        <div style={{
+        <div className="archive-hub-globe__body" style={{
           position:     'absolute',
           inset:        0,
           borderRadius: '50%',
@@ -194,6 +194,12 @@ const ArchiveHubGlobe = memo(function ArchiveHubGlobe({
           overflow:     'hidden',
           pointerEvents:'none',
         }}>
+          <div className="archive-hub-globe__surface archive-hub-globe__surface--slow" aria-hidden style={{
+            background: `linear-gradient(90deg, transparent 0%, ${rgba(bright, 0.16)} 18%, transparent 34%, ${rgba(deep, 0.18)} 52%, transparent 74%, ${rgba(bright, 0.12)} 100%)`,
+          }} />
+          <div className="archive-hub-globe__surface archive-hub-globe__surface--fast" aria-hidden style={{
+            background: `linear-gradient(90deg, ${rgba(deep, 0.12)} 0%, transparent 20%, ${rgba(bright, 0.18)} 38%, transparent 58%, ${rgba(deep, 0.16)} 78%, transparent 100%)`,
+          }} />
           {/* specular highlight — upper left */}
           <div aria-hidden style={{
             position:     'absolute',

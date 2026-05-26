@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Globe, ExternalLink, Plus } from 'lucide-react'
+import { ExternalLink, Plus, LayoutGrid, Sparkles, AlertCircle } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { ARCHIVE_HUB_LOCATIONS, REGISTRY_CATEGORIES, loadArchiveRegistry } from '../utils/archiveInstanceStorage.js'
+import '../styles/solar-directory.css'
 
 function categoryLabel(id) {
     return REGISTRY_CATEGORIES.find((c) => c.id === id)?.label || id
@@ -14,15 +15,23 @@ function hubLabel(id) {
     return ARCHIVE_HUB_LOCATIONS.find((h) => h.id === String(id).toLowerCase())?.label || id
 }
 
-function hubPrefix(id) {
-    const l = hubLabel(id)
-    return l ? `${l} hub · ` : ''
+const fadeUp = {
+    hidden: { opacity: 0, y: 18 },
+    show: {
+        opacity: 1, y: 0,
+        transition: { duration: 0.46, ease: [0.22, 1, 0.36, 1] },
+    },
 }
 
 export default function ArchiveDirectory() {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
     const [tick, setTick] = useState(0)
+    const ink = isDark ? '#ffffff' : '#000000'
+
+    useLayoutEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    }, [])
 
     useEffect(() => {
         const bump = () => setTick((t) => t + 1)
@@ -32,119 +41,143 @@ export default function ArchiveDirectory() {
 
     const rows = useMemo(() => loadArchiveRegistry(), [tick])
 
-    const muted = isDark ? '#94a3b8' : '#64748b'
-    const cardBg = isDark ? 'rgba(7,20,40,0.88)' : 'rgba(255,255,255,0.92)'
-    const border = isDark ? 'rgba(79,195,247,0.15)' : 'rgba(15,23,42,0.1)'
-
     return (
-        <div className="solar-page">
-            <div className="solar-page__inner solar-page__inner--md">
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="solar-page__hero">
-                    <div className="flex items-center justify-center gap-2 mb-3">
-                        <Globe size={28} color="#4fc3f7" />
-                        <h1 className="text-3xl md:text-4xl font-black" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
-                            Archive directory
-                        </h1>
-                    </div>
-                    <p className="text-sm max-w-xl mx-auto leading-relaxed" style={{ color: muted }}>
-                        <strong className="block mb-2" style={{ color: isDark ? '#fbbf24' : '#b45309' }}>
-                            Prototype (frontend-only)
-                        </strong>
-                        Listings below exist only in this browser&apos;s local registry — they are <strong>not</strong> synced to{' '}
-                        <a href="https://archive.solar" target="_blank" rel="noopener noreferrer" className="font-semibold underline inline-flex items-center gap-1" style={{ color: isDark ? '#4fc3f7' : '#0284c7' }}>
-                            archive.solar <ExternalLink size={12} />
-                        </a>
-                        . A future backend would power a public federation directory; for now this page is an offline demo of that idea.
+        <div className="solar-page sa-dir-page">
+            {/* Cinematic background */}
+            <div className="sa-dir-bg" aria-hidden="true">
+                <div className="sa-dir-bg__grid" />
+                <div className="sa-dir-bg__stars" />
+                <div className="sa-dir-bg__glow" />
+            </div>
+
+            <div className="sa-dir-shell">
+                {/* ── Hero ── */}
+                <motion.div
+                    className="sa-dir-hero"
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                >
+                    <h1 className="sa-dir-hero__title">
+                        Explore the<br />
+                        <span className="sa-dir-hero__title--accent">Archive Network</span>
+                    </h1>
+                    <p className="sa-dir-hero__sub">
+                        A federated knowledge network of Solar Archive deployments. Each listing is a portable archive pack hosted on a research hub in the SOLAR coordinate system.
                     </p>
+                    <div className="sa-dir-hero__prototype">
+                        <AlertCircle size={14} style={{ flexShrink: 0, color: ink }} />
+                        <span>
+                            <strong style={{ color: ink }}>Prototype (frontend-only).</strong>{' '}
+                            Listings exist only in this browser&apos;s local registry — not synced to{' '}
+                            <a href="https://archive.solar" target="_blank" rel="noopener noreferrer" style={{ color: ink, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                archive.solar <ExternalLink size={10} />
+                            </a>.
+                            A future backend would power a public federation directory.
+                        </span>
+                    </div>
                 </motion.div>
 
-                <div className="flex justify-center mb-8">
-                    <Link
-                        to="/create-archive"
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white"
-                        style={{ background: 'linear-gradient(135deg, #7c3aed, #4fc3f7)' }}
-                    >
-                        <Plus size={18} /> Start an archive (upload grid image)
+                {/* ── CTA ── */}
+                <motion.div
+                    className="sa-dir-cta"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.18, duration: 0.45 }}
+                >
+                    <Link to="/create-archive" className="sa-dir-btn-primary">
+                        <Plus size={16} /> Start an archive
                     </Link>
-                </div>
+                    {rows.length > 0 && (
+                        <span className="sa-dir-count">
+                            <LayoutGrid size={11} style={{ display: 'inline', marginRight: 5 }} />
+                            {rows.length} listing{rows.length !== 1 ? 's' : ''}
+                        </span>
+                    )}
+                </motion.div>
 
+                {/* ── Empty state ── */}
                 {rows.length === 0 ? (
-                    <div
-                        className="rounded-2xl p-10 text-center text-sm"
-                        style={{ background: cardBg, border: `1px solid ${border}`, color: muted }}
+                    <motion.div
+                        className="sa-dir-empty"
+                        variants={fadeUp}
+                        initial="hidden"
+                        animate="show"
+                        transition={{ delay: 0.26 }}
                     >
-                        No listings yet. Create your archive and opt in to “list on directory”.
-                    </div>
+                        <span className="sa-dir-empty__icon" aria-hidden="true">📡</span>
+                        <p className="sa-dir-empty__title">No archives registered yet</p>
+                        <p className="sa-dir-empty__sub">
+                            Create your first archive via Host Archive, then enable &quot;list on directory&quot; to see it appear here.
+                        </p>
+                        <Link to="/create-archive" className="sa-dir-btn-primary" style={{ display: 'inline-flex', marginTop: 22 }}>
+                            <Sparkles size={15} /> Create your first archive
+                        </Link>
+                    </motion.div>
                 ) : (
-                    <ul className="flex flex-col gap-3">
+                    /* ── Archive listing grid ── */
+                    <div className="sa-dir-grid">
                         {rows.map((row, i) => (
-                            <motion.li
+                            <motion.div
                                 key={`${row.slug}-${row.publishedAt}`}
+                                className="sa-dir-card"
                                 initial={{ opacity: 0, x: -12 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: Math.min(i * 0.04, 0.35) }}
-                                className="rounded-2xl p-4 flex gap-4 items-start"
-                                style={{
-                                    background: cardBg,
-                                    border: `1px solid ${border}`,
+                                transition={{
+                                    delay: Math.min(i * 0.055, 0.32),
+                                    duration: 0.48,
+                                    ease: [0.22, 1, 0.36, 1],
                                 }}
+                                whileHover={{ y: -3, transition: { type: 'spring', stiffness: 280, damping: 22 } }}
                             >
-                                <div
-                                    className="w-20 h-20 rounded-xl shrink-0 overflow-hidden flex items-center justify-center text-2xl"
-                                    style={{
-                                        background: isDark ? 'rgba(15,23,42,0.9)' : 'rgba(241,245,249,1)',
-                                        border: `1px solid ${border}`,
-                                    }}
-                                >
+                                <div className="sa-dir-card__scan" />
+
+                                {/* Cover thumbnail */}
+                                <div className="sa-dir-thumb">
                                     {row.coverThumb?.startsWith('data:')
-                                        ? <img src={row.coverThumb} alt="" className="w-full h-full object-cover" />
-                                        : <span aria-hidden>📚</span>}
+                                        ? <img src={row.coverThumb} alt="" />
+                                        : <span aria-hidden="true">📚</span>
+                                    }
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="font-black text-sm truncate" style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>
-                                        {row.title}
+
+                                {/* Body */}
+                                <div className="sa-dir-card__body">
+                                    <div className="sa-dir-card__title">{row.title}</div>
+                                    <div className="sa-dir-card__slug">/{row.slug}</div>
+
+                                    <div className="sa-dir-card__meta">
+                                        {hubLabel(row.hubPlanetId) && (
+                                            <span className="sa-dir-meta-chip">{hubLabel(row.hubPlanetId)}</span>
+                                        )}
+                                        <span className="sa-dir-meta-chip">{categoryLabel(row.category)}</span>
+                                        <span className="sa-dir-meta-chip">Grid {row.gridWidth}×{row.gridHeight}</span>
+                                        {row.owner && <span className="sa-dir-meta-chip">{row.owner}</span>}
                                     </div>
-                                    <div className="text-xs mt-1 font-mono" style={{ color: isDark ? '#67e8f9' : '#0369a1' }}>
-                                        /{row.slug}
-                                    </div>
-                                    <div className="text-xs mt-2" style={{ color: muted }}>
-                                        {hubPrefix(row.hubPlanetId)}
-                                        {categoryLabel(row.category)} · Grid {row.gridWidth}×{row.gridHeight}
-                                        {row.owner ? ` · ${row.owner}` : ''}
-                                    </div>
+
                                     {row.demoNote && (
-                                        <div className="text-[10px] mt-2 opacity-80 leading-snug" style={{ color: muted }}>
-                                            {row.demoNote}
-                                        </div>
+                                        <p className="sa-dir-card__note">{row.demoNote}</p>
                                     )}
-                                    <div className="mt-3 flex flex-wrap gap-2">
+
+                                    <div className="sa-dir-card__actions">
                                         {row.hubPlanetId && (
                                             <Link
                                                 to={`/archive/${String(row.hubPlanetId).toLowerCase()}`}
-                                                className="text-xs font-bold px-3 py-1.5 rounded-lg"
-                                                style={{
-                                                    background: isDark ? 'rgba(167,139,250,0.2)' : 'rgba(124,58,237,0.12)',
-                                                    color: isDark ? '#c4b5fd' : '#6d28d9',
-                                                }}
+                                                className="sa-dir-action-btn sa-dir-action-btn--purple"
                                             >
                                                 Open archive hub
                                             </Link>
                                         )}
                                         <Link
                                             to="/map"
-                                            className="text-xs font-bold px-3 py-1.5 rounded-lg"
-                                            style={{
-                                                background: isDark ? 'rgba(79,195,247,0.15)' : 'rgba(2,132,199,0.1)',
-                                                color: isDark ? '#4fc3f7' : '#0284c7',
-                                            }}
+                                            className="sa-dir-action-btn sa-dir-action-btn--blue"
                                         >
-                                            Open SOLAR map (demo)
+                                            SOLAR map
                                         </Link>
                                     </div>
                                 </div>
-                            </motion.li>
+                            </motion.div>
                         ))}
-                    </ul>
+                    </div>
                 )}
             </div>
         </div>

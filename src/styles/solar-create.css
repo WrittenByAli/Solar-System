@@ -1,0 +1,104 @@
+.sa-create-page {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.sa-create-page,
+.sa-create-page * {
+  box-sizing: border-box;
+}
+
+.sa-create-title {
+  font-family: 'Anton', 'Impact', sans-serif;
+  font-size: var(--solar-page-heading-size) !important;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  line-height: var(--solar-page-heading-line-height);
+  text-transform: uppercase;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.dark .sa-create-page {
+  background:
+    radial-gradient(ellipse 70% 44% at 50% -16%, rgba(255, 255, 255, 0.045), transparent 62%),
+    linear-gradient(180deg, #02040a 0%, #050816 54%, #02040a 100%);
+}
+
+.light .sa-create-page {
+  background:
+    radial-gradient(ellipse 72% 44% at 50% -15%, rgba(2, 132, 199, 0.1), transparent 62%),
+    linear-gradient(180deg, #f8fafc 0%, #eef6ff 54%, #f8fafc 100%);
+}
+
+/* Requested contrast rule: white in dark mode, black in light mode. */
+.dark .sa-create-page,
+.dark .sa-create-page * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+.light .sa-create-page,
+.light .sa-create-page * {
+  color: #000000 !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+.dark .sa-create-page input,
+.dark .sa-create-page select,
+.dark .sa-create-page textarea {
+  color: #ffffff !important;
+  background-color: rgba(2, 6, 23, 0.74) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color-scheme: dark;
+}
+
+.light .sa-create-page input,
+.light .sa-create-page select,
+.light .sa-create-page textarea {
+  color: #000000 !important;
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(15, 23, 42, 0.16) !important;
+  color-scheme: light;
+}
+
+.dark .sa-create-page option {
+  color: #ffffff;
+  background: #0f172a;
+}
+
+.light .sa-create-page option {
+  color: #000000;
+  background: #ffffff;
+}
+
+.sa-create-page input::placeholder,
+.sa-create-page textarea::placeholder {
+  opacity: 0.58;
+}
+
+.dark .sa-create-page .rounded-3xl,
+.dark .sa-create-page .rounded-\[22px\] {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.light .sa-create-page .rounded-3xl,
+.light .sa-create-page .rounded-\[22px\] {
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+@media (max-width: 768px) {
+  .sa-create-title {
+    font-size: var(--solar-page-heading-size-mobile) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .sa-create-page .solar-page__inner {
+    padding-inline: 14px;
+  }
+
+  .sa-create-title {
+    font-size: var(--solar-page-heading-size-mobile) !important;
+  }
+}

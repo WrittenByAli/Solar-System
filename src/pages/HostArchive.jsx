@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import '../styles/solar-host.css'
 import {
     ARCHIVE_HUB_LOCATIONS,
     REGISTRY_CATEGORIES,
@@ -109,8 +110,10 @@ export default function HostArchive() {
         rawDims &&
         (effectiveW !== rawDims.w || effectiveH !== rawDims.h)
 
-    const muted = isDark ? '#94a3b8' : '#64748b'
-    const ink = isDark ? '#f1f5f9' : '#0f172a'
+    const muted = isDark ? '#ffffff' : '#000000'
+    const ink = isDark ? '#ffffff' : '#000000'
+    const codeColor = ink
+    const accent = ink
 
     const ambient = isDark
         ? 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(79,195,247,0.18), transparent), radial-gradient(ellipse 60% 40% at 100% 50%, rgba(124,58,237,0.12), transparent), radial-gradient(ellipse 50% 35% at 0% 80%, rgba(245,166,35,0.08), transparent)'
@@ -214,325 +217,229 @@ export default function HostArchive() {
     const buildDisabled = phase !== 'ready'
 
     return (
-        <div className="solar-page relative overflow-hidden">
-            <div className="absolute inset-0 pointer-events-none" style={{ background: ambient }} />
+        <div className="solar-page sa-host-page">
+            {/* Background */}
+            <div className="sa-host-bg" aria-hidden="true">
+                <div className="sa-host-bg__grid" />
+                <div className="sa-host-bg__stars" />
+                <div className="sa-host-bg__glow" />
+            </div>
 
-            <div className="relative z-10 solar-page__inner solar-page__inner--md">
+            <div className="sa-host-shell">
+                {/* ── Hero ── */}
                 <motion.div
-                    initial={{ opacity: 0, y: 8 }}
+                    className="sa-host-hero"
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.45 }}
-                    className="solar-page__hero"
+                    transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
                 >
-                    <motion.div
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.2em] mb-8 md:mb-10"
-                        style={{
-                            background: isDark ? 'rgba(79,195,247,0.12)' : 'rgba(2,132,199,0.1)',
-                            border: `1px solid ${isDark ? 'rgba(79,195,247,0.25)' : 'rgba(2,132,199,0.2)'}`,
-                            color: isDark ? '#7dd3fc' : '#0369a1',
-                        }}
-                    >
-                        <Package size={13} /> Portable bundle
-                    </motion.div>
-
-                    <h1
-                        className="font-solar text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4 bg-clip-text text-transparent"
-                        style={{
-                            backgroundImage: isDark
-                                ? 'linear-gradient(135deg, #f8fafc 0%, #7dd3fc 45%, #fbbf24 100%)'
-                                : 'linear-gradient(135deg, #0f172a 0%, #0284c7 45%, #d97706 100%)',
-                        }}
-                    >
-                        Host an archive
+                    <h1 className="sa-host-hero__title">
+                        Host a Living <span className="sa-host-hero__title--accent">Archive</span>
                     </h1>
-                    <p className="text-sm md:text-base max-w-xl mx-auto leading-relaxed mb-4" style={{ color: muted }}>
+                    <p className="sa-host-hero__sub">
                         Drop a picture: each pixel becomes one grid cell (capped at <strong style={{ color: ink }}>{GRID_SIDE_MAX}px</strong> per
-                        side). Download a single JSON pack you can carry to any static deployment of this app, or import a pack someone sent you.
+                        side). Download a portable JSON pack or import one to deploy instantly.
                     </p>
-                    <p className="text-xs max-w-lg mx-auto leading-relaxed mb-4" style={{ color: muted }}>
-                        <strong style={{ color: ink }}>S</strong>ustainable <strong style={{ color: ink }}>O</strong>ff-grid{' '}
-                        <strong style={{ color: ink }}>L</strong>iving-labs for <strong style={{ color: ink }}>A</strong>utonomy and{' '}
-                        <strong style={{ color: ink }}>R</strong>esearch — this flow is for teams who want the same SEG GRID model on a layout they
-                        host themselves.
-                    </p>
-                    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-semibold">
-                        <Link to="/create-archive" className="inline-flex items-center gap-1 hover:underline" style={{ color: isDark ? '#67e8f9' : '#0284c7' }}>
+                    <div className="sa-host-hero__links">
+                        <Link to="/create-archive" className="sa-host-hero__link">
                             Start an archive (browser save) <ArrowRight size={12} />
                         </Link>
-                        <a
-                            href="https://archive.solar"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 opacity-90 hover:opacity-100"
-                            style={{ color: isDark ? '#67e8f9' : '#0284c7' }}
-                        >
+                        <a href="https://archive.solar" target="_blank" rel="noopener noreferrer" className="sa-host-hero__link">
                             Federation vision <ExternalLink size={12} />
                         </a>
                     </div>
                 </motion.div>
 
-                {/* Build / export */}
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
+                {/* ── Export / drop zone console ── */}
+                <motion.section
+                    className="sa-host-panel"
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="rounded-3xl p-1 mb-10"
-                    style={{
-                        background: isDark
-                            ? 'linear-gradient(135deg, rgba(79,195,247,0.35), rgba(124,58,237,0.25), rgba(245,166,35,0.2))'
-                            : 'linear-gradient(135deg, rgba(2,132,199,0.35), rgba(124,58,237,0.22), rgba(245,166,35,0.18))',
+                    transition={{ delay: 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    onDragEnter={(e) => { e.preventDefault(); setDragActive(true) }}
+                    onDragLeave={(e) => { e.preventDefault(); setDragActive(false) }}
+                    onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy' }}
+                    onDrop={(e) => {
+                        e.preventDefault()
+                        setDragActive(false)
+                        const f = e.dataTransfer?.files?.[0]
+                        if (f) applyImageFile(f)
                     }}
                 >
-                    <div
-                        className="rounded-[22px] p-6 md:p-10"
-                        style={{
-                            background: isDark ? 'rgba(4,8,20,0.92)' : 'rgba(255,255,255,0.96)',
-                            backdropFilter: 'blur(16px)',
-                        }}
-                        onDragEnter={(e) => { e.preventDefault(); setDragActive(true) }}
-                        onDragLeave={(e) => { e.preventDefault(); setDragActive(false) }}
-                        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy' }}
-                        onDrop={(e) => {
-                            e.preventDefault()
-                            setDragActive(false)
-                            const f = e.dataTransfer?.files?.[0]
-                            if (f) applyImageFile(f)
-                        }}
-                    >
-                        <h2 className="text-sm font-black uppercase tracking-[0.15em] mb-6 flex items-center gap-2" style={{ color: muted }}>
-                            <Download size={16} /> Export pack
-                        </h2>
-                        <label className="block cursor-pointer group">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                    const f = e.target.files?.[0]
-                                    if (f) applyImageFile(f)
-                                    e.target.value = ''
-                                }}
-                            />
-                            <div
-                                className="rounded-2xl border-2 border-dashed py-12 md:py-16 px-6 text-center transition-all duration-300"
-                                style={{
-                                    borderColor: dragActive
-                                        ? (isDark ? '#4fc3f7' : '#0284c7')
-                                        : isDark ? 'rgba(148,163,184,0.35)' : 'rgba(148,163,184,0.45)',
-                                    background: dragActive
-                                        ? (isDark ? 'rgba(79,195,247,0.08)' : 'rgba(2,132,199,0.06)')
-                                        : isDark ? 'rgba(15,23,42,0.35)' : 'rgba(248,250,252,0.9)',
-                                }}
+                    <div className="sa-host-panel__scan" />
+                    <div className="sa-host-panel__header">
+                        <Download size={14} /> Export pack
+                    </div>
+
+                    <label className="sa-host-dropzone">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                                const f = e.target.files?.[0]
+                                if (f) applyImageFile(f)
+                                e.target.value = ''
+                            }}
+                        />
+                        <div className={`sa-host-dropzone__inner${dragActive ? ' sa-host-dropzone__inner--active' : ''}`}>
+                            <div className="sa-host-dropzone__icon">
+                                {phase === 'loading' ? (
+                                    <Loader2 size={26} className="animate-spin" style={{ color: '#f5a623' }} />
+                                ) : (
+                                    <ImagePlus size={26} style={{ color: '#f5a623' }} />
+                                )}
+                            </div>
+                            <p className="sa-host-dropzone__title">
+                                {dragActive ? 'Release to set grid' : 'Drop cover image'}
+                            </p>
+                            <p className="sa-host-dropzone__sub">or click to choose — dimensions set grid width × height</p>
+                            <div className="sa-host-dim-badge">
+                                <Grid3x3 size={12} />
+                                {effectiveW && effectiveH ? `${effectiveW} × ${effectiveH} cells` : 'pixels → cells'}
+                            </div>
+                        </div>
+                    </label>
+
+                    <AnimatePresence>
+                        {previewUrl && rawDims && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="sa-host-preview"
                             >
-                                <div
-                                    className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-105"
-                                    style={{
-                                        background: isDark ? 'rgba(79,195,247,0.12)' : 'rgba(2,132,199,0.1)',
-                                        border: `1px solid ${isDark ? 'rgba(79,195,247,0.25)' : 'rgba(2,132,199,0.2)'}`,
-                                    }}
-                                >
-                                    {phase === 'loading' ? (
-                                        <Loader2 size={28} className="animate-spin" style={{ color: isDark ? '#4fc3f7' : '#0284c7' }} />
-                                    ) : (
-                                        <ImagePlus size={28} style={{ color: isDark ? '#4fc3f7' : '#0284c7' }} />
+                                <div className="sa-host-preview__img">
+                                    <img src={previewUrl} alt="cover preview" />
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 4 }}>
+                                    <span className="sa-host-dim-tag">{rawDims.w} × {rawDims.h}px</span>
+                                    {wasClamped && (
+                                        <span className="sa-host-clamp-tag">Clamped to {GRID_SIDE_MAX}px per side</span>
                                     )}
                                 </div>
-                                <p className="font-black text-base mb-1" style={{ color: ink }}>
-                                    {dragActive ? 'Release to set grid' : 'Drop cover image'}
-                                </p>
-                                <p className="text-sm" style={{ color: muted }}>or click to choose — dimensions set grid width × height</p>
-                                <span
-                                    className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mt-4"
-                                    style={{
-                                        background: isDark ? 'rgba(124,58,237,0.2)' : 'rgba(124,58,237,0.12)',
-                                        color: isDark ? '#c4b5fd' : '#6d28d9',
-                                    }}
-                                >
-                                    <Grid3x3 size={13} /> {effectiveW && effectiveH ? `${effectiveW} × ${effectiveH}` : 'pixels → cells'}
-                                </span>
-                            </div>
-                        </label>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.section>
 
-                        <AnimatePresence>
-                            {previewUrl && rawDims && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    className="mt-6 grid md:grid-cols-[minmax(0,200px)_1fr] gap-5 items-start"
-                                >
-                                    <div className="rounded-xl overflow-hidden border" style={{ borderColor: isDark ? 'rgba(148,163,184,0.2)' : 'rgba(15,23,42,0.08)' }}>
-                                        <img src={previewUrl} alt="" className="w-full h-auto max-h-44 object-cover object-center" />
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 text-sm">
-                                        <span className="font-mono font-bold tabular-nums px-3 py-2 rounded-lg" style={{ background: isDark ? 'rgba(79,195,247,0.1)' : 'rgba(2,132,199,0.08)', color: ink }}>
-                                            {rawDims.w} × {rawDims.h}
-                                        </span>
-                                        {wasClamped && (
-                                            <span className="text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(251,191,36,0.12)', color: isDark ? '#fcd34d' : '#b45309' }}>
-                                                Clamped to {GRID_SIDE_MAX}px per side
-                                            </span>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
+                {/* ── Metadata form ── */}
+                <motion.section
+                    className="sa-host-panel"
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.06 }}
-                    className="rounded-3xl p-6 md:p-8 mb-10 space-y-5"
-                    style={{
-                        background: isDark ? 'rgba(7,16,36,0.75)' : 'rgba(255,255,255,0.85)',
-                        border: `1px solid ${isDark ? 'rgba(148,163,184,0.12)' : 'rgba(15,23,42,0.08)'}`,
-                        backdropFilter: 'blur(20px)',
-                    }}
+                    transition={{ delay: 0.14, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                 >
-                    <div className="flex items-center gap-2 mb-1">
-                        <Layers size={18} style={{ color: isDark ? '#94a3b8' : '#64748b' }} />
-                        <h2 className="text-sm font-black uppercase tracking-[0.15em]" style={{ color: muted }}>Metadata in the pack</h2>
+                    <div className="sa-host-panel__header">
+                        <Layers size={14} /> Metadata in the pack
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="sm:col-span-2">
-                            <label className="text-xs font-bold block mb-1.5 flex items-center gap-2" style={{ color: muted }}>
-                                <MapPin size={14} aria-hidden /> Hub route
-                            </label>
+
+                    <div className="sa-host-fields">
+                        <div className="sa-host-fields--span2">
+                            <label className="sa-host-label"><MapPin size={11} style={{ display: 'inline', marginRight: 4 }} />Hub route</label>
                             <select
                                 value={hubPlanetId}
                                 onChange={(e) => setHubPlanetId(e.target.value)}
-                                className="w-full rounded-xl px-4 py-3 text-sm outline-none cursor-pointer"
-                                style={{
-                                    background: isDark ? 'rgba(2,6,23,0.6)' : '#fff',
-                                    border: `1px solid ${isDark ? 'rgba(71,85,105,0.4)' : 'rgba(203,213,225,0.9)'}`,
-                                    color: ink,
-                                }}
+                                className="sa-host-select"
                             >
                                 {ARCHIVE_HUB_LOCATIONS.map((h) => (
                                     <option key={h.id} value={h.id}>{h.label} — {h.subtitle}</option>
                                 ))}
                             </select>
-                            <p className="text-[11px] mt-1.5" style={{ color: muted }}>Visitors open <span className="font-mono">/#/archive/{hubMeta?.id || 'earth'}</span> after import.</p>
+                            <p className="sa-host-field-hint">
+                                Visitors open <code style={{ color: '#f5a623' }}>/#/archive/{hubMeta?.id || 'earth'}</code> after import.
+                            </p>
                         </div>
-                        <div className="sm:col-span-2">
-                            <label className="text-xs font-bold block mb-1.5" style={{ color: muted }}>Title</label>
+
+                        <div className="sa-host-fields--span2">
+                            <label className="sa-host-label">Title</label>
                             <input
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="Archive name"
-                                className="w-full rounded-xl px-4 py-3 text-sm outline-none"
-                                style={{
-                                    background: isDark ? 'rgba(2,6,23,0.6)' : '#fff',
-                                    border: `1px solid ${isDark ? 'rgba(71,85,105,0.4)' : 'rgba(203,213,225,0.9)'}`,
-                                    color: ink,
-                                }}
+                                className="sa-host-input"
                             />
                         </div>
-                        <div>
-                            <label className="text-xs font-bold block mb-1.5" style={{ color: muted }}>Slug</label>
-                            <input
-                                value={slug}
-                                onChange={(e) => setSlug(e.target.value)}
-                                placeholder="file name prefix"
-                                className="w-full rounded-xl px-4 py-3 text-sm font-mono outline-none"
-                                style={{
-                                    background: isDark ? 'rgba(2,6,23,0.6)' : '#fff',
-                                    border: `1px solid ${isDark ? 'rgba(71,85,105,0.4)' : 'rgba(203,213,225,0.9)'}`,
-                                    color: ink,
-                                }}
-                            />
+
+                        <div className="sa-host-fields--2col">
+                            <div>
+                                <label className="sa-host-label">Slug</label>
+                                <input
+                                    value={slug}
+                                    onChange={(e) => setSlug(e.target.value)}
+                                    placeholder="file name prefix"
+                                    className="sa-host-input sa-host-input--mono"
+                                />
+                            </div>
+                            <div>
+                                <label className="sa-host-label">Category</label>
+                                <select
+                                    value={category}
+                                    onChange={(e) => setCategory(e.target.value)}
+                                    className="sa-host-select"
+                                >
+                                    {REGISTRY_CATEGORIES.map((c) => (
+                                        <option key={c.id} value={c.id}>{c.label}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label className="text-xs font-bold block mb-1.5" style={{ color: muted }}>Category</label>
-                            <select
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                className="w-full rounded-xl px-4 py-3 text-sm outline-none cursor-pointer"
-                                style={{
-                                    background: isDark ? 'rgba(2,6,23,0.6)' : '#fff',
-                                    border: `1px solid ${isDark ? 'rgba(71,85,105,0.4)' : 'rgba(203,213,225,0.9)'}`,
-                                    color: ink,
-                                }}
-                            >
-                                {REGISTRY_CATEGORIES.map((c) => (
-                                    <option key={c.id} value={c.id}>{c.label}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="sm:col-span-2">
-                            <label className="text-xs font-bold block mb-1.5" style={{ color: muted }}>Site / contact (optional)</label>
+
+                        <div className="sa-host-fields--span2">
+                            <label className="sa-host-label">Site / contact (optional)</label>
                             <input
                                 value={contactUrl}
                                 onChange={(e) => setContactUrl(e.target.value)}
                                 placeholder="https://…"
-                                className="w-full rounded-xl px-4 py-3 text-sm outline-none"
-                                style={{
-                                    background: isDark ? 'rgba(2,6,23,0.6)' : '#fff',
-                                    border: `1px solid ${isDark ? 'rgba(71,85,105,0.4)' : 'rgba(203,213,225,0.9)'}`,
-                                    color: ink,
-                                }}
+                                className="sa-host-input"
                             />
                         </div>
                     </div>
 
                     {err && (
-                        <div className="flex items-center gap-2 text-sm rounded-xl px-4 py-3" style={{ background: 'rgba(248,113,113,0.12)', color: '#f87171', border: '1px solid rgba(248,113,113,0.25)' }}>
-                            <AlertCircle size={18} className="shrink-0" /> {err}
+                        <div className="sa-host-error" style={{ marginTop: 14 }}>
+                            <AlertCircle size={17} style={{ flexShrink: 0 }} /> {err}
                         </div>
                     )}
 
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="sa-host-cta" style={{ marginTop: 20 }}>
                         <motion.button
                             type="button"
-                            whileHover={{ scale: buildDisabled ? 1 : 1.01 }}
-                            whileTap={{ scale: buildDisabled ? 1 : 0.98 }}
+                            whileHover={{ scale: buildDisabled ? 1 : 1.015 }}
+                            whileTap={{ scale: buildDisabled ? 1 : 0.975 }}
                             disabled={buildDisabled}
                             onClick={handleDownloadPack}
-                            className="flex-1 py-3.5 rounded-2xl font-black text-sm uppercase tracking-[0.1em] text-white disabled:opacity-40 flex items-center justify-center gap-2"
-                            style={{
-                                background: 'linear-gradient(135deg, #7c3aed, #4fc3f7)',
-                                boxShadow: '0 12px 36px rgba(124,58,237,0.3)',
-                            }}
+                            className="sa-host-btn-primary"
                         >
-                            <Package size={18} /> Download JSON pack
+                            <Package size={17} /> Download JSON pack
                         </motion.button>
                         <motion.button
                             type="button"
-                            whileHover={{ scale: buildDisabled ? 1 : 1.01 }}
-                            whileTap={{ scale: buildDisabled ? 1 : 0.98 }}
+                            whileHover={{ scale: buildDisabled ? 1 : 1.015 }}
+                            whileTap={{ scale: buildDisabled ? 1 : 0.975 }}
                             disabled={buildDisabled}
                             onClick={handleApplyPackLocally}
-                            className="flex-1 py-3.5 rounded-2xl font-bold text-sm border flex items-center justify-center gap-2"
-                            style={{
-                                borderColor: isDark ? 'rgba(148,163,184,0.35)' : 'rgba(15,23,42,0.15)',
-                                color: ink,
-                                background: isDark ? 'rgba(15,23,42,0.5)' : 'rgba(255,255,255,0.9)',
-                            }}
+                            className="sa-host-btn-secondary"
                         >
-                            Apply here &amp; open <ArrowRight size={16} />
+                            Apply here &amp; open <ArrowRight size={15} />
                         </motion.button>
                     </div>
-                </motion.div>
+                </motion.section>
 
-                {/* Import */}
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
+                {/* ── Import pack ── */}
+                <motion.section
+                    className="sa-host-panel"
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="rounded-3xl p-6 md:p-8 mb-10"
-                    style={{
-                        background: isDark ? 'rgba(4,10,24,0.55)' : 'rgba(248,250,252,0.92)',
-                        border: `1px solid ${isDark ? 'rgba(148,163,184,0.1)' : 'rgba(15,23,42,0.06)'}`,
-                    }}
+                    transition={{ delay: 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                 >
-                    <h2 className="text-sm font-black uppercase tracking-[0.15em] mb-4 flex items-center gap-2" style={{ color: muted }}>
-                        <Upload size={16} /> Import pack
-                    </h2>
-                    <p className="text-sm mb-4" style={{ color: muted }}>
-                        Choose a <span className="font-mono">*-pack.json</span> file exported from this page. Grid dimensions and cover are written to this browser&apos;s storage for the hub encoded in the file.
+                    <div className="sa-host-panel__header">
+                        <Upload size={14} /> Import pack
+                    </div>
+                    <p style={{ fontSize: 13, color: muted, marginBottom: 14, lineHeight: 1.6 }}>
+                        Choose a <code style={{ color: codeColor, fontSize: 11 }}>*-pack.json</code> file exported from this page. Grid dimensions and cover are written to this browser&apos;s storage for the hub encoded in the file.
                     </p>
-                    <label className="inline-flex items-center gap-2 px-5 py-3 rounded-xl cursor-pointer text-sm font-bold text-white"
-                        style={{ background: isDark ? 'rgba(79,195,247,0.25)' : 'rgba(2,132,199,0.9)' }}>
+                    <label className="sa-host-import-btn">
                         <input
                             type="file"
                             accept="application/json,.json"
@@ -544,45 +451,49 @@ export default function HostArchive() {
                                 e.target.value = ''
                             }}
                         />
-                        {importBusy ? <><Loader2 size={18} className="animate-spin" /> Reading…</> : <>Select pack file</>}
+                        {importBusy ? <><Loader2 size={16} className="animate-spin" /> Reading…</> : <>Select pack file</>}
                     </label>
                     {importErr && (
-                        <p className="mt-3 text-sm flex items-center gap-2" style={{ color: '#f87171' }}><AlertCircle size={16} />{importErr}</p>
+                        <p style={{ marginTop: 12, fontSize: 13, color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <AlertCircle size={15} /> {importErr}
+                        </p>
                     )}
                     {importDoneHub && !importErr && (
-                        <p className="mt-4 text-sm" style={{ color: ink }}>
+                        <p style={{ marginTop: 14, fontSize: 13, color: ink }}>
                             Imported.{' '}
-                            <Link
-                                to={`/archive/${importDoneHub}`}
-                                className="font-bold underline"
-                                style={{ color: isDark ? '#7dd3fc' : '#0284c7' }}
-                            >
+                            <Link to={`/archive/${importDoneHub}`} style={{ color: accent, fontWeight: 700 }}>
                                 Open archive for {importDoneHub}
                             </Link>
                         </p>
                     )}
-                </motion.div>
+                </motion.section>
 
-                {/* Hosting */}
-                <motion.div
+                {/* ── Self-hosting info ── */}
+                <motion.section
+                    className="sa-host-panel"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="rounded-3xl p-6 md:p-8 flex gap-4"
-                    style={{
-                        background: isDark ? 'rgba(15,23,42,0.45)' : 'rgba(255,255,255,0.7)',
-                        border: `1px solid ${isDark ? 'rgba(71,85,105,0.25)' : 'rgba(226,232,240,1)'}`,
-                    }}
+                    transition={{ delay: 0.26, duration: 0.5 }}
+                    style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}
                 >
-                    <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: isDark ? 'rgba(52,211,153,0.15)' : 'rgba(16,185,129,0.12)' }}>
-                        <Server size={22} style={{ color: isDark ? '#34d399' : '#059669' }} />
+                    <div className="sa-host-info-icon">
+                        <Server size={20} style={{ color: '#34d399' }} />
                     </div>
-                    <div className="text-sm space-y-2" style={{ color: muted }}>
-                        <h3 className="font-black uppercase tracking-wider text-xs" style={{ color: ink }}>Self-hosting</h3>
-                        <p>Build this site (for example <span className="font-mono">npm run build</span>) and upload the <span className="font-mono">dist</span> folder to any static host. Routes use hash mode, so deep links look like <span className="font-mono">yoursite.com/#/host-archive</span>.</p>
-                        <p>On your deployment, open Host archive, import the JSON pack once per browser (data lives in <span className="font-mono">localStorage</span>). For a shared default for all visitors you would need a small server or baked-in config—that&apos;s outside this demo.</p>
+                    <div style={{ fontSize: 13, color: muted, lineHeight: 1.65 }}>
+                        <p style={{ fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.14em', color: codeColor, marginBottom: 8 }}>Self-hosting</p>
+                        <p style={{ marginBottom: 8 }}>
+                            Build this site (<code style={{ color: codeColor, fontSize: 11 }}>npm run build</code>) and upload the{' '}
+                            <code style={{ color: codeColor, fontSize: 11 }}>dist</code> folder to any static host. Routes use hash mode, so deep links look like{' '}
+                            <code style={{ color: codeColor, fontSize: 11 }}>yoursite.com/#/host-archive</code>.
+                        </p>
+                        <p>
+                            On your deployment, open Host archive, import the JSON pack once per browser (data lives in{' '}
+                            <code style={{ color: codeColor, fontSize: 11 }}>localStorage</code>). A shared default for all visitors would need a small server — outside this demo.
+                        </p>
                     </div>
-                </motion.div>
+                </motion.section>
             </div>
         </div>
     )
 }
+

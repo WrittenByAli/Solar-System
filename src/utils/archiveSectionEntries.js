@@ -58,7 +58,7 @@ export function buildMergedSectionEntries(planet, halfW, halfH) {
         tags,
         difficulty: e.difficulty,
         consensusDifficulty: e.consensusDifficulty,
-        alternatePerspectives: [],
+        alternatePerspectives: Array.isArray(e.alternatePerspectives) ? e.alternatePerspectives : [],
       }
       const prev = m[key]
       const mergedSegStrings = fromUser.segments?.length
@@ -84,7 +84,10 @@ export function buildMergedSectionEntries(planet, halfW, halfH) {
             tags: [...new Set([...(prev.tags || []), ...tags])],
             difficulty: fromUser.difficulty ?? prev.difficulty,
             consensusDifficulty: fromUser.consensusDifficulty ?? prev.consensusDifficulty,
-            alternatePerspectives: prev.alternatePerspectives || [],
+            alternatePerspectives: [
+              ...(prev.alternatePerspectives || []),
+              ...(fromUser.alternatePerspectives || []),
+            ],
           }
         : fromUser
     })

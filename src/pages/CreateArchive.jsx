@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+﻿import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -6,7 +6,6 @@ import {
     CheckCircle,
     AlertCircle,
     ExternalLink,
-    Sparkles,
     Grid3x3,
     Loader2,
     ArrowRight,
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import '../styles/solar-create.css'
 import {
     ARCHIVE_INSTANCE_LS,
     ARCHIVE_HUB_LOCATIONS,
@@ -36,6 +36,10 @@ export default function CreateArchive() {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
     const { isLoggedIn, username } = useAuth()
+
+    useLayoutEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    }, [])
 
     const lastFileRef = useRef(null)
     const [phase, setPhase] = useState('idle')
@@ -211,8 +215,8 @@ export default function CreateArchive() {
         }
     }
 
-    const muted = isDark ? '#94a3b8' : '#64748b'
-    const ink = isDark ? '#f1f5f9' : '#0f172a'
+    const muted = isDark ? '#ffffff' : '#000000'
+    const ink = isDark ? '#ffffff' : '#000000'
 
     const ambient = isDark
         ? 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(79,195,247,0.18), transparent), radial-gradient(ellipse 60% 40% at 100% 50%, rgba(124,58,237,0.12), transparent), radial-gradient(ellipse 50% 35% at 0% 80%, rgba(245,166,35,0.08), transparent)'
@@ -220,7 +224,7 @@ export default function CreateArchive() {
 
     if (phase === 'done') {
         return (
-            <div className="solar-page solar-page--center relative overflow-hidden">
+            <div className="solar-page solar-page--center sa-create-page relative overflow-hidden">
                 <div className="absolute inset-0 pointer-events-none" style={{ background: ambient }} />
                 <motion.div
                     initial={{ opacity: 0, scale: 0.94 }}
@@ -301,7 +305,7 @@ export default function CreateArchive() {
     const saveDisabled = phase !== 'ready' || phase === 'saving'
 
     return (
-        <div className="solar-page relative overflow-hidden">
+        <div className="solar-page sa-create-page relative overflow-hidden">
             <div className="absolute inset-0 pointer-events-none" style={{ background: ambient }} />
 
             <div className="relative z-10 solar-page__inner solar-page__inner--md">
@@ -311,26 +315,11 @@ export default function CreateArchive() {
                     transition={{ duration: 0.45 }}
                     className="solar-page__hero"
                 >
-                    <motion.div
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.2em] mb-8 md:mb-10"
-                        style={{
-                            background: isDark ? 'rgba(79,195,247,0.12)' : 'rgba(2,132,199,0.1)',
-                            border: `1px solid ${isDark ? 'rgba(79,195,247,0.25)' : 'rgba(2,132,199,0.2)'}`,
-                            color: isDark ? '#7dd3fc' : '#0369a1',
-                        }}
-                    >
-                        <Sparkles size={13} /> Shape your canvas
-                    </motion.div>
-
                     <h1
-                        className="font-solar text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4 bg-clip-text text-transparent"
-                        style={{
-                            backgroundImage: isDark
-                                ? 'linear-gradient(135deg, #f8fafc 0%, #7dd3fc 45%, #fbbf24 100%)'
-                                : 'linear-gradient(135deg, #0f172a 0%, #0284c7 45%, #d97706 100%)',
-                        }}
+                        className="sa-create-title mb-4"
+                        style={{ color: ink }}
                     >
-                        Start your archive
+                        Create a Solar Archive
                     </h1>
                     <p className="text-sm md:text-base max-w-xl mx-auto leading-relaxed mb-4" style={{ color: muted }}>
                         Drop any image: its <strong style={{ color: ink }}>width × height in pixels</strong> becomes your coordinate grid — one cell per pixel.
@@ -341,7 +330,7 @@ export default function CreateArchive() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-xs font-semibold opacity-90 hover:opacity-100 transition-opacity"
-                        style={{ color: isDark ? '#67e8f9' : '#0284c7' }}
+                        style={{ color: ink }}
                     >
                         Federation vision: archive.solar <ExternalLink size={12} />
                     </a>
@@ -615,7 +604,7 @@ export default function CreateArchive() {
                         <input type="checkbox" checked={listPublicly} onChange={(e) => setListPublicly(e.target.checked)} className="mt-1 rounded border-gray-400" />
                         <span style={{ color: muted }}>
                             Also publish to the <strong style={{ color: ink }}>shared directory</strong> prototype (same browser). Future: sync to{' '}
-                            <a href="https://archive.solar" target="_blank" rel="noopener noreferrer" className="font-semibold underline" style={{ color: isDark ? '#67e8f9' : '#0284c7' }}>archive.solar</a>.
+                            <a href="https://archive.solar" target="_blank" rel="noopener noreferrer" className="font-semibold underline" style={{ color: ink }}>archive.solar</a>.
                         </span>
                     </label>
 
@@ -714,3 +703,4 @@ export default function CreateArchive() {
         </div>
     )
 }
+

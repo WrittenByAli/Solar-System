@@ -10,6 +10,7 @@
   justify-content: flex-start;
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
   padding:
     max(16px, env(safe-area-inset-top))
@@ -45,7 +46,7 @@
   z-index: 1;
   width: 100%;
   max-width: 40rem;
-  margin: auto;
+  margin: 0 auto;
   padding: 8px 12px 12px;
   text-align: center;
   box-sizing: border-box;
@@ -81,7 +82,7 @@
 
 .planet-intro__title {
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(1.75rem, 7.5vw, 4.75rem);
+  font-size: clamp(1.75rem, 8vw, 4.5rem);
   font-weight: 900;
   letter-spacing: -0.04em;
   margin: 0 0 4px;
@@ -91,7 +92,7 @@
 }
 
 .planet-intro__body {
-  margin-bottom: 20px;
+  margin-bottom: clamp(16px, 3vh, 28px);
 }
 
 .planet-intro__domain {
@@ -128,6 +129,41 @@
   margin-left: auto;
   margin-right: auto;
   line-height: 1.5;
+}
+
+.planet-intro__focus {
+  --planet-color: #f5a623;
+  max-width: 36rem;
+  margin: 14px auto 0;
+}
+
+.planet-intro__focus-label {
+  margin-bottom: 8px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.planet-intro__focus-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+}
+
+.planet-intro__focus-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--planet-color) 45%, transparent);
+  background: color-mix(in srgb, var(--planet-color) 10%, transparent);
+  color: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.25;
 }
 
 .planet-intro__nav {
@@ -224,7 +260,7 @@
 
 @media (min-width: 768px) {
   .planet-intro {
-    justify-content: center;
+    justify-content: flex-start;
     padding-top: max(24px, env(safe-area-inset-top));
     padding-bottom: max(24px, env(safe-area-inset-bottom));
   }
@@ -240,11 +276,11 @@
   }
 
   .planet-intro__badge {
-    margin-bottom: 30px;
+    margin-bottom: 22px;
   }
 
   .planet-intro__body {
-    margin-bottom: 40px;
+    margin-bottom: 26px;
   }
 
   .planet-intro__domain {
@@ -253,11 +289,11 @@
   }
 
   .planet-intro__nav {
-    margin-bottom: 28px;
+    margin-bottom: 18px;
   }
 
   .planet-intro__federation {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     font-size: 11px;
   }
 
@@ -267,8 +303,50 @@
   }
 }
 
-@media (min-height: 700px) and (min-width: 768px) {
+@media (max-height: 760px) and (min-width: 768px) {
+  .planet-intro__orb {
+    width: 68px;
+    height: 68px;
+    margin-bottom: 14px;
+  }
+
+  .planet-intro__badge {
+    margin-bottom: 14px;
+  }
+
+  .planet-intro__title {
+    font-size: clamp(2.25rem, 6.5vw, 3.8rem);
+  }
+
+  .planet-intro__intro {
+    line-height: 1.45;
+  }
+}
+
+@media (max-width: 480px) {
   .planet-intro {
-    overflow-y: hidden;
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  .planet-intro__badge {
+    max-width: 100%;
+    justify-content: center;
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .planet-intro__title {
+    font-size: clamp(2.1rem, 14vw, 3.6rem);
+  }
+
+  .planet-intro__domain {
+    letter-spacing: 0.11em;
+  }
+
+  .planet-intro__focus-pill {
+    max-width: 100%;
+    text-align: center;
   }
 }

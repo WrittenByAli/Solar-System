@@ -39,9 +39,9 @@ export const LAYER_LABELS = {
     8: '16384px · Deep Full',
 }
 
-export const SUBMISSION_PREVIEW_LAYER_IDS = [5, 6, 7, 8]
+export const SUBMISSION_PREVIEW_LAYER_IDS = [4, 5, 6, 7, 8]
 
-/** Parse ?archiveLayer= from submit / report URLs → 5–8 or null */
+/** Parse ?archiveLayer= from submit / report URLs → 4–8 or null */
 export function parseSubmissionArchiveLayer(raw) {
     const n = parseInt(String(raw ?? '').trim(), 10)
     return SUBMISSION_PREVIEW_LAYER_IDS.includes(n) ? n : null
