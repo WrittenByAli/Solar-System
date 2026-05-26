@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useLocation } from 'react-router-dom'
 import { useTheme } from '../App.jsx'
 import { SolarWordCore } from './SolarBrandA.jsx'
-import FoundationLogo from './FoundationLogo.jsx'
 
 const NAV_LINKS = [
     { label: 'Home', path: '/' },
@@ -13,7 +12,6 @@ const NAV_LINKS = [
     { label: 'Directory', path: '/directory' },
     { label: 'Reviews', path: '/reviews' },
     { label: 'Host Archive', path: '/host-archive' },
-    { label: 'Join', path: '/join' },
 ]
 
 const TAGS = ['SOLAR', 'Peer Review', 'Open Data', 'Public Knowledge']
@@ -25,6 +23,7 @@ export default function Footer() {
 
     if (
         location.pathname === '/' ||
+        location.pathname === '/join' ||
         location.pathname.startsWith('/archive/')
     ) return null
 
@@ -35,17 +34,6 @@ export default function Footer() {
                     {/* Brand */}
                     <div className="sa-footer__brand-col">
                         <div className="sa-footer__brand">
-                            <div
-                                className="sa-footer__logo"
-                                style={{
-                                    background: 'linear-gradient(135deg, #f5a623, #ff6b35)',
-                                    boxShadow: isDark
-                                        ? '0 0 20px rgba(245,166,35,0.25)'
-                                        : '0 8px 20px rgba(245,166,35,0.18)',
-                                }}
-                            >
-                                <FoundationLogo fillCircle alt="" />
-                            </div>
                             <span
                                 className="sa-footer__brand-text"
                                 style={{ color: isDark ? '#f8fafc' : '#0f172a' }}

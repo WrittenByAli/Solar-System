@@ -147,19 +147,7 @@
 .sa-footer__brand {
   display: flex;
   align-items: center;
-  gap: 12px;
   margin-bottom: 14px;
-}
-
-.sa-footer__logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  flex-shrink: 0;
 }
 
 .sa-footer__brand-text {

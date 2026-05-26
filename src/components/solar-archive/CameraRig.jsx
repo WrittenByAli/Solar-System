@@ -3,7 +3,8 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
 export default function CameraRig({ scrollProgress = 0, mouse, reveal = 0, shake = 0 }) {
-  const { camera } = useThree()
+  const { camera, size } = useThree()
+  const isMobile = size.width <= 640
   const lookAt = useRef(new THREE.Vector3(0, 0, 0))
   const shakeOffset = useRef(new THREE.Vector3())
   const smoothMouse = useRef({ x: 0, y: 0 })
@@ -21,13 +22,21 @@ export default function CameraRig({ scrollProgress = 0, mouse, reveal = 0, shake
     const mx = smoothMouse.current.x
     const my = smoothMouse.current.y
 
-    const dive = Math.sin(sp * Math.PI) * 3.6
-    const baseRadius = 14.5 - sp * 6.5 - dive * 0.55
-    const angle = t * 0.055 + sp * 0.85
+    let targetX, targetY, targetZ
 
-    const targetX = Math.sin(angle) * baseRadius + mx * 0.72
-    const targetY = 2.4 - dive * 0.65 + Math.sin(t * 0.28) * 0.22 + my * 0.42
-    const targetZ = Math.cos(angle) * baseRadius - sp * 3.2
+    if (isMobile) {
+      // Fixed frontal view on mobile — no orbit, just scroll-driven zoom/pan
+      targetX = mx * 0.4
+      targetY = 2.2 - sp * 3.2 + my * 0.25
+      targetZ = 14.5 - sp * 5.8
+    } else {
+      const dive = Math.sin(sp * Math.PI) * 3.6
+      const baseRadius = 14.5 - sp * 6.5 - dive * 0.55
+      const angle = t * 0.055 + sp * 0.85
+      targetX = Math.sin(angle) * baseRadius + mx * 0.72
+      targetY = 2.4 - dive * 0.65 + Math.sin(t * 0.28) * 0.22 + my * 0.42
+      targetZ = Math.cos(angle) * baseRadius - sp * 3.2
+    }
 
     if (shake > 0) {
       shakeOffset.current.set(

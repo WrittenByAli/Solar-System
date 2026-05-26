@@ -81,12 +81,13 @@ function SceneContent({ reveal, scrollProgress, scrollVelocity, mouse, shake, is
 }
 
 export default function SolarSystemScene({ reveal, scrollProgress, scrollVelocity, mouse, shake, isDark = true }) {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640
   return (
     <Canvas
-      dpr={[1, 1.75]}
-      shadows
+      dpr={isMobile ? [1, 1] : [1, 1.75]}
+      shadows={!isMobile}
       camera={{ position: [0, 2.5, 20], fov: 50, near: 0.1, far: 90 }}
-      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+      gl={{ antialias: !isMobile, alpha: false, powerPreference: 'high-performance' }}
       style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'auto' }}
     >
       <Suspense fallback={null}>
