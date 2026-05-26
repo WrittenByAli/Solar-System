@@ -115,6 +115,46 @@ export default function SolarArchiveExperience() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // On mobile: intercept touch-scroll so long chapters exhaust their own
+  // overflow before the page scroll advances to the next chapter.
+  useEffect(() => {
+    if (loading) return
+    if (typeof window === 'undefined' || window.innerWidth > 640) return
+
+    let startY = 0
+    const getLongLayer = () => document.querySelector('.scroll-story__layer--long')
+
+    const onTouchStart = (e) => {
+      startY = e.touches[0].clientY
+    }
+
+    const onTouchMove = (e) => {
+      const layer = getLongLayer()
+      if (!layer) return
+      const maxScroll = layer.scrollHeight - layer.clientHeight
+      if (maxScroll <= 8) return // fits in viewport — let page scroll through
+
+      const deltaY = startY - e.touches[0].clientY
+      const atBottom = layer.scrollTop >= maxScroll - 8
+      const atTop = layer.scrollTop <= 0
+      const movingDown = deltaY > 0
+      const movingUp = deltaY < 0
+
+      if ((movingDown && !atBottom) || (movingUp && !atTop)) {
+        e.preventDefault()
+        layer.scrollTop += deltaY
+        startY = e.touches[0].clientY
+      }
+    }
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove)
+    }
+  }, [loading])
+
   const handleEnter = useCallback(() => navigate(primaryArchivePath()), [navigate])
 
   return (

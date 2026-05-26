@@ -157,6 +157,8 @@ export default function MapView() {
   }, [])
 
   useEffect(() => {
+    // No orbit animation on small screens — static positions only
+    if (window.innerWidth <= 640) return
     animRef.current = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(animRef.current)
   }, [animate])

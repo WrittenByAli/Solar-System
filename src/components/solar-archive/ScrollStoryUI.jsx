@@ -134,7 +134,7 @@ function HeroContent({ scrollProgress, isDark, navigate, local }) {
 
 function StatsContent() {
   return (
-    <div className="scroll-story__layer scroll-story__layer--centered">
+    <div className="scroll-story__layer scroll-story__layer--centered scroll-story__layer--long">
       <div className="scroll-story__stats-grid">
         {STATS.map((s) => (
           <div key={s.label} className="scroll-story__stat">
@@ -149,7 +149,7 @@ function StatsContent() {
 
 function StatementContent() {
   return (
-    <div className="scroll-story__layer scroll-story__layer--centered">
+    <div className="scroll-story__layer scroll-story__layer--centered scroll-story__layer--long">
       <div className="scroll-story__panel scroll-story__panel--fit">
         <Kicker>What is SOLAR</Kicker>
         <div className="scroll-story__statement">
@@ -177,7 +177,7 @@ function StatementContent() {
 
 function MechanicsContent() {
   return (
-    <div className="scroll-story__layer scroll-story__layer--centered">
+    <div className="scroll-story__layer scroll-story__layer--centered scroll-story__layer--long">
       <div className="scroll-story__panel scroll-story__panel--fit">
         <Kicker>Archive Mechanics</Kicker>
         <h2 className="scroll-story__section-title scroll-story__section-title--compact">
@@ -204,7 +204,7 @@ function MechanicsContent() {
 
 function HubsContent({ onEnter, navigate }) {
   return (
-    <div className="scroll-story__layer scroll-story__layer--centered">
+    <div className="scroll-story__layer scroll-story__layer--centered scroll-story__layer--long">
       <div className="scroll-story__panel scroll-story__panel--fit">
         <div className="scroll-story__hubs-header">
           <div>
@@ -240,7 +240,7 @@ function HubsContent({ onEnter, navigate }) {
 
 function FeaturesContent() {
   return (
-    <div className="scroll-story__layer scroll-story__layer--centered">
+    <div className="scroll-story__layer scroll-story__layer--centered scroll-story__layer--long">
       <div className="scroll-story__panel scroll-story__panel--fit">
         <Kicker>How It Works</Kicker>
         <div className="scroll-story__features-grid">
@@ -259,7 +259,7 @@ function FeaturesContent() {
 
 function FinalContent({ navigate }) {
   return (
-    <div className="scroll-story__layer scroll-story__layer--final">
+    <div className="scroll-story__layer scroll-story__layer--final scroll-story__layer--long">
       <div className="scroll-story__final-inner">
         <h2 className="scroll-story__final-mega">
           <span>Start exploring</span>

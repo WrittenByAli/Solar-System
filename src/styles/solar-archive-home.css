@@ -785,13 +785,15 @@
     align-items: flex-start;
     padding-top: max(68px, calc(env(safe-area-inset-top) + 58px));
     padding-bottom: max(24px, env(safe-area-inset-bottom));
-    /* Allow content taller than viewport to scroll within the fixed layer */
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
     /* No mouse on touch — disable 3D parallax entirely */
     transform: none !important;
     will-change: opacity;
+  }
+
+  /* Long chapters scroll internally before advancing to next chapter */
+  .scroll-story__layer--long {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .scroll-story__layer--centered {
