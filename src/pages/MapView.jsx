@@ -117,6 +117,7 @@ export default function MapView() {
   const navigate = useNavigate()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640
   const [hoveredPlanet, setHoveredPlanet] = useState(null)
   const [selectedHubId, setSelectedHubId] = useState('star')
   const [searchVal, setSearchVal] = useState('')
@@ -372,7 +373,7 @@ export default function MapView() {
                   <motion.circle
                     r={46}
                     fill="url(#mapNsCorona)"
-                    animate={{ opacity: [0.55, 1, 0.55], scale: [1, 1.06, 1] }}
+                    animate={isMobile ? { opacity: 0.75 } : { opacity: [0.55, 1, 0.55], scale: [1, 1.06, 1] }}
                     transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
                   />
                   <g opacity={0.92}>
@@ -402,7 +403,7 @@ export default function MapView() {
                   <motion.circle
                     r={58}
                     fill="url(#mapSunCorona)"
-                    animate={{ opacity: [0.65, 1, 0.65], scale: [1, 1.08, 1] }}
+                    animate={isMobile ? { opacity: 0.8 } : { opacity: [0.65, 1, 0.65], scale: [1, 1.08, 1] }}
                     transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
                   />
                   <circle r={36} fill="url(#mapSunCore)" />

@@ -799,6 +799,13 @@
   to { transform: rotate(360deg); }
 }
 
+@media (max-width: 640px) {
+  .solar-map__planet-spin,
+  .solar-map__planet-ring-spin {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .solar-map__orbit,
   .solar-map__stat-dot,
