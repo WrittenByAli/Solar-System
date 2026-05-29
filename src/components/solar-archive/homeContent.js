@@ -2,15 +2,15 @@
 
 export const PLANETARY_HUBS = [
   { id: 'star', planet: 'North Star', domain: 'Foundation', color: '#f5a623', grad: ['#fde68a', '#f5a623', '#d97706'] },
-  { id: 'sun', planet: 'Sun', domain: 'Energy', color: '#ff6b35', grad: ['#fed7aa', '#ff6b35', '#c2410c'] },
-  { id: 'mercury', planet: 'Mercury', domain: 'Industry', color: '#94a3b8', grad: ['#e2e8f0', '#94a3b8', '#475569'] },
-  { id: 'venus', planet: 'Venus', domain: 'Agriculture', color: '#fbbf24', grad: ['#fef9c3', '#fbbf24', '#a16207'] },
-  { id: 'earth', planet: 'Earth', domain: 'Biology', color: '#34d399', grad: ['#a7f3d0', '#34d399', '#059669'] },
-  { id: 'mars', planet: 'Mars', domain: 'Engineering', color: '#f87171', grad: ['#fecaca', '#f87171', '#b91c1c'] },
-  { id: 'jupiter', planet: 'Jupiter', domain: 'Intelligence', color: '#fb923c', grad: ['#fed7aa', '#fb923c', '#c2410c'] },
-  { id: 'saturn', planet: 'Saturn', domain: 'Ecology', color: '#fde68a', grad: ['#fef9c3', '#fde68a', '#d97706'] },
-  { id: 'uranus', planet: 'Uranus', domain: 'Society', color: '#67e8f9', grad: ['#cffafe', '#67e8f9', '#0891b2'] },
-  { id: 'neptune', planet: 'Neptune', domain: 'Water', color: '#818cf8', grad: ['#c7d2fe', '#818cf8', '#4338ca'] },
+  { id: 'sun', planet: 'Sun', domain: 'Physics', color: '#ff6b35', grad: ['#fed7aa', '#ff6b35', '#c2410c'] },
+  { id: 'mercury', planet: 'Mercury', domain: 'Mathematics', color: '#94a3b8', grad: ['#e2e8f0', '#94a3b8', '#475569'] },
+  { id: 'venus', planet: 'Venus', domain: 'Psychology', color: '#fbbf24', grad: ['#fef9c3', '#fbbf24', '#a16207'] },
+  { id: 'earth', planet: 'Earth', domain: 'Earth Science', color: '#34d399', grad: ['#a7f3d0', '#34d399', '#059669'] },
+  { id: 'mars', planet: 'Mars', domain: 'Technology', color: '#f87171', grad: ['#fecaca', '#f87171', '#b91c1c'] },
+  { id: 'jupiter', planet: 'Jupiter', domain: 'Social Science', color: '#fb923c', grad: ['#fed7aa', '#fb923c', '#c2410c'] },
+  { id: 'saturn', planet: 'Saturn', domain: 'Astronomy', color: '#fde68a', grad: ['#fef9c3', '#fde68a', '#d97706'] },
+  { id: 'uranus', planet: 'Uranus', domain: 'Chemistry', color: '#67e8f9', grad: ['#cffafe', '#67e8f9', '#0891b2'] },
+  { id: 'neptune', planet: 'Neptune', domain: 'Biology', color: '#818cf8', grad: ['#c7d2fe', '#818cf8', '#4338ca'] },
 ]
 
 export const STATS = [
@@ -64,10 +64,10 @@ export const HERO_BULLETS = [
 ]
 
 export const DOMAIN_HIGHLIGHTS = [
-  { label: 'Energy', body: 'Sun hub powers renewable energy research — solar, wind, and closed-loop thermal systems.', color: '#f5a623' },
-  { label: 'Materials', body: 'Mercury hub focuses on industrial processes, circular economy, and material science.', color: '#94a3b8' },
-  { label: 'Ecology', body: 'Saturn hub covers agriculture, waste cycles, and regenerative land systems.', color: '#fde68a' },
-  { label: 'Intelligence', body: 'Jupiter hub archives AI, information systems, and collective knowledge networks.', color: '#fb923c' },
+  { label: 'Physics', body: 'Sun hub archives mechanics, thermodynamics, electromagnetism, quantum physics, and relativity.', color: '#ff6b35' },
+  { label: 'Mathematics', body: 'Mercury hub covers algebra, geometry, analysis, statistics, and applied mathematical methods.', color: '#94a3b8' },
+  { label: 'Astronomy', body: 'Saturn hub maps stars, galaxies, cosmology, and observational astronomy across the universe.', color: '#fde68a' },
+  { label: 'Social Science', body: 'Jupiter hub archives economics, sociology, political science, and collective decision-making.', color: '#fb923c' },
 ]
 
 /** Non-overlapping scroll chapter spacers — see scrollChapters.js */

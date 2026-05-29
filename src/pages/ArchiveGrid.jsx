@@ -64,6 +64,7 @@ import {
   hasHubCompassTaxonomy,
   mergeStaticLayerMapForHub,
 } from '../utils/hubTaxonomyRegistry.js'
+import { getHubDisciplineCopy } from '../constants/hubDisciplineCopy.js'
 
 const researchData = window.SOLAR_CONTENT_DATA || fallbackData;
 
@@ -2566,8 +2567,15 @@ export default function ArchiveGrid() {
       researchData.planets.find((p) => p.id?.toLowerCase() === id || p.planet?.toLowerCase() === id) ||
       researchData.planets[0]
     const sections = getHubResearchSections(id)
-    if (sections?.length) return { ...base, sections }
-    return base
+    const taxonomy = getHubTaxonomy(id)
+    const copy = getHubDisciplineCopy(id)
+    const domain = taxonomy?.discipline || copy?.domain || base.domain
+    const intro = copy?.intro || base.intro
+    const shortDomain = copy?.shortDomain || base.shortDomain
+    if (sections?.length) {
+      return { ...base, sections, domain, intro, shortDomain }
+    }
+    return { ...base, domain, intro, shortDomain }
   }, [hubId])
 
   // Build section lookup keyed by absolute grid index "gx,gy"

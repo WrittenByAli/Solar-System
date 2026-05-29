@@ -3,12 +3,12 @@
         {
             "id": "sun",
             "planet": "Sun",
-            "domain": "Energy Research & Production",
-            "shortDomain": "Energy",
+            "domain": "Physics",
+            "shortDomain": "Physics",
             "color": "#ff6b35",
             "glowColor": "rgba(255,107,53,0.6)",
             "chapter": 2,
-            "intro": "The Sun hub provides all the energy for SOLAR It uses solar panels, geothermal energy, hydrogen, batteries, and fusion research to make sure every hub has reliable power. The Sun hub also develops smart grids, thermal management, and new materials to keep energy flowing efficiently and safely.",
+            "intro": "The Sun hub is the Physics archive of SOLAR — covering classical mechanics, thermodynamics, electromagnetism, optics, quantum mechanics, relativity, and particle physics from first principles through advanced research.",
             "description": "The Sun hub is the energetic heart of SOLAR In both name and function, it mirrors the role of our nearest star: providing the fundamental energy upon which all other systems depend. Without it, no food can be grown, no water purified, no data processed, and no community sustained. Energy is the master resource, the one input that makes all other outputs possible.\n\nWithin SOLAR, the Sun hub is responsible for the research, development, and deployment of every energy technology the project relies upon. This includes solar photovoltaic and solar thermal systems, geothermal extraction, hydrogen production and storage, advanced battery chemistry, fusion energy research, smart grid management, and thermal regulation. Each of these technologies addresses a different dimension of the energy challenge: generation, storage, distribution, and efficiency.",
             "sections": [
                 {
@@ -106,12 +106,12 @@
         {
             "id": "mercury",
             "planet": "Mercury",
-            "domain": "Industrial Production & Materials",
-            "shortDomain": "Industry",
+            "domain": "Mathematics",
+            "shortDomain": "Mathematics",
             "color": "#9ca3af",
             "glowColor": "rgba(156,163,175,0.5)",
             "chapter": 3,
-            "intro": "Mercury is the industrial heart of SOLAR It produces metals, ceramics, nanomaterials, and modular construction systems. Its factories are efficient, zero-waste, and highly automated. Mercury makes sure every hub has the tools and structures it needs while keeping production safe and sustainable.",
+            "intro": "The Mercury hub archives Mathematics — arithmetic, algebra, geometry, analysis, statistics, and applied mathematical methods that underpin every other scientific domain in SOLAR.",
             "description": "Mercury is the forge of SOLAR, the industrial hub where raw materials are transformed into the tools, structures, and components that every other hub depends upon. Named after the planet closest to the Sun, Mercury operates in the intense heat of manufacturing: smelting metals, firing ceramics, synthesizing polymers, and assembling modular systems.\n\nThe Mercury hub combines traditional metallurgy with cutting-edge nanomaterial science, additive manufacturing, and zero-waste industrial processes. Every product leaving Mercury is designed for durability, repairability, and eventual recycling back into the production cycle. This circular approach eliminates waste streams and reduces dependence on external supply chains.",
             "sections": [
                 {
@@ -145,12 +145,12 @@
         {
             "id": "venus",
             "planet": "Venus",
-            "domain": "Controlled Agriculture & Animal Systems",
-            "shortDomain": "Agriculture",
+            "domain": "Psychology & Neuroscience",
+            "shortDomain": "Psychology",
             "color": "#fbbf24",
             "glowColor": "rgba(251,191,36,0.5)",
             "chapter": 4,
-            "intro": "Venus manages agriculture and animal systems. It uses closed-loop greenhouses, vertical farms, and aquaponics to grow food efficiently. Waste is reused, and nutrients are cycled back into the system. Venus ensures every hub has reliable, nutritious food while conserving resources.",
+            "intro": "The Venus hub covers Psychology & Neuroscience — cognition, behavior, neural systems, development, and the science of mind and brain across experimental and clinical research.",
             "description": "If the Sun hub is the heartbeat of energy and Mercury is the forge of industry, then Venus is the stomach and the soul of SOLAR — the guarantor of nourishment, fertility, and abundance. Within this framework, Venus represents the agricultural and food systems required to keep a society thriving not only in physical survival but also in cultural identity.\n\nFood is more than calories. It is history, memory, ritual, and the means by which people feel rooted in community. A society without food security is fragile. A society without shared meals is spiritually impoverished. Venus ensures that neither vulnerability takes hold. Here, climate-controlled agriculture, advanced hydroponics, nutrient recycling, and synthetic protein systems are developed, tested, and distributed across all other hubs.",
             "sections": [
                 {
@@ -184,12 +184,12 @@
         {
             "id": "earth",
             "planet": "Earth",
-            "domain": "Biology, Medicine & Genomics",
-            "shortDomain": "Biology",
+            "domain": "Earth & Environmental Science",
+            "shortDomain": "Earth Science",
             "color": "#34d399",
             "glowColor": "rgba(52,211,153,0.5)",
             "chapter": 5,
-            "intro": "Earth focuses on human health, medical research, and biotechnology. It studies disease, genetics, and wellness. Knowledge from Earth is shared across all hubs, strengthening the resilience of every other system.",
+            "intro": "The Earth hub documents Earth & Environmental Science — geology, climate, ecosystems, natural resources, and planetary systems research tied to environmental stewardship.",
             "description": "If Mars is the crucible of engineering and Jupiter the brain of intelligence, then Earth is the beating heart of SOLAR Here lies the domain where life itself is studied, decoded, and reimagined. Earth is not just humanity's place of origin but its living laboratory, the hub where genomes are sequenced, medicines developed, therapies refined, and ecosystems modeled.\n\nEvery advance made here echoes outward, strengthening the resilience of every other hub: crops engineered for Saturn's hydroponic towers, livestock improved for Venus's closed loops, genetic screening protocols ensuring the survival of colonists on Mars, and marine biotechnologies safeguarding Neptune's fragile aquatic balance.",
             "sections": [
                 {
@@ -250,12 +250,12 @@
         {
             "id": "mars",
             "planet": "Mars",
-            "domain": "Engineering & Harsh Environments",
-            "shortDomain": "Engineering",
+            "domain": "Applied Technology",
+            "shortDomain": "Technology",
             "color": "#f87171",
             "glowColor": "rgba(248,113,113,0.5)",
             "chapter": 6,
-            "intro": "Mars is the hub dedicated to engineering resilience. It represents the principles and practices that allow communities to withstand disruption, scarcity, and stress. It is the workshop of durability, the safeguard against collapse, and the forge in which adaptability becomes strength.",
+            "intro": "The Mars hub focuses on Applied Technology — engineering systems, materials, robotics, infrastructure, and technology designed for real-world deployment and extreme environments.",
             "description": "Every society must answer a fundamental question: how does it endure when conditions turn hostile? Within SOLAR, the answer lies in Mars, the hub dedicated to engineering resilience. Mars represents not an alien frontier, but the principles and practices that allow communities to withstand disruption, scarcity, and stress.\n\nIn this hub, survival is treated not as an emergency response, but as an ongoing practice. Civil and structural engineering ensures that homes and infrastructure endure earthquakes, floods, and fires. Agricultural innovation demonstrates how food can be grown in the poorest soils. Architecture for extremes guarantees safety and dignity under the harshest conditions.",
             "sections": [
                 {
@@ -318,12 +318,12 @@
         {
             "id": "jupiter",
             "planet": "Jupiter",
-            "domain": "AI, Data & Computing",
-            "shortDomain": "Intelligence",
+            "domain": "Social Science",
+            "shortDomain": "Social Science",
             "color": "#fb923c",
             "glowColor": "rgba(251,146,60,0.5)",
             "chapter": 7,
-            "intro": "Jupiter is the nervous system of SOLAR, the intelligence engine that ensures the entire structure is not a collection of isolated experiments but a coordinated, adaptive civilization. Its immense capacity absorbs uncertainty, processes chaos, and transforms danger into foresight.",
+            "intro": "The Jupiter hub archives Social Science — economics, sociology, political science, anthropology, and how societies organize knowledge, resources, and collective decision-making.",
             "description": "Every civilization must decide what it will treat as its foundation. For SOLAR, the foundation is intelligence. The capacity to observe, to interpret, to decide and to learn faster than the forces that threaten survival is what separates collapse from continuity. This is the role of Jupiter.\n\nJupiter is the nervous system of the project. Where the other hubs gather resources, generate energy, or cultivate food, Jupiter gathers knowledge, generates predictions, and cultivates trust. Without it, SOLAR would be blind — a system of organs without a mind, each working in isolation, vulnerable to the very crises it was designed to withstand.",
             "sections": [
                 {
@@ -385,12 +385,12 @@
         {
             "id": "saturn",
             "planet": "Saturn",
-            "domain": "Ecology & Waste Systems",
-            "shortDomain": "Ecology",
+            "domain": "Astronomy & Cosmology",
+            "shortDomain": "Astronomy",
             "color": "#fde68a",
             "glowColor": "rgba(253,230,138,0.5)",
             "chapter": 8,
-            "intro": "Saturn is the stomach of SOLAR Where matter is transformed into life, food is grown, waste is repurposed, and nutrients are cycled continuously. In a closed-loop society, nothing can be discarded without consequences. Saturn ensures every resource contributes to sustaining life.",
+            "intro": "The Saturn hub maps Astronomy & Cosmology — stars, galaxies, observational methods, planetary science, and our place in the universe from the solar neighborhood to deep space.",
             "description": "If Earth is the heart of biology and Mars the crucible of engineering, Saturn is the stomach of SOLAR It is the hub where matter is transformed into life, where food is grown, waste is repurposed, and nutrients are cycled continuously.\n\nThe Saturn hub combines vertical farms, hydroponics, aquaponics, algae and fungi cultivation, controlled soil chambers, and advanced composting facilities into an interconnected network that transforms inputs into outputs without waste. These systems are designed to operate in extreme or constrained environments, developing agricultural and waste systems that are productive, resilient, adaptable, and scalable.",
             "sections": [
                 {
@@ -451,12 +451,12 @@
         {
             "id": "uranus",
             "planet": "Uranus",
-            "domain": "Society, Culture & Ethics",
-            "shortDomain": "Society",
+            "domain": "Chemistry",
+            "shortDomain": "Chemistry",
             "color": "#67e8f9",
             "glowColor": "rgba(103,232,249,0.5)",
             "chapter": 9,
-            "intro": "Uranus is the cultural and ethical compass of SOLAR It is the hub where governance, education, arts, social systems, and ethical frameworks converge to ensure that society remains just, resilient, and cohesive. It produces meaning, fairness, and balance.",
+            "intro": "The Uranus hub holds Chemistry — atomic structure, chemical bonding, reactions, biochemistry, and materials science at the molecular level.",
             "description": "If Saturn feeds humanity and Jupiter provides intelligence, Uranus teaches humanity how to live together. It is the cultural and ethical compass of SOLAR, the hub where governance, education, arts, social systems, and ethical frameworks converge to ensure that society remains just, resilient, and cohesive.\n\nUnlike other hubs, Uranus does not produce food, water, or energy. Instead, it produces meaning, fairness, and balance. It ensures that the technical achievements of the other hubs serve human society rather than overpower it. Without Uranus, SOLAR would risk becoming efficient but hollow, sustainable but unequal.",
             "sections": [
                 {
@@ -518,12 +518,12 @@
         {
             "id": "neptune",
             "planet": "Neptune",
-            "domain": "Oceans & Water Systems",
-            "shortDomain": "Water",
+            "domain": "Biology",
+            "shortDomain": "Biology",
             "color": "#818cf8",
             "glowColor": "rgba(129,140,248,0.5)",
             "chapter": 10,
-            "intro": "Neptune ensures that SOLAR never goes thirsty. Water is the foundation of life, agriculture and energy. Neptune serves as the hydrological hub, managing oceans, rivers, aquifers and closed-loop water cycles to stabilize every other hub.",
+            "intro": "The Neptune hub covers Biology — cells, genetics, evolution, ecology, and organismal biology from molecular life through ecosystems and biodiversity.",
             "description": "If Saturn feeds the SOLAR system and Jupiter provides intelligence, Neptune ensures that it never goes thirsty. Water is the foundation of life, agriculture and energy, yet it remains one of the most volatile and critical resources on Earth and beyond.\n\nNeptune serves as the hydrological hub, responsible for managing oceans, rivers, aquifers and closed-loop water cycles in a way that stabilizes every other hub. The hub transforms water from a precarious commodity into a predictable, sustainable and equitable resource that supports the entire network.",
             "sections": [
                 {

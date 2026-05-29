@@ -6,63 +6,64 @@ import { useTheme } from '../App.jsx'
 import MapBackground from '../components/map/MapBackground.jsx'
 import researchData from '../data/researchData.json'
 import { ARCHIVE_HUB_LOCATIONS, loadHubArchiveConfig } from '../utils/archiveInstanceStorage.js'
+import { getHubDisciplineCopy } from '../constants/hubDisciplineCopy.js'
 import { getHubResearchSections, getHubTaxonomy } from '../utils/hubTaxonomyRegistry.js'
 import '../styles/solar-map.css'
 
 const PLANETS = [
   {
-    id: 'sun', label: 'Sun', subject: 'Energy Research', domain: 'Energy Research',
+    id: 'sun', label: 'Sun', subject: 'Physics', domain: 'Physics',
     color: '#ff6b35', glow: 'rgba(255,107,53,0.7)', size: 72, orbitR: 0, baseAngle: 0, period: 0,
-    desc: 'The Sun hub archives renewable energy systems, closed-loop thermal design, and power autonomy for off-grid living-labs.',
-    topics: ['Solar photovoltaics', 'Wind generation', 'Fusion & hydrogen', 'Battery storage', 'Microgrid design'],
+    desc: 'The Sun hub is the Physics archive — mechanics, thermodynamics, electromagnetism, quantum physics, relativity, and particle research.',
+    topics: ["Newton's Laws", 'Thermodynamics', 'Electromagnetism', 'Quantum mechanics', 'Relativity'],
   },
   {
-    id: 'mercury', label: 'Mercury', subject: 'Industrial Production', domain: 'Industrial Production',
+    id: 'mercury', label: 'Mercury', subject: 'Mathematics', domain: 'Mathematics',
     color: '#9ca3af', glow: 'rgba(156,163,175,0.5)', size: 14, orbitR: 95, baseAngle: 200, period: 88,
-    desc: 'Mercury hub covers material science, fabrication, and circular industrial processes for resilient autonomous sites.',
-    topics: ['Metals & alloys', 'Ceramics', '3D printing', 'Composites', 'Circular economy'],
+    desc: 'Mercury hub archives Mathematics — algebra, geometry, analysis, statistics, and applied mathematical methods.',
+    topics: ['Algebra', 'Geometry', 'Calculus', 'Statistics', 'Number theory'],
   },
   {
-    id: 'venus', label: 'Venus', subject: 'Agriculture & Food', domain: 'Agriculture & Food',
+    id: 'venus', label: 'Venus', subject: 'Psychology & Neuroscience', domain: 'Psychology & Neuroscience',
     color: '#fbbf24', glow: 'rgba(251,191,36,0.5)', size: 22, orbitR: 140, baseAngle: 340, period: 225,
-    desc: 'Venus hub documents food sovereignty — controlled-environment agriculture, soil regeneration, and closed nutrient loops.',
-    topics: ['Greenhouses', 'Vertical farms', 'Aquaponics', 'Permaculture', 'Food preservation'],
+    desc: 'Venus hub covers Psychology & Neuroscience — cognition, behavior, neural systems, and mind–brain research.',
+    topics: ['Cognition', 'Neuroscience', 'Behavior', 'Development', 'Clinical psychology'],
   },
   {
-    id: 'earth', label: 'Earth', subject: 'Biology & Medicine', domain: 'Biology & Medicine',
+    id: 'earth', label: 'Earth', subject: 'Earth & Environmental Science', domain: 'Earth & Environmental Science',
     color: '#34d399', glow: 'rgba(52,211,153,0.5)', size: 24, orbitR: 190, baseAngle: 60, period: 365,
-    desc: 'Earth hub spans genomics, medicine, ecology, and biotech research tied to human and ecosystem health.',
-    topics: ['Genomics', 'Medicine & diagnostics', 'Ecology', 'Biotech', 'Public health'],
+    desc: 'Earth hub documents Earth & Environmental Science — geology, climate, ecosystems, and planetary systems.',
+    topics: ['Geology', 'Climate', 'Ecology', 'Oceanography', 'Environmental systems'],
   },
   {
-    id: 'mars', label: 'Mars', subject: 'Engineering', domain: 'Engineering',
+    id: 'mars', label: 'Mars', subject: 'Applied Technology', domain: 'Applied Technology',
     color: '#f87171', glow: 'rgba(248,113,113,0.5)', size: 18, orbitR: 245, baseAngle: 150, period: 687,
-    desc: 'Mars hub focuses on engineering under constraint — robotics, structures, and systems built for harsh environments.',
-    topics: ['Structural resilience', 'Robotics', 'Habitat design', 'Extreme environments', 'Field repair'],
+    desc: 'Mars hub focuses on Applied Technology — engineering, robotics, materials, and systems for real-world deployment.',
+    topics: ['Engineering systems', 'Robotics', 'Materials', 'Infrastructure', 'Extreme environments'],
   },
   {
-    id: 'jupiter', label: 'Jupiter', subject: 'AI & Computing', domain: 'AI & Computing',
+    id: 'jupiter', label: 'Jupiter', subject: 'Social Science', domain: 'Social Science',
     color: '#fb923c', glow: 'rgba(251,146,60,0.5)', size: 50, orbitR: 310, baseAngle: 270, period: 4333,
-    desc: 'Jupiter hub archives intelligence systems — neural networks, sensor networks, and digital twins for distributed research.',
-    topics: ['Neural networks', 'Sensor networks', 'Digital twins', 'Edge computing', 'Knowledge graphs'],
+    desc: 'Jupiter hub archives Social Science — economics, sociology, political science, and collective decision-making.',
+    topics: ['Economics', 'Sociology', 'Political science', 'Anthropology', 'Public policy'],
   },
   {
-    id: 'saturn', label: 'Saturn', subject: 'Ecology & Waste', domain: 'Ecology & Waste',
+    id: 'saturn', label: 'Saturn', subject: 'Astronomy & Cosmology', domain: 'Astronomy & Cosmology',
     color: '#fde68a', glow: 'rgba(253,230,138,0.5)', size: 42, orbitR: 380, baseAngle: 30, period: 10759,
-    desc: 'Saturn hub maps ecology and waste cycles — composting, biochar, regenerative land, and nutrient recovery.',
-    topics: ['Composting', 'Biochar', 'Regenerative land', 'Waste recovery', 'Nutrient cycling'],
+    desc: 'Saturn hub maps Astronomy & Cosmology — stars, galaxies, observational methods, and deep-space research.',
+    topics: ['Stellar astronomy', 'Galaxies', 'Cosmology', 'Planetary science', 'Observational methods'],
   },
   {
-    id: 'uranus', label: 'Uranus', subject: 'Society & Ethics', domain: 'Society & Ethics',
+    id: 'uranus', label: 'Uranus', subject: 'Chemistry', domain: 'Chemistry',
     color: '#67e8f9', glow: 'rgba(103,232,249,0.5)', size: 30, orbitR: 445, baseAngle: 100, period: 30687,
-    desc: 'Uranus hub holds governance, education, arts, and ethics — how communities steward shared knowledge and autonomy.',
-    topics: ['Governance', 'Education', 'Arts & culture', 'Ethics', 'Community agreements'],
+    desc: 'Uranus hub holds Chemistry — molecular structure, reactions, biochemistry, and materials at the atomic level.',
+    topics: ['Organic chemistry', 'Inorganic chemistry', 'Biochemistry', 'Physical chemistry', 'Materials'],
   },
   {
-    id: 'neptune', label: 'Neptune', subject: 'Oceans & Water', domain: 'Oceans & Water',
+    id: 'neptune', label: 'Neptune', subject: 'Biology', domain: 'Biology',
     color: '#818cf8', glow: 'rgba(129,140,248,0.5)', size: 28, orbitR: 505, baseAngle: 220, period: 60190,
-    desc: 'Neptune hub covers water systems — desalination, aquaculture, tidal energy, and marine resource stewardship.',
-    topics: ['Desalination', 'Aquaculture', 'Tidal energy', 'Watershed care', 'Marine ecology'],
+    desc: 'Neptune hub covers Biology — cells, genetics, evolution, ecology, and organismal life systems.',
+    topics: ['Cell biology', 'Genetics', 'Evolution', 'Ecology', 'Physiology'],
   },
 ]
 
@@ -97,16 +98,18 @@ function enrichHub(hub) {
   const id = hub.id.toLowerCase()
   const dataHub = researchData.planets.find((p) => p.id?.toLowerCase() === id || p.planet?.toLowerCase() === id)
   const taxonomy = getHubTaxonomy(id)
+  const copy = getHubDisciplineCopy(id)
   const sections = getHubResearchSections(id)
   const location = ARCHIVE_HUB_LOCATIONS.find((h) => h.id === id)
   const cfg = loadHubArchiveConfig(id)
   const sectionCount = sections?.length || dataHub?.sections?.length || 0
+  const discipline = taxonomy?.discipline || copy?.domain || location?.subtitle || dataHub?.domain || hub.domain
 
   return {
     ...hub,
-    subject: taxonomy?.discipline || dataHub?.subject || hub.subject,
-    domain: location?.subtitle || taxonomy?.centerLabel || dataHub?.domain || hub.domain,
-    desc: dataHub?.intro || dataHub?.description?.split('\n')[0] || dataHub?.summary || hub.desc,
+    subject: discipline,
+    domain: discipline,
+    desc: copy?.intro || dataHub?.intro || dataHub?.description?.split('\n')[0] || dataHub?.summary || hub.desc,
     topics: sections?.slice(0, 5).map((s) => s.title).filter(Boolean) || hub.topics,
     sectionCount,
     gridLabel: `${cfg.gridWidth || 3840} × ${cfg.gridHeight || 2160}`,

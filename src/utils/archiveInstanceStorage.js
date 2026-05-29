@@ -1,4 +1,6 @@
 /** Saved layout + branding for a hostable archive instance (local demo — swap for API later). */
+import { getHubDisciplineCopy } from '../constants/hubDisciplineCopy.js'
+
 export const ARCHIVE_INSTANCE_LS = 'solarArchiveInstanceConfig'
 /** Per map hub (`/archive/:planetId`) instance configs — overrides legacy single-config when present. */
 export const ARCHIVE_BY_HUB_LS = 'solarArchiveByHub'
@@ -8,18 +10,24 @@ export const ARCHIVE_REGISTRY_LS = 'solarArchivePublishedRegistry'
 export const ARCHIVE_LIBRARY_LS = 'solarArchiveLibrary'
 
 /** Map hubs — ids must match `/archive/:planetId` routes and MapView targets. */
-export const ARCHIVE_HUB_LOCATIONS = [
-    { id: 'star', label: 'North Star', subtitle: 'Foundation archive · memoranda & canon' },
-    { id: 'sun', label: 'Sun', subtitle: 'Energy Research' },
-    { id: 'mercury', label: 'Mercury', subtitle: 'Industrial Production' },
-    { id: 'venus', label: 'Venus', subtitle: 'Agriculture & Food' },
-    { id: 'earth', label: 'Earth', subtitle: 'Biology & Medicine' },
-    { id: 'mars', label: 'Mars', subtitle: 'Engineering' },
-    { id: 'jupiter', label: 'Jupiter', subtitle: 'AI & Computing' },
-    { id: 'saturn', label: 'Saturn', subtitle: 'Ecology & Waste' },
-    { id: 'uranus', label: 'Uranus', subtitle: 'Society & Ethics' },
-    { id: 'neptune', label: 'Neptune', subtitle: 'Oceans & Water' },
+const HUB_LOCATION_DEFS = [
+    { id: 'star', label: 'North Star', fallbackSubtitle: 'Foundation archive · memoranda & canon' },
+    { id: 'sun', label: 'Sun' },
+    { id: 'mercury', label: 'Mercury' },
+    { id: 'venus', label: 'Venus' },
+    { id: 'earth', label: 'Earth' },
+    { id: 'mars', label: 'Mars' },
+    { id: 'jupiter', label: 'Jupiter' },
+    { id: 'saturn', label: 'Saturn' },
+    { id: 'uranus', label: 'Uranus' },
+    { id: 'neptune', label: 'Neptune' },
 ]
+
+export const ARCHIVE_HUB_LOCATIONS = HUB_LOCATION_DEFS.map(({ id, label, fallbackSubtitle }) => ({
+    id,
+    label,
+    subtitle: getHubDisciplineCopy(id)?.domain || fallbackSubtitle || label,
+}))
 
 export function normalizeHubId(raw) {
     let id = String(raw || 'earth').trim().toLowerCase()
