@@ -1,0 +1,287 @@
+/* ══════════════════════════════════════════════════════════════
+   Global navbar — Apple-editorial redesign
+   One consistent frosted bar on every page (no per-page "premium"
+   variant): slim height, hairline bottom border, restrained motion,
+   a sliding underline for the active route, and a macOS-style
+   account menu. Local CSS vars mirror the /join page's token
+   pattern so both surfaces read as one design system.
+══════════════════════════════════════════════════════════════ */
+
+.solar-navbar {
+  --nav-ink: #f5f5f7;
+  --nav-ink-2: #a1a1a8;
+  --nav-ink-3: #6e6e76;
+  --nav-surface: rgba(15, 15, 17, 0.72);
+  --nav-border: rgba(255, 255, 255, 0.09);
+  --nav-hover: rgba(255, 255, 255, 0.07);
+  --nav-accent: #2997ff;
+  --nav-cta-bg: #f5f5f7;
+  --nav-cta-ink: #111111;
+  --nav-danger: #ff6961;
+
+  height: 56px;
+  min-height: 56px !important;
+  padding-top: env(safe-area-inset-top) !important;
+  background: var(--nav-surface);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom: 1px solid var(--nav-border);
+  box-shadow: none;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.light .solar-navbar {
+  --nav-ink: #111111;
+  --nav-ink-2: #6b7280;
+  --nav-ink-3: #9ca3af;
+  --nav-surface: rgba(250, 250, 250, 0.78);
+  --nav-border: rgba(17, 17, 17, 0.08);
+  --nav-hover: rgba(17, 17, 17, 0.045);
+  --nav-accent: #0071e3;
+  --nav-cta-bg: #111111;
+  --nav-cta-ink: #ffffff;
+  --nav-danger: #c93030;
+}
+
+/* ── Brand wordmark ───────────────────────────────────────── */
+
+.solar-navbar__brand {
+  color: var(--nav-ink);
+}
+
+/* ── Desktop link row ─────────────────────────────────────── */
+
+.snav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.snav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 530;
+  letter-spacing: -0.005em;
+  color: var(--nav-ink-2);
+  text-decoration: none;
+  transition: color 0.2s ease, background 0.2s ease;
+  white-space: nowrap;
+}
+
+.snav-link:hover { color: var(--nav-ink); background: var(--nav-hover); }
+
+.snav-link[data-active='true'] { color: var(--nav-ink); }
+
+.snav-link__underline {
+  position: absolute;
+  left: 13px;
+  right: 13px;
+  bottom: 1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--nav-accent);
+}
+
+/* ── Divider between link group and utility group ─────────── */
+
+.snav-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--nav-border);
+  margin: 0 6px;
+  flex-shrink: 0;
+}
+
+/* ── Icon button (theme toggle) ───────────────────────────── */
+
+.snav-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--nav-ink-2);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+.snav-icon-btn:hover { background: var(--nav-hover); color: var(--nav-ink); }
+
+/* ── Sign in CTA (unauthenticated) ────────────────────────── */
+
+.snav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 590;
+  letter-spacing: -0.005em;
+  color: var(--nav-cta-ink);
+  background: var(--nav-cta-bg);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.snav-cta:hover { transform: translateY(-1px); opacity: 0.92; }
+.snav-cta:active { transform: translateY(0); }
+
+.snav-cta--compact {
+  padding: 6px 13px;
+  font-size: 11px;
+}
+
+/* ── Avatar ───────────────────────────────────────────────── */
+
+.snav-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  user-select: none;
+  background: linear-gradient(135deg, #6e6e76, #3a3a3f);
+  border: 1px solid var(--nav-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.2s ease;
+}
+.light .snav-avatar { background: linear-gradient(135deg, #a1a1a8, #6b7280); }
+
+.snav-avatar-btn:hover .snav-avatar { box-shadow: 0 0 0 3px var(--nav-hover); }
+
+/* ── Account dropdown — macOS-style menu ──────────────────── */
+
+.snav-menu {
+  background: var(--nav-surface);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid var(--nav-border);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 20px 48px rgba(0, 0, 0, 0.28);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.light .snav-menu {
+  box-shadow:
+    0 1px 2px rgba(17, 17, 17, 0.04),
+    0 20px 48px rgba(17, 17, 17, 0.14);
+}
+
+.snav-menu__profile {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--nav-border);
+}
+.snav-menu__name {
+  font-size: 13.5px;
+  font-weight: 590;
+  color: var(--nav-ink);
+  letter-spacing: -0.005em;
+}
+.snav-menu__email {
+  font-size: 11.5px;
+  color: var(--nav-ink-3);
+  margin-top: 1px;
+}
+
+.snav-menu__points {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 16px;
+  font-size: 12px;
+  color: var(--nav-ink-2);
+  border-bottom: 1px solid var(--nav-border);
+}
+
+.snav-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 11px 16px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--nav-ink-2);
+  background: none;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.snav-menu__item:hover { background: var(--nav-hover); color: var(--nav-ink); }
+.snav-menu__item--danger { color: var(--nav-danger); border-top: 1px solid var(--nav-border); }
+.snav-menu__item--danger:hover { background: color-mix(in srgb, var(--nav-danger) 10%, transparent); color: var(--nav-danger); }
+
+/* ── Tablet icon strip ─────────────────────────────────────── */
+
+.snav-icon-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--nav-ink-2);
+  transition: background 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+.snav-icon-strip[data-active='true'] {
+  color: var(--nav-ink);
+  background: var(--nav-hover);
+}
+
+/* ── Mobile sheet ─────────────────────────────────────────── */
+
+.snav-sheet {
+  /* Solid (not the slim bar's translucent --nav-surface) -- this sheet only
+     ever renders on mobile, where backdrop-filter support/perf is spottier
+     and the page's cosmic background was showing through enough to hurt
+     legibility. */
+  background: rgba(8, 8, 11, 0.97);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border-bottom: 1px solid var(--nav-border);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
+}
+
+.light .snav-sheet {
+  background: rgba(255, 255, 255, 0.97);
+}
+
+.snav-sheet__profile {
+  background: var(--nav-hover);
+  border: 1px solid var(--nav-border);
+}
+
+.snav-sheet__link {
+  color: var(--nav-ink-2);
+}
+.snav-sheet__link[data-active='true'] {
+  color: var(--nav-ink);
+  background: var(--nav-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snav-link,
+  .snav-icon-btn,
+  .snav-cta,
+  .snav-menu__item {
+    transition-duration: 0.01ms;
+  }
+}

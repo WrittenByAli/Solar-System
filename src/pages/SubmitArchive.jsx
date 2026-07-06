@@ -9,6 +9,8 @@ import SubmissionLayerGuide, {
     SUBMISSION_LAYER_OPTIONS,
 } from '../components/SubmissionLayerGuide.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { supabase } from '../utils/supabaseClient.js'
+import FoundationLogo from '../components/FoundationLogo.jsx'
 import { appendPendingSubmission, getSubmissions, migrateSubmission, normalizeSubmissionTags, MAX_TAGS_PER_SUBMISSION } from '../utils/submissionStorage.js'
 import { appendSegmentReport } from '../utils/segmentReports.js'
 import {
@@ -22,6 +24,7 @@ import {
   getNarrativeSubmitState,
 } from '../utils/archiveLayerSpecs.js'
 import { buildMergedSectionEntries } from '../utils/archiveSectionEntries.js'
+import { buildSortedSegments } from '../utils/segmentDifficulty.js'
 import { getHubResearchSections, getHubTaxonomy } from '../utils/hubTaxonomyRegistry.js'
 import { readGridDimensionsFromStorage, normalizeHubId } from '../utils/archiveInstanceStorage.js'
 
@@ -290,7 +293,7 @@ function AuthorSubmissionOverview({ username, isDark, accent }) {
 export default function SubmitArchive() {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
-    const { isLoggedIn, username } = useAuth()
+    const { isLoggedIn, username, profile } = useAuth()
     const [searchParams, setSearchParams] = useSearchParams()
     const isSegmentReport = searchParams.get('intent') === 'segmentReport'
     const [submitted, setSubmitted] = useState(false)
@@ -301,6 +304,7 @@ export default function SubmitArchive() {
     const [graphUrlDraft, setGraphUrlDraft] = useState('')
     const [attachErr, setAttachErr] = useState('')
     const [attachmentCountSubmitted, setAttachmentCountSubmitted] = useState(0)
+    const [submittedCoords, setSubmittedCoords] = useState({ x: '', y: '' })
     const [previewLayer, setPreviewLayer] = useState(5)
     const [guidelinesOpen, setGuidelinesOpen] = useState(false)
     const [showRichPreview, setShowRichPreview] = useState(false)
@@ -325,6 +329,11 @@ export default function SubmitArchive() {
         () => parseSubmissionArchiveLayer(searchParams.get('archiveLayer')),
         [searchParams],
     )
+    // Present when deep-linked from an existing entry ("Add L5 summary" / "Add L6
+    // detail" / narrative segment links) -- targets that entry via updates_entry_id
+    // instead of creating an independent new topic at an empty coordinate.
+    const updatesEntryId = searchParams.get('updatesEntryId') || null
+    const isDeepenMode = !isSegmentReport && !!updatesEntryId
     const nextSegmentSlotHint = searchParams.get('nextSegmentSlot')
     const highlightSegmentSlot = useMemo(() => {
         if (archiveLayerNum !== 7 && archiveLayerNum !== 8) return null
@@ -379,10 +388,50 @@ export default function SubmitArchive() {
         return planetWithCompiledSections(base, normalizeHubId(id))
     }, [form.planet])
 
+    // Supabase: approved entries for the selected hub, merged over static/local
+    // data -- without this, availableSlots and the L5/L6 narrative gates are
+    // blind to real submitted content (they'd only ever see hardcoded/local data).
+    const [dbEntriesForForm, setDbEntriesForForm] = useState({})
+    useEffect(() => {
+        if (!hubIdForForm) { setDbEntriesForForm({}); return }
+        let active = true
+        supabase
+            .from('archive_entries')
+            .select('*')
+            .eq('planet_id', hubIdForForm)
+            .eq('status', 'approved')
+            .is('updates_entry_id', null)
+            .then(({ data }) => {
+                if (!active || !Array.isArray(data)) return
+                const map = {}
+                data.forEach((e) => {
+                    const gx = e.coord_x + mergeHalfW
+                    const gy = mergeHalfH - e.coord_y
+                    const fullText = e.content || e.short_summary || ''
+                    const segStrings =
+                        fullText.match(/[^.!?]+[.!?]*/g)?.map((s) => s.trim()).filter(Boolean) || [fullText]
+                    map[`${gx},${gy}`] = {
+                        id: e.id,
+                        title: e.title,
+                        content: fullText,
+                        detail: e.content || '',
+                        shortSummary: e.short_summary || fullText.slice(0, 400),
+                        segments: buildSortedSegments(segStrings, e.difficulty ?? null),
+                        attachments: Array.isArray(e.attachments) ? e.attachments : [],
+                        tags: Array.isArray(e.tags) ? e.tags : [],
+                        alternatePerspectives: Array.isArray(e.alternate_perspectives) ? e.alternate_perspectives : [],
+                        foundationMeta: null,
+                    }
+                })
+                setDbEntriesForForm(map)
+            })
+        return () => { active = false }
+    }, [hubIdForForm, mergeHalfW, mergeHalfH])
+
     const mergedSectionEntries = useMemo(() => {
         if (!planetDataForMerge || !form.planet) return {}
-        return buildMergedSectionEntries(planetDataForMerge, mergeHalfW, mergeHalfH)
-    }, [planetDataForMerge, form.planet, mergeHalfW, mergeHalfH, submissionMergeTick])
+        return { ...buildMergedSectionEntries(planetDataForMerge, mergeHalfW, mergeHalfH), ...dbEntriesForForm }
+    }, [planetDataForMerge, form.planet, mergeHalfW, mergeHalfH, submissionMergeTick, dbEntriesForForm])
 
     const submitMergeCellKey = useMemo(
         () => cellKeyFromDisplay(form.coordX, form.coordY, mergeHalfW, mergeHalfH),
@@ -619,12 +668,39 @@ export default function SubmitArchive() {
         }))
     }, [searchParams])
 
+    // Deepen mode: pull the base entry's own title from Supabase so the user
+    // isn't retyping it, and to keep planet/coords authoritative rather than
+    // trusting the URL alone.
     useEffect(() => {
-        if (isSegmentReport || !form.coordX || !form.coordY) return
+        if (!isDeepenMode || !updatesEntryId) return
+        let active = true
+        supabase
+            .from('archive_entries')
+            .select('title, planet_id, coord_x, coord_y')
+            .eq('id', updatesEntryId)
+            .maybeSingle()
+            .then(({ data }) => {
+                if (!active || !data) return
+                setForm((f) => ({
+                    ...f,
+                    subject: data.title || f.subject,
+                    planet: data.planet_id || f.planet,
+                    coordX: String(data.coord_x),
+                    coordY: String(data.coord_y),
+                }))
+            })
+        return () => { active = false }
+    }, [isDeepenMode, updatesEntryId])
+
+    useEffect(() => {
+        // In deepen mode the coordinate deliberately targets an already-occupied
+        // cell (that's the whole point), so it will never appear in availableSlots
+        // -- don't let this effect wipe it out.
+        if (isSegmentReport || isDeepenMode || !form.coordX || !form.coordY) return
         if (selectedTaxonomy && (!form.domainId || !form.topicKey)) return
         if (selectedCoordinateIsValid) return
         setForm((f) => ({ ...f, coordX: '', coordY: '' }))
-    }, [form.planet, form.domainId, form.subfieldId, form.topicKey, form.coordX, form.coordY, previewLayer, selectedTaxonomy, selectedCoordinateIsValid, isSegmentReport])
+    }, [form.planet, form.domainId, form.subfieldId, form.topicKey, form.coordX, form.coordY, previewLayer, selectedTaxonomy, selectedCoordinateIsValid, isSegmentReport, isDeepenMode])
 
     const appendFiles = useCallback((fileList, kind) => {
         const files = Array.from(fileList || [])
@@ -685,8 +761,8 @@ export default function SubmitArchive() {
     const showTagsField = isSegmentReport || previewLayer >= 5
     // L6 can be submitted without a new L5 summary if L5 already exists at the coordinate
     const l5ExistsAtTarget = cellHasL5(mergedCellAtTarget)
-    const summaryRequiredForL6 = previewLayer === 6 && !l5ExistsAtTarget
-    const showSummaryField = isSegmentReport || previewLayer === 5 || summaryRequiredForL6
+    const summaryRequiredForDeeperLayer = previewLayer >= 6 && !l5ExistsAtTarget
+    const showSummaryField = isSegmentReport || previewLayer === 5 || summaryRequiredForDeeperLayer
     const showDetailField = isSegmentReport || previewLayer >= 6
     const showDifficultyField = !isSegmentReport && previewLayer >= 6
     const showAttachmentsField = isSegmentReport || previewLayer >= 5
@@ -711,23 +787,25 @@ export default function SubmitArchive() {
         }
         const errs = {}
         if (!form.planet) errs.planet = 'Select a planet/domain'
-        if (selectedTaxonomy && !form.domainId) errs.domainId = 'Select an L2 topic'
-        if (selectedTaxonomy && form.domainId && !form.topicKey) errs.subfieldId = 'Select an L3 subtopic'
+        if (!isDeepenMode) {
+            if (selectedTaxonomy && !form.domainId) errs.domainId = 'Select an L2 topic'
+            if (selectedTaxonomy && form.domainId && !form.topicKey) errs.subfieldId = 'Select an L3 subtopic'
+        }
         if (!form.subject.trim()) errs.subject = 'Subject is required'
         if (!form.coordX || !form.coordY) {
             errs.coordX = 'Select an available grid coordinate (X,Y)'
             errs.coordY = 'Select an available grid coordinate (X,Y)'
-        } else {
-            if (isNaN(parseInt(form.coordX)) || isNaN(parseInt(form.coordY))) {
-                errs.coordX = 'Valid X coordinate required'
-                errs.coordY = 'Valid Y coordinate required'
-            } else if (!selectedCoordinateIsValid) {
-                const coordMessage = previewLayer === 4
-                    ? 'Choose one of the valid adjacent coordinates'
-                    : 'Choose one of the valid adjacent coordinates for this topic/subtopic'
-                errs.coordX = coordMessage
-                errs.coordY = coordMessage
-            }
+        } else if (isNaN(parseInt(form.coordX)) || isNaN(parseInt(form.coordY))) {
+            errs.coordX = 'Valid X coordinate required'
+            errs.coordY = 'Valid Y coordinate required'
+        } else if (!isDeepenMode && !selectedCoordinateIsValid) {
+            // Deepen mode deliberately targets an already-occupied coordinate --
+            // that's the entry being deepened, not a fresh adjacent slot.
+            const coordMessage = previewLayer === 4
+                ? 'Choose one of the valid adjacent coordinates'
+                : 'Choose one of the valid adjacent coordinates for this topic/subtopic'
+            errs.coordX = coordMessage
+            errs.coordY = coordMessage
         }
         // Summary required at L5 always; at L6+ only if L5 doesn't already exist at the coordinate
         const needsSummary = previewLayer === 5 || (previewLayer >= 6 && !l5ExistsAtTarget)
@@ -760,12 +838,13 @@ export default function SubmitArchive() {
         return errs
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
         const errs = validate()
         if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
         const authorUsername = username || 'guest'
+        setSubmittedCoords({ x: normalizeCoordString(form.coordX), y: normalizeCoordString(form.coordY) })
 
         if (isSegmentReport) {
             const attachmentCount = attachments.length
@@ -791,23 +870,58 @@ export default function SubmitArchive() {
         const submittedAttachments = showAttachmentsField
             ? [...attachments, ...(showSourceLinksField ? sourceLinksToAttachments(form.sourceLinks) : [])]
             : []
-        appendPendingSubmission({
-            ...form,
-            coordX: normalizeCoordString(form.coordX),
-            coordY: normalizeCoordString(form.coordY),
-            summary: previewLayer >= 5 ? form.summary.trim() : '',
-            detail: previewLayer >= 6 ? form.detail.trim() : '',
-            createdAt: new Date().toISOString(),
+
+        const normalizedTags = showTagsField ? normalizeSubmissionTags(form.tags) : []
+        const normalizedPerspectives = showAlternatePerspectivesField
+            ? parseAlternatePerspectives(form.alternatePerspectives)
+            : []
+
+        // Save to Supabase. In deepen mode this is a pending draft attached to an
+        // existing entry via updates_entry_id -- it merges into the base entry
+        // once reviewed, rather than becoming an independent topic.
+        const { error: dbError } = await supabase.from('archive_entries').insert({
+            title: form.subject.trim(),
+            content: previewLayer >= 6 ? form.detail.trim() : '',
+            short_summary: previewLayer >= 5 ? form.summary.trim() : '',
+            layer: previewLayer,
+            planet_id: form.planet,
+            hub_id: form.planet,
+            coord_x: parseInt(normalizeCoordString(form.coordX), 10) || 0,
+            coord_y: parseInt(normalizeCoordString(form.coordY), 10) || 0,
+            status: 'pending',
+            submitted_by: profile?.id ?? null,
+            updates_entry_id: updatesEntryId || null,
+            tags: normalizedTags,
             attachments: submittedAttachments,
-            authorUsername,
-            tags: showTagsField ? normalizeSubmissionTags(form.tags) : [],
-            alternatePerspectives: showAlternatePerspectivesField ? parseAlternatePerspectives(form.alternatePerspectives) : [],
-            archiveLayer: previewLayer,
-            domainLabel: selectedDomain?.label || '',
-            subfieldLabel: selectedSubfield?.label || '',
-            topicKey: selectedL3Topic?.key || form.topicKey,
-            topicLabel: selectedL3Topic?.title || form.topicLabel,
+            alternate_perspectives: normalizedPerspectives,
         })
+
+        if (dbError) {
+            console.error('Supabase insert failed:', dbError.message)
+        }
+
+        // Deepen-mode drafts are Supabase-only -- the localStorage fallback merge
+        // doesn't understand updates_entry_id and would show it as a competing,
+        // independent entry at the same coordinate.
+        if (!isDeepenMode) {
+            appendPendingSubmission({
+                ...form,
+                coordX: normalizeCoordString(form.coordX),
+                coordY: normalizeCoordString(form.coordY),
+                summary: previewLayer >= 5 ? form.summary.trim() : '',
+                detail: previewLayer >= 6 ? form.detail.trim() : '',
+                createdAt: new Date().toISOString(),
+                attachments: submittedAttachments,
+                authorUsername,
+                tags: normalizedTags,
+                alternatePerspectives: normalizedPerspectives,
+                archiveLayer: previewLayer,
+                domainLabel: selectedDomain?.label || '',
+                subfieldLabel: selectedSubfield?.label || '',
+                topicKey: selectedL3Topic?.key || form.topicKey,
+                topicLabel: selectedL3Topic?.title || form.topicLabel,
+            })
+        }
         setAttachmentCountSubmitted(submittedAttachments.length)
         setSubmitted(true)
     }
@@ -880,6 +994,7 @@ export default function SubmitArchive() {
         setAttachErr('')
         setGraphUrlDraft('')
         setAttachmentCountSubmitted(0)
+        setSubmittedCoords({ x: '', y: '' })
         setPreviewLayer(5)
         setShowRichPreview(false)
         setForm(emptyForm())
@@ -888,6 +1003,7 @@ export default function SubmitArchive() {
                 const next = new URLSearchParams(prev)
                 next.delete('archiveLayer')
                 next.delete('nextSegmentSlot')
+                next.delete('updatesEntryId')
                 return next
             },
             { replace: true },
@@ -896,7 +1012,7 @@ export default function SubmitArchive() {
 
     const readinessItems = [
         { key: 'hub',    label: 'Research hub selected',   done: !!form.planet,                                                                              required: true  },
-        { key: 'coord',  label: 'Coordinate ready',        done: selectedCoordinateIsValid,                                                                  required: true  },
+        { key: 'coord',  label: 'Coordinate ready',        done: isDeepenMode ? !!(form.coordX && form.coordY) : selectedCoordinateIsValid,                    required: true  },
         { key: 'title',  label: 'Entry title set',         done: form.subject.trim().length > 0,                                                             required: true  },
         { key: 'sum',    label: 'Summary completeness',    done: !showSummaryField  || (form.summary.trim().length >= 50 && form.summary.length <= 400),     required: showSummaryField  },
         { key: 'detail', label: 'Technical detail filled', done: !showDetailField   || (form.detail.trim().length  >= 100 && form.detail.length  <= 2500),   required: showDetailField   },
@@ -938,7 +1054,11 @@ export default function SubmitArchive() {
                     <p className="mb-2" style={{ color: isDark ? '#64748b' : '#64748b', fontSize: 14 }}>
                         {wasSegmentReport ? (
                             <>
-                                Your segment report for <strong style={{ color: selectedPlanet?.color }}>{selectedPlanet?.label}</strong> at ({form.coordX}, {form.coordY}) was saved locally for the moderation queue demo.
+                                Your segment report for <strong style={{ color: selectedPlanet?.color }}>{selectedPlanet?.label}</strong> at ({submittedCoords.x}, {submittedCoords.y}) was saved locally for the moderation queue demo.
+                            </>
+                        ) : isDeepenMode ? (
+                            <>
+                                Your L{previewLayer} addition to <strong style={{ color: selectedPlanet?.color }}>{form.subject}</strong> has been received.
                             </>
                         ) : (
                             <>
@@ -949,9 +1069,11 @@ export default function SubmitArchive() {
                     <p className="text-sm mb-6" style={{ color: isDark ? '#64748b' : '#64748b' }}>
                         {wasSegmentReport
                             ? 'Reports are stored in this browser (solarArchiveSegmentReports). Attachments, if any, are included in the report record.'
-                            : `It enters the review queue until three independent reviewers pass fact-check and difficulty grading; only then it appears on the coordinate grid at (${form.coordX}, ${form.coordY}).${
-                                  attachmentCountSubmitted > 0 ? ` ${attachmentCountSubmitted} file(s) attached (stored in this browser).` : ''
-                              }`}
+                            : isDeepenMode
+                                ? `It enters the review queue until three independent reviewers pass fact-check and difficulty grading; only then does it merge into the existing entry at (${submittedCoords.x}, ${submittedCoords.y}).`
+                                : `It enters the review queue until three independent reviewers pass fact-check and difficulty grading; only then it appears on the coordinate grid at (${submittedCoords.x}, ${submittedCoords.y}).${
+                                      attachmentCountSubmitted > 0 ? ` ${attachmentCountSubmitted} file(s) attached (stored in this browser).` : ''
+                                  }`}
                     </p>
                     <motion.button
                         whileHover={{ scale: 1.04 }}

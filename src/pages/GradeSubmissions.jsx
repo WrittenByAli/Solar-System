@@ -1,26 +1,17 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ClipboardCheck, ShieldCheck, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
+import { ClipboardCheck, ShieldCheck, AlertTriangle, ChevronDown, ChevronUp, Layers } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { supabase } from '../utils/supabaseClient.js'
 import {
     MIN_POINTS_REVIEWER_ACCESS,
     REVIEWERS_REQUIRED,
     REVIEW_RECOMMENDATION_MAX_CHARS,
     POINTS_PER_REVIEW_COMPLETED,
 } from '../constants/reviewWorkflow.js'
-import {
-    addReviewToSubmission,
-    getPendingSubmissions,
-    migrateSubmission,
-} from '../utils/submissionStorage.js'
-import {
-    incrementReviewerStats,
-    rewardAuthorOnApproval,
-} from '../utils/userProfileStorage.js'
 import FoundationLogo from '../components/FoundationLogo.jsx'
-import FieldHonorTokens from '../components/FieldHonorTokens.jsx'
 import fallbackData from '../data/researchData.json'
 
 const researchData = window.SOLAR_CONTENT_DATA || fallbackData
@@ -29,8 +20,8 @@ const planetTitleById = Object.fromEntries(
 )
 
 function coordSlotLabel(e) {
-    const x = String(e.coordX || '').padStart(3, '0')
-    const y = String(e.coordY || '').padStart(3, '0')
+    const x = String(e.coord_x ?? '').padStart(3, '0')
+    const y = String(e.coord_y ?? '').padStart(3, '0')
     return `${x}, ${y}`
 }
 
@@ -39,12 +30,17 @@ export default function GradeSubmissions() {
     const isDark = theme === 'dark'
     const {
         isLoggedIn,
-        username,
+        profile,
         points,
         canAccessReviewerQueue,
         refreshProfile,
     } = useAuth()
 
+    const [queue, setQueue] = useState([])
+    const [reviewsByEntry, setReviewsByEntry] = useState({})
+    const [usernamesById, setUsernamesById] = useState({})
+    const [baseTitlesById, setBaseTitlesById] = useState({})
+    const [loading, setLoading] = useState(true)
     const [listTick, setListTick] = useState(0)
     const [expandedId, setExpandedId] = useState(null)
     const [factOk, setFactOk] = useState(true)
@@ -53,18 +49,63 @@ export default function GradeSubmissions() {
     const [submitErr, setSubmitErr] = useState('')
     const [submitting, setSubmitting] = useState(false)
 
-    useEffect(() => {
-        const bump = () => setListTick((t) => t + 1)
-        window.addEventListener('solar-archive-submissions-updated', bump)
-        return () => window.removeEventListener('solar-archive-submissions-updated', bump)
-    }, [])
+    const myId = profile?.id || null
 
-    const queue = useMemo(() => {
-        return getPendingSubmissions()
-            .map(migrateSubmission)
-            .filter((s) => s.authorUsername !== username)
-            .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)))
-    }, [listTick, username])
+    useEffect(() => {
+        if (!isLoggedIn || !myId || !canAccessReviewerQueue) { setLoading(false); return }
+        let active = true
+        setLoading(true)
+
+        async function load() {
+            const { data: pending, error } = await supabase
+                .from('archive_entries')
+                .select('*')
+                .eq('status', 'pending')
+                .order('created_at', { ascending: true })
+            if (!active) return
+            if (error || !Array.isArray(pending)) { setQueue([]); setLoading(false); return }
+
+            const candidates = pending.filter((e) => e.submitted_by !== myId)
+
+            const ids = candidates.map((e) => e.id)
+            const { data: reviewRows } = ids.length
+                ? await supabase.from('reviews').select('*').in('entry_id', ids)
+                : { data: [] }
+            const byEntry = {}
+            ;(reviewRows || []).forEach((r) => {
+                if (!byEntry[r.entry_id]) byEntry[r.entry_id] = []
+                byEntry[r.entry_id].push(r)
+            })
+
+            // Exclude entries this reviewer has already graded
+            const notYetReviewed = candidates.filter(
+                (e) => !(byEntry[e.id] || []).some((r) => r.reviewer_id === myId),
+            )
+
+            const authorIds = [...new Set(notYetReviewed.map((e) => e.submitted_by).filter(Boolean))]
+            const reviewerIds = [...new Set((reviewRows || []).map((r) => r.reviewer_id))]
+            const allProfileIds = [...new Set([...authorIds, ...reviewerIds])]
+            const { data: profiles } = allProfileIds.length
+                ? await supabase.from('users_profile').select('id, username').in('id', allProfileIds)
+                : { data: [] }
+            const nameMap = Object.fromEntries((profiles || []).map((p) => [p.id, p.username]))
+
+            const baseIds = [...new Set(notYetReviewed.map((e) => e.updates_entry_id).filter(Boolean))]
+            const { data: bases } = baseIds.length
+                ? await supabase.from('archive_entries').select('id, title, layer').in('id', baseIds)
+                : { data: [] }
+            const baseMap = Object.fromEntries((bases || []).map((b) => [b.id, b]))
+
+            if (!active) return
+            setQueue(notYetReviewed)
+            setReviewsByEntry(byEntry)
+            setUsernamesById(nameMap)
+            setBaseTitlesById(baseMap)
+            setLoading(false)
+        }
+        load()
+        return () => { active = false }
+    }, [isLoggedIn, myId, canAccessReviewerQueue, listTick])
 
     useEffect(() => {
         if (!expandedId) return
@@ -75,37 +116,33 @@ export default function GradeSubmissions() {
     }, [expandedId])
 
     const submitReview = useCallback(
-        (e) => {
+        async (e) => {
             e.preventDefault()
-            if (!expandedId || !username) return
+            if (!expandedId || !myId) return
             setSubmitErr('')
             setSubmitting(true)
             try {
-                const sub = queue.find((x) => x.id === expandedId)
-                const res = addReviewToSubmission(expandedId, {
-                    reviewerUsername: username,
-                    factCheckPass: factOk,
+                const { error } = await supabase.from('reviews').insert({
+                    entry_id: expandedId,
+                    reviewer_id: myId,
+                    fact_check_pass: factOk,
                     difficulty,
-                    notes,
+                    notes: notes.slice(0, REVIEW_RECOMMENDATION_MAX_CHARS),
                 })
-                if (!res.ok) {
-                    if (res.error === 'already_reviewed') setSubmitErr('You already graded this entry.')
-                    else if (res.error === 'cannot_review_own') setSubmitErr('You cannot grade your own submission.')
+                if (error) {
+                    if (error.code === '23505') setSubmitErr('You already graded this entry.')
+                    else if (/cannot review own/i.test(error.message || '')) setSubmitErr('You cannot grade your own submission.')
                     else setSubmitErr('Unable to save this grade.')
-                    setSubmitting(false)
                     return
                 }
-                incrementReviewerStats(username, res.submission?.planet || sub?.planet, factOk)
-                if (res.submission?.status === 'approved') {
-                    rewardAuthorOnApproval(res.submission.authorUsername, res.submission.planet)
-                }
-                refreshProfile(username)
+                await refreshProfile()
                 setExpandedId(null)
+                setListTick((t) => t + 1)
             } finally {
                 setSubmitting(false)
             }
         },
-        [expandedId, username, factOk, difficulty, notes, refreshProfile, queue],
+        [expandedId, myId, factOk, difficulty, notes, refreshProfile],
     )
 
     const cardBg = isDark ? 'rgba(7,20,40,0.85)' : 'rgba(255,255,255,0.92)'
@@ -121,7 +158,7 @@ export default function GradeSubmissions() {
                     Sign in to review
                 </h1>
                 <p className="text-sm mb-6" style={{ color: muted }}>
-                    Archive reviewers sign in with a username so grades are attributed correctly.
+                    Archive reviewers sign in so grades are attributed correctly.
                 </p>
                 <Link
                     to="/join"
@@ -207,15 +244,17 @@ export default function GradeSubmissions() {
                     </div>
                     <p className="text-sm" style={{ color: muted }}>
                         Fact-check and rate comprehension difficulty. Entries join the live archive only after{' '}
-                        <strong>{REVIEWERS_REQUIRED}</strong> independent reviewers all pass fact-check. Approved prose is ordered{' '}
-                        <strong>easiest → hardest</strong> by segment. Each grade earns <strong>{POINTS_PER_REVIEW_COMPLETED}</strong> pts.
+                        <strong>{REVIEWERS_REQUIRED}</strong> independent reviewers all pass fact-check. Each grade earns{' '}
+                        <strong>{POINTS_PER_REVIEW_COMPLETED}</strong> pts.
                     </p>
                     <p className="text-xs mt-2" style={{ color: isDark ? '#475569' : '#cbd5e1' }}>
-                        Signed in as <strong>{username}</strong> · {points.toLocaleString()} pts
+                        {points.toLocaleString()} pts
                     </p>
                 </motion.div>
 
-                {queue.length === 0 ? (
+                {loading ? (
+                    <div className="text-center py-16 text-sm" style={{ color: muted }}>Loading pending submissions…</div>
+                ) : queue.length === 0 ? (
                     <div
                         className="text-center py-16 rounded-2xl text-sm"
                         style={{ background: cardBg, border: `1px solid ${border}`, color: muted }}
@@ -226,7 +265,10 @@ export default function GradeSubmissions() {
                     <div className="flex flex-col gap-3">
                         {queue.map((s) => {
                             const open = expandedId === s.id
-                            const n = (s.reviews || []).length
+                            const reviews = reviewsByEntry[s.id] || []
+                            const n = reviews.length
+                            const authorName = usernamesById[s.submitted_by] || 'unknown'
+                            const baseEntry = s.updates_entry_id ? baseTitlesById[s.updates_entry_id] : null
                             return (
                                 <motion.div
                                     key={s.id}
@@ -241,19 +283,17 @@ export default function GradeSubmissions() {
                                     >
                                         <div className="flex-1 min-w-0">
                                             <div className="font-bold text-sm truncate" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
-                                                {s.subject || 'Untitled'}
+                                                {s.title || 'Untitled'}
                                             </div>
+                                            {baseEntry && (
+                                                <div className="text-xs flex items-center gap-1.5 mt-0.5" style={{ color: isDark ? '#4fc3f7' : '#0284c7' }}>
+                                                    <Layers size={11} />
+                                                    Adds L{s.layer} depth to <strong>{baseEntry.title}</strong> (currently L{baseEntry.layer})
+                                                </div>
+                                            )}
                                             <div className="text-xs truncate flex flex-wrap items-center gap-x-2 gap-y-1" style={{ color: muted }}>
-                                                <span>{String(s.planet)} · slot ({coordSlotLabel(s)}) ·</span>
-                                                <span className="inline-flex items-center gap-1 min-w-0">
-                                                    author
-                                                    <FieldHonorTokens
-                                                        username={s.authorUsername}
-                                                        planetId={s.planet}
-                                                        planetLabel={planetTitleById[String(s.planet).toLowerCase()] || s.planet}
-                                                    />
-                                                    <span className="truncate">@{s.authorUsername}</span>
-                                                </span>
+                                                <span>{planetTitleById[String(s.planet_id).toLowerCase()] || s.planet_id} · slot ({coordSlotLabel(s)}) ·</span>
+                                                <span>L{s.layer} · author @{authorName}</span>
                                                 <span>· {n}/{REVIEWERS_REQUIRED} reviews</span>
                                             </div>
                                             {(s.tags || []).length > 0 && (
@@ -286,14 +326,14 @@ export default function GradeSubmissions() {
                                                 style={{ borderColor: border }}
                                             >
                                                 <div className="p-4 flex flex-col gap-4">
-                                                    {(s.summary || s.detail) && (
+                                                    {(s.short_summary || s.content) && (
                                                         <div className="text-xs leading-relaxed rounded-xl p-3" style={{ background: isDark ? 'rgba(2,4,8,0.45)' : 'rgba(240,244,248,0.9)', color: isDark ? '#cbd5e1' : '#475569' }}>
-                                                            {s.summary && <p className="font-semibold mb-1 text-[13px]" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>Summary</p>}
-                                                            {s.summary && <p className="mb-2">{s.summary}</p>}
-                                                            {s.detail && (
+                                                            {s.short_summary && <p className="font-semibold mb-1 text-[13px]" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>Summary</p>}
+                                                            {s.short_summary && <p className="mb-2">{s.short_summary}</p>}
+                                                            {s.content && (
                                                                 <>
                                                                     <p className="font-semibold mb-1 text-[13px]" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>Detail</p>
-                                                                    <p className="whitespace-pre-wrap">{s.detail}</p>
+                                                                    <p className="whitespace-pre-wrap">{s.content}</p>
                                                                 </>
                                                             )}
                                                         </div>
@@ -306,15 +346,15 @@ export default function GradeSubmissions() {
                                                     {n > 0 && (
                                                         <div className="text-xs space-y-1" style={{ color: muted }}>
                                                             <span className="font-semibold" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Prior grades</span>
-                                                            {(s.reviews || []).map((r) => (
-                                                                <div key={`${r.reviewerUsername}-${r.at}`} className="pl-2 border-l-2 border-opacity-30" style={{ borderColor: isDark ? '#475569' : '#cbd5e1' }}>
+                                                            {reviews.map((r) => (
+                                                                <div key={r.id} className="pl-2 border-l-2 border-opacity-30" style={{ borderColor: isDark ? '#475569' : '#cbd5e1' }}>
                                                                     <span className="font-medium" style={{ color: isDark ? '#e2e8f0' : '#334155' }}>
-                                                                        @{r.reviewerUsername}
+                                                                        @{usernamesById[r.reviewer_id] || 'unknown'}
                                                                     </span>
-                                                                    : fact-check {r.factCheckPass ? 'pass' : 'fail'} · difficulty {r.difficulty}/5
+                                                                    : fact-check {r.fact_check_pass ? 'pass' : 'fail'} · difficulty {r.difficulty}/5
                                                                     {r.notes?.trim() ? (
                                                                         <div className="mt-0.5 italic whitespace-pre-wrap" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
-                                                                            “{r.notes.trim()}”
+                                                                            "{r.notes.trim()}"
                                                                         </div>
                                                                     ) : null}
                                                                 </div>
@@ -400,5 +440,3 @@ export default function GradeSubmissions() {
         </div>
     )
 }
-
-

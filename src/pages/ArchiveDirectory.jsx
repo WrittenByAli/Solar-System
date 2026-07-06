@@ -1,9 +1,10 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ExternalLink, Plus, LayoutGrid, Sparkles, AlertCircle } from 'lucide-react'
+import { ExternalLink, Plus, LayoutGrid, Sparkles, AlertCircle, Database, Search } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { ARCHIVE_HUB_LOCATIONS, REGISTRY_CATEGORIES, loadArchiveRegistry } from '../utils/archiveInstanceStorage.js'
+import { supabase } from '../utils/supabaseClient.js'
 import '../styles/solar-directory.css'
 
 function categoryLabel(id) {
@@ -14,6 +15,8 @@ function hubLabel(id) {
     if (!id) return null
     return ARCHIVE_HUB_LOCATIONS.find((h) => h.id === String(id).toLowerCase())?.label || id
 }
+
+const LAYER_NAMES = { 4: 'Entry', 5: 'Detailed', 6: 'Segmented', 7: 'Deep', 8: 'Narrative' }
 
 const fadeUp = {
     hidden: { opacity: 0, y: 18 },
@@ -40,6 +43,45 @@ export default function ArchiveDirectory() {
     }, [])
 
     const rows = useMemo(() => loadArchiveRegistry(), [tick])
+
+    // Live archive entries from Supabase (Phase 2A — real database reads)
+    const [entries, setEntries] = useState(null) // null = loading
+    const [entryHub, setEntryHub] = useState('all')
+    const [entryQuery, setEntryQuery] = useState('')
+
+    useEffect(() => {
+        let active = true
+        supabase
+            .from('archive_entries')
+            .select('id,title,short_summary,layer,planet_id,status,created_at')
+            .eq('status', 'approved')
+            .order('created_at', { ascending: false })
+            .limit(200)
+            .then(({ data, error }) => {
+                if (!active) return
+                if (error) {
+                    console.error('Directory entries fetch failed:', error.message)
+                    setEntries([])
+                    return
+                }
+                setEntries(data || [])
+            })
+        return () => { active = false }
+    }, [])
+
+    const entryHubs = useMemo(() => {
+        if (!entries) return []
+        return [...new Set(entries.map((e) => e.planet_id))].sort()
+    }, [entries])
+
+    const filteredEntries = useMemo(() => {
+        if (!entries) return []
+        const q = entryQuery.trim().toLowerCase()
+        return entries.filter((e) =>
+            (entryHub === 'all' || e.planet_id === entryHub) &&
+            (!q || e.title.toLowerCase().includes(q) || (e.short_summary || '').toLowerCase().includes(q)),
+        )
+    }, [entries, entryHub, entryQuery])
 
     return (
         <div className="solar-page sa-dir-page">
@@ -179,6 +221,80 @@ export default function ArchiveDirectory() {
                         ))}
                     </div>
                 )}
+
+                {/* ── Live archive entries (Supabase) ── */}
+                <motion.section
+                    className="sa-dir-entries"
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    aria-label="Live archive entries"
+                >
+                    <div className="sa-dir-entries__head">
+                        <h2 className="sa-dir-entries__title">
+                            <Database size={15} style={{ flexShrink: 0 }} />
+                            Live archive entries
+                        </h2>
+                        <span className="sa-dir-count">
+                            {entries === null
+                                ? 'Loading…'
+                                : `${filteredEntries.length} of ${entries.length} entr${entries.length !== 1 ? 'ies' : 'y'}`}
+                        </span>
+                    </div>
+                    <p className="sa-dir-entries__sub">
+                        Approved research entries, streamed live from the shared SOLAR database.
+                    </p>
+
+                    <div className="sa-dir-entries__filters">
+                        <div className="sa-dir-entries__search">
+                            <Search size={13} aria-hidden />
+                            <input
+                                type="search"
+                                placeholder="Search title or summary…"
+                                value={entryQuery}
+                                onChange={(e) => setEntryQuery(e.target.value)}
+                                aria-label="Search archive entries"
+                            />
+                        </div>
+                        <select
+                            className="sa-dir-entries__select"
+                            value={entryHub}
+                            onChange={(e) => setEntryHub(e.target.value)}
+                            aria-label="Filter by hub"
+                        >
+                            <option value="all">All hubs</option>
+                            {entryHubs.map((h) => (
+                                <option key={h} value={h}>{hubLabel(h) || h}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {entries !== null && filteredEntries.length === 0 && (
+                        <p className="sa-dir-entries__none">No entries match this filter.</p>
+                    )}
+
+                    <div className="sa-dir-entries__grid">
+                        {filteredEntries.map((e, i) => (
+                            <motion.div
+                                key={e.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: Math.min(i * 0.02, 0.3), duration: 0.35 }}
+                            >
+                                <Link to={`/archive/${e.planet_id}`} className="sa-dir-entry">
+                                    <div className="sa-dir-entry__title">{e.title}</div>
+                                    {e.short_summary && (
+                                        <p className="sa-dir-entry__summary">{e.short_summary}</p>
+                                    )}
+                                    <div className="sa-dir-card__meta" style={{ marginTop: 'auto' }}>
+                                        <span className="sa-dir-meta-chip">{hubLabel(e.planet_id) || e.planet_id}</span>
+                                        <span className="sa-dir-meta-chip">L{e.layer} · {LAYER_NAMES[e.layer] || 'Entry'}</span>
+                                    </div>
+                                </Link>
+                            </motion.div>
+                        ))}
+                    </div>
+                </motion.section>
             </div>
         </div>
     )

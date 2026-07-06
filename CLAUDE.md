@@ -18,7 +18,8 @@ The project uses `"type": "module"` in package.json — any standalone scripts m
 - **Tailwind CSS** — utility classes alongside custom CSS
 - **Lucide React** — icons
 - **Three.js** + `@react-three/fiber` + `@react-three/drei` — 3D home page scene
-- No backend — all data is static or in-memory/localStorage
+- **Clerk** (`@clerk/clerk-react`) — real authentication (see `AUTH_SETUP.md`)
+- **Supabase** (`@supabase/supabase-js`) — profiles + archive entries (see "Backend state" below)
 
 ## Routing
 
@@ -28,7 +29,10 @@ All routes are defined in `src/App.jsx` inside `<AnimatedRoutes>`:
 |---|---|
 | `/` | `Home` (immersive, no page-wrap motion) |
 | `/map` | `MapView` |
-| `/join` | `Join` (sign in / sign up) |
+| `/join` | `Join` (sign in / sign up / verify / MFA / password reset) — only public route |
+| `/sso-callback` | `SsoCallback` (OAuth completion, public) |
+| `/email-link-verified` | `EmailLinkVerified` (email verification link landing, public) |
+| `/account` | `AccountSecurity` (MFA enrollment, sessions) |
 | `/archive/:planetId` | `ArchiveGrid` |
 | `/leaderboard` | `Leaderboard` |
 | `/reviews` | `Reviews` |
@@ -37,6 +41,8 @@ All routes are defined in `src/App.jsx` inside `<AnimatedRoutes>`:
 | `/create-archive` | `CreateArchive` |
 | `/host-archive` | `HostArchive` |
 | `/directory` | `ArchiveDirectory` |
+
+All routes except `/join`, `/sso-callback`, and `/email-link-verified` are wrapped in `RequireAuth` (App.jsx) — signed-out users are redirected to `/join`. Auth is real (Clerk); see `AUTH_SETUP.md`.
 
 ## Theme System
 
@@ -156,6 +162,11 @@ The submit form at `/submit` handles L4–L8. The preview sidebar uses `Submissi
 | `src/utils/archiveLayerSpecs.js` | Layer spec definitions |
 | `src/utils/archiveSectionEntries.js` | Archive section entry data |
 
-## No Backend
+## Backend state (Phase 2A)
 
-There is currently no backend. Authentication is mock (stores username in memory via `AuthContext`). Submissions are stored in `localStorage` via `src/utils/archiveInstanceStorage.js`. All leaderboard, review, and directory data is static/demo data defined inline in the page files.
+There is no application server — Clerk is the auth backend and Supabase is the data backend, both called directly from the browser.
+
+- **Auth:** real Clerk accounts (`AuthContext` wraps `useUser`); profiles sync to the Supabase `users_profile` table.
+- **Archive entries:** seeded subjects + user submissions live in the Supabase `archive_entries` table (`supabase_schema.sql`, `supabase_seed.sql`). `ArchiveGrid` reads approved entries per hub; `ArchiveDirectory` lists them; `/submit` inserts pending entries.
+- **RLS:** enabled with permissive Phase 2A demo policies (migration `phase2a_demo_policies`); `supabase_rls.sql` replaces them with strict per-user policies in Phase 2B — read its warning header first.
+- **Still localStorage/demo:** hosted-archive registry, review queue/grading, leaderboard scores, and segment reports (`archiveInstanceStorage.js` + inline page data).

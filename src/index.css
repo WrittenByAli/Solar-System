@@ -1,5 +1,6 @@
 @import './styles/theme-tokens.css';
 @import './styles/solar-page-shell.css';
+@import './styles/apple-navbar.css';
 
 @tailwind base;
 @tailwind components;
@@ -29,29 +30,6 @@ body {
   background-color: var(--sa-bg, var(--bg-primary));
   color: var(--sa-text, var(--text-primary));
   transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.sa-nav-link {
-  background: transparent;
-  color: var(--sa-nav-text);
-  border: 1px solid transparent;
-}
-
-.sa-nav-link[data-active='true'] {
-  background: var(--sa-accent-subtle);
-  color: var(--sa-accent);
-  border-color: var(--sa-accent-border);
-}
-
-.sa-nav-link[data-active='true']:hover {
-  background: var(--sa-accent-subtle) !important;
-  color: var(--sa-accent) !important;
-  border-color: var(--sa-accent-border) !important;
-}
-
-.sa-nav-link:hover {
-  background: var(--sa-accent-subtle) !important;
-  color: var(--sa-accent) !important;
 }
 
 /* Navbar brand — Anton title mark, clean single-line lockup */

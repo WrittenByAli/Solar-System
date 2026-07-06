@@ -1246,39 +1246,6 @@
   background: linear-gradient(90deg, var(--sa-accent-gold), var(--sa-accent));
 }
 
-/* ── Premium navbar (homepage) ── */
-
-.solar-navbar {
-  position: fixed;
-}
-
-.solar-navbar--premium {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  width: 100% !important;
-  min-height: 3.5rem;
-  padding: max(0.45rem, env(safe-area-inset-top)) max(0.85rem, env(safe-area-inset-right)) 0.45rem max(1rem, env(safe-area-inset-left)) !important;
-  border-radius: 0 !important;
-  border: 1px solid var(--sa-nav-glass-border) !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  background: var(--sa-nav-glass) !important;
-  backdrop-filter: blur(28px) saturate(1.6) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(1.6) !important;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
-}
-
-.light .solar-navbar--premium {
-  box-shadow:
-    0 8px 28px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
-}
-
 .solar-archive-root--light .scroll-story__hero-desc {
   color: #0f172a;
   text-shadow:
@@ -1305,31 +1272,6 @@
 
 .solar-archive-root--light .scroll-story__btn--outline:hover {
   color: #92400e;
-}
-
-.solar-navbar__premium-glow {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    radial-gradient(ellipse 60% 120% at 8% 0%, rgba(79, 195, 247, 0.14), transparent 55%),
-    radial-gradient(ellipse 50% 100% at 92% 100%, rgba(245, 166, 35, 0.1), transparent 50%);
-  opacity: 0.85;
-}
-
-.solar-navbar__premium-border {
-  pointer-events: none;
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(79, 195, 247, 0.42), rgba(245, 166, 35, 0.28), transparent);
-}
-
-.solar-navbar--premium .sa-nav-link[data-active='true'] {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 @media (prefers-reduced-motion: reduce) {

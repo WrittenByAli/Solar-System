@@ -1,89 +1,136 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { MIN_POINTS_REVIEWER_ACCESS } from '../constants/reviewWorkflow.js'
-import { loadUserProfile, upsertUserProfile } from '../utils/userProfileStorage.js'
-
-const SESSION_KEY = 'solarArchiveSession'
+import { useUser, useClerk } from '@clerk/clerk-react'
+import { supabase } from '../utils/supabaseClient.js'
+import { hasPermission } from '../auth/authorization.js'
+import { reportAuthError } from '../auth/logger.js'
+import { NEW_ACCOUNT_STARTER_POINTS } from '../constants/reviewWorkflow.js'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-    const [session, setSession] = useState(null)
+    const { user, isLoaded, isSignedIn } = useUser()
+    const { signOut } = useClerk()
     const [profile, setProfile] = useState(null)
 
-    const refreshProfile = useCallback((username) => {
-        const u = username || session?.username
-        if (!u) return
-        const p = loadUserProfile(u)
-        if (p) setProfile(p)
-    }, [session?.username])
-
     useEffect(() => {
-        try {
-            const raw = localStorage.getItem(SESSION_KEY)
-            if (raw) {
-                const s = JSON.parse(raw)
-                if (s?.username) {
-                    setSession({ username: s.username })
-                    const p = loadUserProfile(s.username)
-                    if (p) setProfile(p)
-                }
+        if (!isLoaded) return
+        if (!isSignedIn || !user) {
+            setProfile(null)
+            return
+        }
+
+        let cancelled = false
+
+        async function syncProfile() {
+            const { data: existing, error: selErr } = await supabase
+                .from('users_profile')
+                .select('*')
+                .eq('clerk_id', user.id)
+                .maybeSingle()
+
+            if (selErr) reportAuthError('profile-select', selErr)
+            if (cancelled) return
+
+            if (existing) {
+                setProfile(existing)
+                return
             }
-        } catch {
-            /* ignore */
-        }
-    }, [])
 
-    useEffect(() => {
-        const fn = () => {
-            if (session?.username) refreshProfile(session.username)
-        }
-        window.addEventListener('solar-archive-profile-updated', fn)
-        return () => window.removeEventListener('solar-archive-profile-updated', fn)
-    }, [session?.username, refreshProfile])
+            const username =
+                [user.firstName, user.lastName].filter(Boolean).join(' ') ||
+                user.username ||
+                user.emailAddresses[0]?.emailAddress?.split('@')[0] ||
+                'user'
 
-    const login = useCallback((username, email) => {
-        const uname = String(username || '').trim()
-        if (!uname) return
-        let p = loadUserProfile(uname)
-        if (!p) {
-            p = upsertUserProfile({
-                username: uname,
-                email: email || '',
-            })
-        } else if (email && email !== p.email) {
-            upsertUserProfile({ username: uname, email })
-        }
-        localStorage.setItem(SESSION_KEY, JSON.stringify({ username: uname }))
-        setSession({ username: uname })
-        setProfile(loadUserProfile(uname))
-    }, [])
+            // ignoreDuplicates → ON CONFLICT DO NOTHING: never clobbers a row
+            // the signup flow already wrote (which holds the chosen username).
+            const { data: created, error: insErr } = await supabase
+                .from('users_profile')
+                .upsert(
+                    {
+                        clerk_id: user.id,
+                        username,
+                        email: user.emailAddresses[0]?.emailAddress ?? '',
+                        points: NEW_ACCOUNT_STARTER_POINTS,
+                    },
+                    { onConflict: 'clerk_id', ignoreDuplicates: true },
+                )
+                .select()
+                .maybeSingle()
 
-    const logout = useCallback(() => {
-        localStorage.removeItem(SESSION_KEY)
-        setSession(null)
+            if (insErr) reportAuthError('profile-create', insErr)
+            if (cancelled) return
+
+            if (created) {
+                setProfile(created)
+            } else {
+                // conflict path: row appeared between select and upsert — fetch it
+                const { data: raced } = await supabase
+                    .from('users_profile')
+                    .select('*')
+                    .eq('clerk_id', user.id)
+                    .maybeSingle()
+                if (!cancelled && raced) setProfile(raced)
+            }
+        }
+
+        syncProfile()
+        return () => { cancelled = true }
+    }, [isLoaded, isSignedIn, user])
+
+    const logout = useCallback(async () => {
         setProfile(null)
-    }, [])
+        await signOut()
+    }, [signOut])
 
-    const setProfileDirect = useCallback((next) => {
-        setProfile(next)
-    }, [])
+    const refreshProfile = useCallback(async () => {
+        if (!user) return
+        const { data } = await supabase
+            .from('users_profile')
+            .select('*')
+            .eq('clerk_id', user.id)
+            .maybeSingle()
+        if (data) setProfile(data)
+    }, [user])
 
-    const value = useMemo(() => {
-        const points = profile?.points ?? 0
-        const canAccessReviewerQueue = !!session?.username && points >= MIN_POINTS_REVIEWER_ACCESS
-        return {
-            session,
-            profile,
-            isLoggedIn: !!session?.username,
-            username: session?.username || null,
-            points,
-            canAccessReviewerQueue,
-            login,
-            logout,
-            refreshProfile,
-            setProfileDirect,
-        }
-    }, [session, profile, login, logout, refreshProfile, setProfileDirect])
+    const setProfileDirect = useCallback((next) => setProfile(next), [])
+
+    const username = isSignedIn
+        ? (profile?.username ||
+           user?.username ||
+           user?.firstName ||
+           user?.emailAddresses?.[0]?.emailAddress?.split('@')[0] ||
+           null)
+        : null
+    const email = isSignedIn
+        ? (user?.emailAddresses?.[0]?.emailAddress || profile?.email || null)
+        : null
+    const avatarUrl = isSignedIn ? (user?.imageUrl || null) : null
+    const points = profile?.points ?? 0
+
+    // Authorization is delegated to the central policy (src/auth/authorization.js).
+    // AuthContext answers "who is this?"; the policy answers "what may they do?".
+    const can = useCallback(
+        (permission) => hasPermission({ isLoggedIn: !!isSignedIn, points }, permission),
+        [isSignedIn, points],
+    )
+    const canAccessReviewerQueue = can('review:grade')
+
+    const value = useMemo(() => ({
+        session: isSignedIn ? { username } : null,
+        profile,
+        isLoggedIn: !!isSignedIn,
+        authLoaded: isLoaded,
+        username,
+        email,
+        avatarUrl,
+        points,
+        can,
+        canAccessReviewerQueue,
+        logout,
+        refreshProfile,
+        setProfileDirect,
+    }), [isSignedIn, isLoaded, username, email, avatarUrl, profile, points, can, canAccessReviewerQueue, logout, refreshProfile, setProfileDirect])
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

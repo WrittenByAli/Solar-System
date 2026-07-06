@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { buildMergedSectionEntries } from '../utils/archiveSectionEntries.js'
+import { supabase } from '../utils/supabaseClient.js'
 import fallbackData from '../data/researchData.json'
 import SegmentHoverSurface from '../components/SegmentHoverSurface.jsx'
 import {
@@ -592,7 +593,7 @@ function NarrativeGateMessage({ message, shortMessage, isDark, compact }) {
 }
 
 /** Next sentence slot -- opens Submit with layer + slot (L8 blocked in specs until L7 band is full). */
-function SegmentSubmitAddLink({ planetId, lx, ly, archiveLayer, nextSlot, col, isDark, compact }) {
+function SegmentSubmitAddLink({ planetId, lx, ly, archiveLayer, nextSlot, entryId, col, isDark, compact }) {
   const params = new URLSearchParams({
     planet: String(planetId || '').toLowerCase(),
     coordX: String(lx),
@@ -600,6 +601,7 @@ function SegmentSubmitAddLink({ planetId, lx, ly, archiveLayer, nextSlot, col, i
     archiveLayer: String(archiveLayer),
     nextSegmentSlot: String(nextSlot),
   })
+  if (entryId) params.set('updatesEntryId', String(entryId))
   const fs = compact ? 9 : 12
   const iconSz = compact ? 11 : 15
   return (
@@ -625,6 +627,41 @@ function SegmentSubmitAddLink({ planetId, lx, ly, archiveLayer, nextSlot, col, i
     >
       <Plus size={iconSz} strokeWidth={2.5} aria-hidden />
       Add
+    </Link>
+  )
+}
+
+/** Deep-links to /submit to add a missing L5 summary or L6 detail to an existing entry. */
+function AddMissingDepthLink({ planetId, lx, ly, archiveLayer, entryId, col, isDark }) {
+  const params = new URLSearchParams({
+    planet: String(planetId || '').toLowerCase(),
+    coordX: String(lx),
+    coordY: String(ly),
+    archiveLayer: String(archiveLayer),
+  })
+  if (entryId) params.set('updatesEntryId', String(entryId))
+  return (
+    <Link
+      to={`/submit?${params.toString()}`}
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 8,
+        fontSize: 10,
+        fontWeight: 800,
+        letterSpacing: '0.04em',
+        textDecoration: 'none',
+        padding: '2px 8px',
+        borderRadius: 8,
+        border: `1px solid ${col}55`,
+        color: col,
+        background: isDark ? `${col}14` : `${col}10`,
+      }}
+    >
+      <Plus size={11} strokeWidth={2.5} aria-hidden />
+      Add L{archiveLayer} {archiveLayer === 5 ? 'summary' : 'detail'}
     </Link>
   )
 }
@@ -748,8 +785,9 @@ const L4Content = memo(function L4Content({ lx, ly, data, col, isDark, compassSe
 })
 
 // L5: 256px - Summary
-const L5Content = memo(function L5Content({ lx, ly, data, col, isDark }) {
+const L5Content = memo(function L5Content({ lx, ly, data, col, isDark, planetId }) {
   const hasAtt = (data?.attachments || []).length > 0
+  const hasSummary = !!(data?.shortSummary && String(data.shortSummary).trim())
   return (
     <div style={{ padding: 12, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: col, marginBottom: 8, fontWeight: 800 }}>{pad4(lx)},{pad4(ly)} · SUMMARY</div>
@@ -762,6 +800,9 @@ const L5Content = memo(function L5Content({ lx, ly, data, col, isDark }) {
       <p style={{ fontSize: 11, color: isDark ? '#94a3b8' : '#334155', lineHeight: 1.5, flex: 1, overflow: 'hidden', minHeight: 0, margin: 0,
         display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical',
       }}>{data?.shortSummary || 'Waiting for contribution...'}</p>
+      {!hasSummary && data?.title && (
+        <AddMissingDepthLink planetId={planetId} lx={lx} ly={ly} archiveLayer={5} entryId={data?.id} col={col} isDark={isDark} />
+      )}
       <AlternatePerspectivesLinks items={data?.alternatePerspectives} col={col} isDark={isDark} />
       {hasAtt && (
         <div style={{ marginTop: 'auto', paddingTop: 6, flexShrink: 0 }}>
@@ -883,10 +924,10 @@ const L6Content = memo(function L6Content({ lx, ly, data, col, isDark, planetId 
         </div>
         <div style={{ flex: 1, overflow: 'auto', padding: '4px 28px 24px' }}>
           {orderedSegments.length === 0 ? (
-            data?.content?.trim() ? (
+            data?.detail?.trim() ? (
               <SegmentHoverSurface
                 coordLabel={coordLabel}
-                difficulty={estimateSegmentDifficulty(data.content)}
+                difficulty={estimateSegmentDifficulty(data.detail)}
                 accentColor={col}
                 isDark={isDark}
                 style={{ cursor: 'default' }}
@@ -895,16 +936,21 @@ const L6Content = memo(function L6Content({ lx, ly, data, col, isDark, planetId 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: col }}>FULL TEXT</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <SegmentDifficultyBadge difficulty={estimateSegmentDifficulty(data.content)} isDark={isDark} fontSize={10} />
-                      <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={6} segmentIndex="full" segmentLabel="FULL TEXT · single block" excerpt={data.content} col={col} isDark={isDark} compact />
+                      <SegmentDifficultyBadge difficulty={estimateSegmentDifficulty(data.detail)} isDark={isDark} fontSize={10} />
+                      <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={6} segmentIndex="full" segmentLabel="FULL TEXT · single block" excerpt={data.detail} col={col} isDark={isDark} compact />
                     </div>
                   </div>
-                  {data.content}
+                  {data.detail}
                 </div>
               </SegmentHoverSurface>
             ) : (
               <div style={{ padding: '24px 0', color: isDark ? '#334155' : '#94a3b8', fontSize: 11, fontStyle: 'italic' }}>
                 No segments submitted yet.
+                {data?.title && (
+                  <div>
+                    <AddMissingDepthLink planetId={planetId} lx={lx} ly={ly} archiveLayer={6} entryId={data?.id} col={col} isDark={isDark} />
+                  </div>
+                )}
               </div>
             )
           ) : (
@@ -1049,6 +1095,7 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
                           ly={ly}
                           archiveLayer={7}
                           nextSlot={i + 1}
+                          entryId={data?.id}
                           col={col}
                           isDark={isDark}
                           compact
@@ -1073,6 +1120,10 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
                     <div style={{ fontSize: 10, lineHeight: 1.5, color: isDark ? '#64748b' : '#94a3b8', fontWeight: 600 }}>
                       Add L5 (summary) and L6 (detail) content at this coordinate before authoring narrative tiles.
                       Easiest segments (difficulty 1) fill L7 first; harder segments automatically advance to L8 once L7 is complete.
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {!hasL5 && <AddMissingDepthLink planetId={planetId} lx={lx} ly={ly} archiveLayer={5} entryId={data?.id} col={col} isDark={isDark} />}
+                        {!hasL6 && <AddMissingDepthLink planetId={planetId} lx={lx} ly={ly} archiveLayer={6} entryId={data?.id} col={col} isDark={isDark} />}
+                      </div>
                     </div>
                   )}
                 </SegmentHoverSurface>
@@ -1337,7 +1388,7 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactS
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                           <span style={{ fontSize: 20, fontWeight: 900, color: col }}>SLOT {i + 1}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                            {showAddHere && <SegmentSubmitAddLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} nextSlot={nar + 1} col={col} isDark={isDark} compact />}
+                            {showAddHere && <SegmentSubmitAddLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} nextSlot={nar + 1} entryId={data?.id} col={col} isDark={isDark} compact />}
                             <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} segmentIndex={`narr-${i + 1}-empty`} segmentLabel={`L8 narrative slot ${i + 1} (empty)`} excerpt="" col={col} isDark={isDark} compact />
                           </div>
                         </div>
@@ -1636,7 +1687,7 @@ const GridCell = memo(function GridCell({
         <EmptyAddButton col={col} isDark={isDark} layer={layer} />
       )}
       {layer === 4 && <L4Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} compassSelected={compassSelected} />}
-      {layer === 5 && <L5Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} />}
+      {layer === 5 && <L5Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} planetId={planetId} />}
       {layer === 6 && !isEmpty && <L6Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} planetId={planetId} />}
       {layer === 7 && !isEmpty && <L7Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} gridFactsCatalog={gridFactsCatalog} deepFactSources={deepFactSources} planetId={planetId} />}
       {layer === 8 && !isEmpty && <L8Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} deepFactSources={deepFactSources} planetId={planetId} visYMin={visYMin} visYMax={visYMax} />}
@@ -2578,11 +2629,53 @@ export default function ArchiveGrid() {
     return { ...base, domain, intro, shortDomain }
   }, [hubId])
 
+  // Supabase: approved entries for this hub fetched on mount / hub change
+  const [dbEntries, setDbEntries] = useState({})
+  useEffect(() => {
+    let active = true
+    supabase
+      .from('archive_entries')
+      .select('*')
+      .eq('planet_id', hubId)
+      .eq('status', 'approved')
+      .is('updates_entry_id', null) // deepening drafts merge into their base entry; never shown standalone
+      .then(({ data }) => {
+        if (!active || !Array.isArray(data)) return
+        const map = {}
+        data.forEach((e) => {
+          const gx = e.coord_x + halfW
+          const gy = halfH - e.coord_y
+          const fullText = e.content || e.short_summary || ''
+          const segStrings =
+            fullText.match(/[^.!?]+[.!?]*/g)?.map((s) => s.trim()).filter(Boolean) || [fullText]
+          map[`${gx},${gy}`] = {
+            id: e.id,
+            title: e.title,
+            content: fullText,
+            // `detail` (not `content`) is the L6+ signal cellHasL6/hasL6 check for —
+            // `content` above falls back to the summary for display, so it can be
+            // truthy even when no real L6 detail was ever submitted.
+            detail: e.content || '',
+            shortSummary: e.short_summary || fullText.slice(0, 400),
+            segments: buildSortedSegments(segStrings, e.difficulty ?? null),
+            attachments: Array.isArray(e.attachments) ? e.attachments : [],
+            tags: Array.isArray(e.tags) ? e.tags : [],
+            alternatePerspectives: Array.isArray(e.alternate_perspectives)
+              ? e.alternate_perspectives
+              : [],
+            foundationMeta: null,
+          }
+        })
+        setDbEntries(map)
+      })
+    return () => { active = false }
+  }, [hubId, halfW, halfH])
+
   // Build section lookup keyed by absolute grid index "gx,gy"
-  // Sections start at grid center: section 0 → (halfW, halfH) = display (0,0)
+  // Supabase entries (dbEntries) are merged on top of the static data.
   const sectionEntries = useMemo(
-    () => buildMergedSectionEntries(planet, halfW, halfH),
-    [planet, submissionMergeTick, halfW, halfH],
+    () => ({ ...buildMergedSectionEntries(planet, halfW, halfH), ...dbEntries }),
+    [planet, submissionMergeTick, halfW, halfH, dbEntries],
   )
 
   // On planet change or grid resize: reset to layer 1, zoom 1, center planet / grid origin on screen

@@ -14,7 +14,11 @@ export function buildMergedSectionEntries(planet, halfW, halfH) {
   const m = {}
   const pidForPlace = String(planet.id || planet.planet || '').toLowerCase()
   planet.sections?.forEach((s, i) => {
-    const fullText = s.content || s.fullDepth || s.detailedSummary || s.shortSummary || ''
+    // `detail` (not `content`) is what cellHasL6 checks for -- content below falls
+    // back to the short summary for display, so it can be truthy even when no real
+    // L6+ detail was ever written for this section.
+    const trueDetail = s.content || s.fullDepth || s.detailedSummary || ''
+    const fullText = trueDetail || s.shortSummary || ''
     let segmentStrings = fullText.match(/[^.!?]+[.!?]*/g) || [fullText]
     segmentStrings = segmentStrings.map((sg) => sg.trim()).filter((sg) => sg.length > 0)
     const segments = buildSortedSegments(segmentStrings, null)
@@ -23,6 +27,7 @@ export function buildMergedSectionEntries(planet, halfW, halfH) {
     m[`${gx},${gy}`] = {
       title: s.title,
       content: fullText,
+      detail: trueDetail,
       shortSummary: s.shortSummary || fullText.slice(0, 400),
       segments,
       attachments: s.attachments || [],
@@ -52,6 +57,7 @@ export function buildMergedSectionEntries(planet, halfW, halfH) {
       const fromUser = {
         title: e.subject || 'Submission',
         content: fullText,
+        detail: e.detail || '',
         shortSummary: (e.summary || '').trim() || fullText.slice(0, 400),
         segments: buildSortedSegments(segStrings, entryDifficulty),
         attachments: Array.isArray(e.attachments) ? e.attachments : [],
@@ -79,6 +85,7 @@ export function buildMergedSectionEntries(planet, halfW, halfH) {
             title: fromUser.title || prev.title,
             shortSummary: fromUser.shortSummary || prev.shortSummary,
             content: fromUser.content || prev.content,
+            detail: fromUser.detail || prev.detail,
             segments: mergedSegments.length ? mergedSegments : prev.segments,
             attachments: [...(prev.attachments || []), ...(fromUser.attachments || [])],
             tags: [...new Set([...(prev.tags || []), ...tags])],

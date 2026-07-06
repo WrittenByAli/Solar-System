@@ -3,13 +3,11 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 import { Award, ChevronDown, ClipboardCheck, Medal, ShieldCheck, Sparkles, Trophy, Users } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { supabase } from '../utils/supabaseClient.js'
 import {
     MIN_POINTS_REVIEWER_ACCESS,
     POINTS_PER_REVIEW_COMPLETED,
 } from '../constants/reviewWorkflow.js'
-import { getApprovedSubmissions } from '../utils/submissionStorage.js'
-import { listAllProfiles } from '../utils/userProfileStorage.js'
-import { topThreeOnPlanet } from '../utils/fieldLeaderboards.js'
 import FieldHonorTokens from '../components/FieldHonorTokens.jsx'
 import fallbackData from '../data/researchData.json'
 import '../styles/solar-leaderboard.css'
@@ -234,28 +232,64 @@ export default function Leaderboard() {
         }
     }, [])
 
-    const realProfiles = useMemo(() => {
-        return [...listAllProfiles()].sort(
-            (a, b) => b.points - a.points || a.username.localeCompare(b.username),
-        )
+    // Real Supabase data: profiles ranked by points, plus per-planet contribution
+    // and passing-review counts aggregated client-side (dataset is small).
+    const [supaProfiles, setSupaProfiles] = useState([])
+    const [supaApprovedCount, setSupaApprovedCount] = useState(0)
+    useEffect(() => {
+        let active = true
+        async function load() {
+            const [{ data: profiles }, { data: entries }, { data: reviews }] = await Promise.all([
+                supabase.from('users_profile').select('id, username, points'),
+                supabase.from('archive_entries').select('id, planet_id, status, submitted_by, updates_entry_id'),
+                supabase.from('reviews').select('reviewer_id, entry_id, fact_check_pass'),
+            ])
+            if (!active) return
+            const entryById = Object.fromEntries((entries || []).map((e) => [e.id, e]))
+            const approvedTopics = (entries || []).filter((e) => e.status === 'approved' && !e.updates_entry_id)
+            setSupaApprovedCount(approvedTopics.length)
+
+            const contributionsByUser = {}
+            approvedTopics.forEach((e) => {
+                if (!e.submitted_by) return
+                const pid = String(e.planet_id || '').toLowerCase()
+                contributionsByUser[e.submitted_by] = contributionsByUser[e.submitted_by] || {}
+                contributionsByUser[e.submitted_by][pid] = (contributionsByUser[e.submitted_by][pid] || 0) + 1
+            })
+
+            const reviewsByUser = {}
+            const reviewCountByUser = {}
+            ;(reviews || []).forEach((r) => {
+                reviewCountByUser[r.reviewer_id] = (reviewCountByUser[r.reviewer_id] || 0) + 1
+                if (!r.fact_check_pass) return
+                const pid = String(entryById[r.entry_id]?.planet_id || '').toLowerCase()
+                if (!pid) return
+                reviewsByUser[r.reviewer_id] = reviewsByUser[r.reviewer_id] || {}
+                reviewsByUser[r.reviewer_id][pid] = (reviewsByUser[r.reviewer_id][pid] || 0) + 1
+            })
+
+            const built = (profiles || []).map((p) => ({
+                username: p.username,
+                points: p.points || 0,
+                reviewsCompleted: reviewCountByUser[p.id] || 0,
+                contributionsByPlanet: contributionsByUser[p.id] || {},
+                reviewsByPlanet: reviewsByUser[p.id] || {},
+            })).sort((a, b) => b.points - a.points || a.username.localeCompare(b.username))
+
+            setSupaProfiles(built)
+        }
+        load()
+        return () => { active = false }
     }, [tick])
 
-    const rankedProfiles = realProfiles.length > 0 ? realProfiles : DEMO_PROFILES
-
-    const approvedEntryCount = useMemo(() => {
-        const realCount = getApprovedSubmissions().length
-        if (realCount > 0) return realCount
-        return DEMO_PROFILES.reduce(
-            (sum, p) => sum + Object.values(p.contributionsByPlanet || {}).reduce((a, n) => a + n, 0),
-            0,
-        )
-    }, [tick])
+    const rankedProfiles = supaProfiles.length > 0 ? supaProfiles : DEMO_PROFILES
+    const approvedEntryCount = supaProfiles.length > 0
+        ? supaApprovedCount
+        : DEMO_PROFILES.reduce((sum, p) => sum + Object.values(p.contributionsByPlanet || {}).reduce((a, n) => a + n, 0), 0)
 
     const honorPlanet   = researchData.planets.find((p) => p.id === honorPlanetId) || researchData.planets[0]
-    const realExpertsTop  = topThreeOnPlanet(honorPlanet?.id, 'contributions')
-    const realCheckersTop = topThreeOnPlanet(honorPlanet?.id, 'reviews')
-    const expertsTop  = realExpertsTop.length  > 0 ? realExpertsTop  : rankDemoUsersOnPlanet(DEMO_PROFILES, honorPlanet?.id, 'contributions')
-    const checkersTop = realCheckersTop.length > 0 ? realCheckersTop : rankDemoUsersOnPlanet(DEMO_PROFILES, honorPlanet?.id, 'reviews')
+    const expertsTop  = supaProfiles.length > 0 ? rankDemoUsersOnPlanet(supaProfiles, honorPlanet?.id, 'contributions') : rankDemoUsersOnPlanet(DEMO_PROFILES, honorPlanet?.id, 'contributions')
+    const checkersTop = supaProfiles.length > 0 ? rankDemoUsersOnPlanet(supaProfiles, honorPlanet?.id, 'reviews') : rankDemoUsersOnPlanet(DEMO_PROFILES, honorPlanet?.id, 'reviews')
 
     const totalContributors = rankedProfiles.length
     const topPerformer      = rankedProfiles[0]
@@ -530,7 +564,7 @@ export default function Leaderboard() {
                     transition={{ duration: 0.45 }}
                     className="leaderboard-ledger-note"
                 >
-                    Local demo ledger (localStorage): honors compare accounts on this device only. Segment text is sorted easiest → hardest after approval.
+                    Points and honors are live from the shared SOLAR database. Segment text is sorted easiest → hardest after approval.
                 </motion.p>
             </div>
         </div>
