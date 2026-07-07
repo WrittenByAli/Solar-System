@@ -126,3 +126,13 @@ temp/
 
 # TypeScript cache
 *.tsbuildinfo
+
+# Internal docs & security-sensitive files — kept local, not published.
+# (CLAUDE.md and README.md remain tracked.)
+*.md
+!CLAUDE.md
+!README.md
+supabase_*.sql
+qa-*.mjs
+test-*.mjs
+shot-*.mjs
