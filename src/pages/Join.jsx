@@ -120,6 +120,10 @@ export default function Join() {
     const [notice, setNotice] = useState('')
     const [loading, setLoading] = useState(false)
     const [done, setDone] = useState(null) // 'login' | 'signup' | 'reset'
+    // Clerk's bot check (Cloudflare Turnstile) can stall signUp.create()
+    // for 30s+ on localhost with zero feedback — this flags the wait so
+    // the user knows the hang is the security check, not a frozen app.
+    const [slowCheck, setSlowCheck] = useState(false)
 
     // verification / OTP state (shared by email-verify and password-reset)
     const [otp, setOtp] = useState('')
@@ -131,9 +135,13 @@ export default function Join() {
     // MFA second factor — `mfaFactor` is whichever strategy Clerk actually
     // offered this account (totp / phone_code / backup_code); the UI adapts
     // instead of hardcoding totp, which would dead-end phone-only accounts.
+    // `mfaDeviceVerify` marks Clerk's Client Trust (new-device) check, which
+    // rides the same pipe but is NOT user-enrolled MFA — the copy must say
+    // "verify this device", not "two-factor authentication".
     const [mfaFactor, setMfaFactor] = useState(null)
     const [mfaHasBackup, setMfaHasBackup] = useState(false)
     const [mfaBackup, setMfaBackup] = useState(false)
+    const [mfaDeviceVerify, setMfaDeviceVerify] = useState(false)
 
     // Email-link verification (alternative to the OTP code). While
     // `linkWait` is true the verify view shows a waiting panel and
@@ -148,9 +156,10 @@ export default function Join() {
     }
 
     // 1-second tick drives the resend countdown + expiry display
-    const needsTimer = view === 'verify' || view === 'reset'
+    const needsTimer = view === 'verify' || view === 'reset' || view === 'mfa'
     useEffect(() => {
         if (!needsTimer) return undefined
+        setNowTick(Date.now()) // correct immediately — nowTick is stale from before the view switch
         const t = setInterval(() => setNowTick(Date.now()), 1000)
         return () => clearInterval(t)
     }, [needsTimer])
@@ -174,25 +183,36 @@ export default function Join() {
         setMfaBackup(false)
         setMfaFactor(null)
         setMfaHasBackup(false)
+        setMfaDeviceVerify(false)
     }
 
     /* Persist profile (with names) to Supabase before session activation so
        AuthContext's sync finds the completed row. Falls back to the minimal
-       column set if the extended columns don't exist yet. */
+       column set if the extended columns don't exist yet.
+
+       MUST NEVER THROW: it runs between Clerk marking the signup complete
+       and session activation. A rejected fetch here (offline blip, extension
+       blocking supabase.co) used to bubble into submitVerify's catch and get
+       reported as "Incorrect code" — after the account was already created.
+       Profile sync is best-effort; AuthContext recreates the row on login. */
     const saveProfile = async (clerkId, { firstName, lastName, email }) => {
         if (!clerkId) return
-        const username = `${firstName} ${lastName}`.trim() || email.split('@')[0] || 'user'
-        const base = { clerk_id: clerkId, username, email, points: 0 }
-        const { error: err } = await supabase.from('users_profile').upsert(
-            { ...base, first_name: firstName, last_name: lastName },
-            { onConflict: 'clerk_id' },
-        )
-        if (err) {
-            reportAuthError('profile-save', err)
-            const { error: retryErr } = await supabase
-                .from('users_profile')
-                .upsert(base, { onConflict: 'clerk_id' })
-            if (retryErr) reportAuthError('profile-save-retry', retryErr)
+        try {
+            const username = `${firstName} ${lastName}`.trim() || email.split('@')[0] || 'user'
+            const base = { clerk_id: clerkId, username, email, points: 0 }
+            const { error: err } = await supabase.from('users_profile').upsert(
+                { ...base, first_name: firstName, last_name: lastName },
+                { onConflict: 'clerk_id' },
+            )
+            if (err) {
+                reportAuthError('profile-save', err)
+                const { error: retryErr } = await supabase
+                    .from('users_profile')
+                    .upsert(base, { onConflict: 'clerk_id' })
+                if (retryErr) reportAuthError('profile-save-retry', retryErr)
+            }
+        } catch (err) {
+            reportAuthError('profile-save-fatal', err)
         }
     }
 
@@ -223,13 +243,22 @@ export default function Join() {
             const result = await signIn.create({ identifier: values.email, password: values.password })
             if (result.status === 'complete') {
                 await finish(setSignInActive, result.createdSessionId, 'login')
-            } else if (result.status === 'needs_second_factor') {
+            } else if (result.status === 'needs_second_factor' || result.status === 'needs_client_trust') {
                 // Pick whichever factor Clerk actually enrolled this account
                 // with. The Clerk dashboard's Multi-factor settings can enable
                 // ANY of totp / phone_code / email_code as the second factor
                 // independent of which first-factor identifiers exist, so all
                 // four must be handled — hardcoding one strategy dead-ends
                 // every account enrolled in a different one.
+                //
+                // Client Trust (device verification, on by default for Clerk
+                // apps created after Nov 2025) arrives through this same pipe:
+                // the password is CORRECT but the browser is unrecognized, so
+                // Clerk demands an emailed/SMS code even when the account has
+                // no MFA enrolled. Current API versions report it as
+                // needs_second_factor (with only email/phone factors offered);
+                // newer ones as needs_client_trust — both must be handled or
+                // login on any new device dead-ends.
                 const factors = result.supportedSecondFactors || []
                 const totp = factors.find((f) => f.strategy === 'totp')
                 const phone = factors.find((f) => f.strategy === 'phone_code')
@@ -263,6 +292,14 @@ export default function Join() {
                 // view change, so setting them first would be wiped out.
                 setMfaFactor(primary)
                 setMfaHasBackup(!!backup)
+                // No TOTP/backup factor enrolled ⇒ this is the new-device
+                // check, not real MFA (the instance has email/SMS second
+                // factors disabled, so they can only appear via Client Trust).
+                setMfaDeviceVerify(result.status === 'needs_client_trust' || (!totp && !backup))
+                if (primary?.strategy === 'phone_code' || primary?.strategy === 'email_code') {
+                    setCodeSentAt(Date.now())
+                    setResendReadyAt(Date.now() + RESEND_COOLDOWN_MS)
+                }
             } else {
                 setError('Invalid email or password.')
             }
@@ -292,7 +329,42 @@ export default function Join() {
             }
         } catch (err) {
             reportAuthError('mfa', err)
-            setError('Invalid code. Please try again.')
+            setError(
+                err?.errors?.[0]?.code === 'form_code_incorrect'
+                    ? 'Invalid code. Please try again.'
+                    : 'Verification hit a network problem. Please try again.',
+            )
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    /* Resend the second-factor / device-verification code. Without this,
+       a lost or slow email is a hard dead-end: the sign-in attempt holds
+       an unverified code and the view offers no way to request another. */
+    const resendMfaCode = async () => {
+        setError('')
+        if (Date.now() < resendReadyAt || !mfaFactor) return
+        setLoading(true)
+        try {
+            if (mfaFactor.strategy === 'phone_code') {
+                await signIn.prepareSecondFactor({
+                    strategy: 'phone_code',
+                    phoneNumberId: mfaFactor.phoneNumberId,
+                })
+            } else if (mfaFactor.strategy === 'email_code') {
+                await signIn.prepareSecondFactor({
+                    strategy: 'email_code',
+                    emailAddressId: mfaFactor.emailAddressId,
+                })
+            }
+            setCodeSentAt(Date.now())
+            setResendReadyAt(Date.now() + RESEND_COOLDOWN_MS)
+            setOtp('')
+            setNotice('A new code has been sent.')
+        } catch (err) {
+            reportAuthError('mfa-resend', err)
+            setError('Could not send a new code. Please try again shortly.')
         } finally {
             setLoading(false)
         }
@@ -307,6 +379,7 @@ export default function Join() {
         if (Object.keys(errors).length) { setFieldErrors(errors); return }
 
         setLoading(true)
+        const slowTimer = setTimeout(() => setSlowCheck(true), 8000)
         try {
             // Build the richest payload the instance accepts. If Clerk rejects a
             // param as unknown (field disabled in dashboard), strip exactly that
@@ -374,6 +447,8 @@ export default function Join() {
             reportAuthError('signup', err)
             setError(signUpErrorMessage(err))
         } finally {
+            clearTimeout(slowTimer)
+            setSlowCheck(false)
             setLoading(false)
         }
     }
@@ -476,13 +551,28 @@ export default function Join() {
             }
         } catch (err) {
             reportAuthError('verify', err)
-            setAttempts((a) => a + 1)
-            const remaining = MAX_VERIFY_ATTEMPTS - (attempts + 1)
-            setError(
-                remaining > 0
-                    ? `Incorrect code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`
-                    : 'Too many incorrect attempts. Request a new code.',
-            )
+            // Only a genuinely wrong/expired code burns an attempt. Any other
+            // failure (session activation, network) after Clerk accepted the
+            // code must not masquerade as "Incorrect code" — the account may
+            // already exist, and retyping codes can never fix it.
+            const errCode = err?.errors?.[0]?.code || ''
+            const codeWasWrong = errCode === 'form_code_incorrect' || errCode === 'verification_expired'
+            if (signUp?.status === 'complete') {
+                setError(
+                    'Your email is verified and your account was created, but sign-in ' +
+                    'could not start automatically. Switch to the Login tab and sign in.',
+                )
+            } else if (codeWasWrong) {
+                setAttempts((a) => a + 1)
+                const remaining = MAX_VERIFY_ATTEMPTS - (attempts + 1)
+                setError(
+                    remaining > 0
+                        ? `Incorrect code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`
+                        : 'Too many incorrect attempts. Request a new code.',
+                )
+            } else {
+                setError('Verification hit a network problem. Your code was not used up — please try again.')
+            }
         } finally {
             setLoading(false)
             setOtp('')
@@ -580,12 +670,14 @@ export default function Join() {
             setError('Password reset did not complete. Please try again.')
         } catch (err) {
             reportAuthError('reset', err)
-            setAttempts((a) => a + 1)
-            setError(
-                err?.errors?.[0]?.code === 'form_code_incorrect'
-                    ? 'Incorrect code. Please try again.'
-                    : 'Password reset failed. Request a new code and try again.',
-            )
+            // Attempts only burn on an actually-wrong code — other failures
+            // (network, session activation) don't invalidate the code.
+            if (err?.errors?.[0]?.code === 'form_code_incorrect') {
+                setAttempts((a) => a + 1)
+                setError('Incorrect code. Please try again.')
+            } else {
+                setError('Password reset failed. Request a new code and try again.')
+            }
         } finally {
             setLoading(false)
         }
@@ -824,22 +916,25 @@ export default function Join() {
         )
     }
 
-    /* ── MFA second factor ────────────────────────────────── */
+    /* ── MFA second factor / new-device verification ──────── */
     if (view === 'mfa') {
         const factorIsPhone = mfaFactor?.strategy === 'phone_code'
         const factorIsEmail = mfaFactor?.strategy === 'email_code'
+        const mfaTitle = mfaDeviceVerify ? 'Verify it’s you' : 'Two-factor authentication'
         const mfaSubtitle = mfaBackup
             ? 'Enter one of your backup codes.'
-            : factorIsPhone
-                ? `Enter the 6-digit code sent to ${mfaFactor?.safeIdentifier || 'your phone'}.`
-                : factorIsEmail
-                    ? `Enter the 6-digit code sent to ${mfaFactor?.safeIdentifier || 'your email'}.`
-                    : 'Enter the 6-digit code from your authenticator app.'
+            : mfaDeviceVerify
+                ? `Your password was correct, but this browser isn’t recognized yet. We sent a 6-digit code to ${mfaFactor?.safeIdentifier || (factorIsPhone ? 'your phone' : 'your email')} — it can take a minute to arrive, and it may land in spam.`
+                : factorIsPhone
+                    ? `Enter the 6-digit code sent to ${mfaFactor?.safeIdentifier || 'your phone'}.`
+                    : factorIsEmail
+                        ? `Enter the 6-digit code sent to ${mfaFactor?.safeIdentifier || 'your email'}.`
+                        : 'Enter the 6-digit code from your authenticator app.'
         return shell(
             <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="sj-card">
                 <div className="sj-card__head">
                     <div className="sj-verify-icon"><KeyRound size={28} /></div>
-                    <h1 className="sj-card__title">Two-factor authentication</h1>
+                    <h1 className="sj-card__title">{mfaTitle}</h1>
                     <p className="sj-card__sub">{mfaSubtitle}</p>
                 </div>
 
@@ -866,15 +961,25 @@ export default function Join() {
                             value={otp}
                             onChange={setOtp}
                             disabled={loading}
-                            ariaLabel="Authenticator code"
+                            ariaLabel={(factorIsPhone || factorIsEmail) ? 'Verification code' : 'Authenticator code'}
                         />
                     )}
 
+                    {noticeBox}
                     {errorBox}
 
                     <button type="submit" className="sj-submit" disabled={loading || !otp}>
                         {loading ? <><span className="sj-spinner" /> Verifying…</> : <><ShieldCheck size={16} /> Verify <ArrowRight size={14} /></>}
                     </button>
+
+                    {(factorIsPhone || factorIsEmail) && !mfaBackup && (
+                        <p className="sj-switch" style={{ marginTop: 4 }}>
+                            Didn&apos;t receive it?{' '}
+                            <button type="button" className="sj-link-btn" onClick={resendMfaCode} disabled={loading || resendWaitSec > 0}>
+                                {resendWaitSec > 0 ? `Resend in ${resendWaitSec}s` : 'Resend code'}
+                            </button>
+                        </p>
+                    )}
 
                     {mfaHasBackup && (
                         <button
@@ -916,7 +1021,7 @@ export default function Join() {
                                 placeholder="you@example.com"
                                 value={form.email}
                                 onChange={(e) => set('email', e.target.value)}
-                                autoComplete="email"
+                                autoComplete="off"
                                 aria-invalid={!!fieldErrors.email}
                                 aria-describedby={fieldErrors.email ? 'sj-err-email' : undefined}
                                 autoFocus
@@ -1080,7 +1185,7 @@ export default function Join() {
                     transition={{ duration: 0.2 }}
                     onSubmit={isSignup ? submitSignUp : submitSignIn}
                     className="sj-form"
-                    autoComplete="on"
+                    autoComplete="off"
                     noValidate
                 >
                     {/* Names — signup only */}
@@ -1130,7 +1235,7 @@ export default function Join() {
                                 name="email"
                                 className="sj-input" type="email" placeholder="you@example.com"
                                 value={form.email} onChange={(e) => set('email', e.target.value)}
-                                autoComplete="email"
+                                autoComplete="off"
                                 aria-invalid={!!fieldErrors.email}
                                 aria-describedby={fieldErrors.email ? 'sj-err-email' : undefined}
                                 required
@@ -1151,7 +1256,10 @@ export default function Join() {
                                 placeholder={isSignup ? 'At least 12 characters' : 'Your password'}
                                 value={form.password}
                                 onChange={(e) => set('password', e.target.value)}
-                                autoComplete={isSignup ? 'new-password' : 'current-password'}
+                                // "new-password" on BOTH tabs: it's the only value
+                                // Chrome respects for suppressing saved-credential
+                                // autofill (plain "off" is ignored on login fields).
+                                autoComplete="new-password"
                                 aria-invalid={!!fieldErrors.password}
                                 aria-describedby={fieldErrors.password ? 'sj-err-password' : undefined}
                                 required
@@ -1246,6 +1354,14 @@ export default function Join() {
                     {/* Clerk Bot Protection mount point — REQUIRED for custom
                         signup flows; without it signUp.create() fails CAPTCHA. */}
                     {isSignup && <div id="clerk-captcha" />}
+
+                    {isSignup && loading && slowCheck && (
+                        <p className="sj-notice" role="status">
+                            Running the browser security check — on localhost this can take
+                            up to a minute. Keep this tab open; if it never finishes, try
+                            disabling ad-blockers or another browser.
+                        </p>
+                    )}
 
                     <button type="submit" className="sj-submit" disabled={loading}>
                         {loading

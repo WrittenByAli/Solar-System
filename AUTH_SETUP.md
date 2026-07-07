@@ -11,7 +11,7 @@ There is no application server — Clerk's API is the auth backend.
 |---|---|
 | `src/auth/validation.js` | All client-side validation rules (names, email, password policy, common-password rejection, strength scoring) |
 | `src/components/auth/OtpInput.jsx` | Reusable 6-box OTP input (paste, keyboard nav, ARIA) |
-| `src/pages/Join.jsx` | Sign in, sign up, email verification (code or magic link), MFA second factor, forgot/reset password, OAuth start |
+| `src/pages/Join.jsx` | Sign in, sign up, email verification (code or magic link), MFA second factor, Client Trust device verification, forgot/reset password, OAuth start |
 | `src/pages/SsoCallback.jsx` | OAuth redirect completion (`/sso-callback`) |
 | `src/pages/EmailLinkVerified.jsx` | Email-verification-link landing page (`/email-link-verified`) |
 | `src/pages/AccountSecurity.jsx` | MFA enrollment (TOTP, backup codes, passkeys) + active session management (`/account`) |
@@ -36,6 +36,39 @@ There is no application server — Clerk's API is the auth backend.
 | Passkeys | User & Authentication → Passkeys | On (optional) |
 | Bot protection | Security → Attack protection | Keep on — the form has the required `clerk-captcha` mount |
 | **Redirect URLs (OAuth + email link)** | **Configure → Paths, or via Backend API `/v1/redirect_urls`** | **Must include `<origin>/#/sso-callback` AND `<origin>/#/email-link-verified` for every origin the app runs on** |
+
+### 2.0 Client Trust (device verification) — why login asks for an email code
+
+Clerk apps created after Nov 14 2025 have **Client Trust** enabled by
+default (Dashboard → Configure → Security → Attack protection). When a
+user signs in with a **correct password from an unrecognized browser**,
+Clerk returns `needs_second_factor` (newer API versions:
+`needs_client_trust`) with an `email_code` factor — even when the
+account has **no MFA enrolled**. The response carries
+`client_trust_state: "new"`; after the emailed code is verified it
+becomes `"known"` and that browser skips the step on future logins.
+
+`Join.jsx` handles both statuses: it detects the device-verification
+case (no TOTP/backup factor enrolled), shows a "Verify it's you"
+screen instead of "Two-factor authentication", and offers a resend
+button (60 s cooldown). Codes to `+clerk_test` addresses accept
+`424242` without sending mail.
+
+If the emailed codes are unwanted friction in development, toggle
+Client Trust off on the same Attack protection page (dashboard-only —
+not exposed via the Backend API).
+
+### 2.2 Bot sign-up protection — why signup can hang for ~30 s on localhost
+
+The signup CAPTCHA (Cloudflare Turnstile, "smart" mode) frequently
+fails on localhost with client-side error `300010` plus
+`postMessage`/sandboxed-iframe console noise, retries for tens of
+seconds, and only then lets `signUp.create()` proceed. This is
+environmental (Turnstile vs. localhost/extensions/headless), not app
+code — the required `<div id="clerk-captcha">` mount is present. For
+fast local signups, turn **Bot sign-up protection** off in Dashboard →
+Configure → Security → Attack protection (dashboard-only setting);
+keep it ON in production.
 
 ### 2.1 OAuth redirect URLs — required or Google/GitHub buttons silently fail
 

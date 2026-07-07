@@ -169,4 +169,6 @@ There is no application server — Clerk is the auth backend and Supabase is the
 - **Auth:** real Clerk accounts (`AuthContext` wraps `useUser`); profiles sync to the Supabase `users_profile` table.
 - **Archive entries:** seeded subjects + user submissions live in the Supabase `archive_entries` table (`supabase_schema.sql`, `supabase_seed.sql`). `ArchiveGrid` reads approved entries per hub; `ArchiveDirectory` lists them; `/submit` inserts pending entries.
 - **RLS:** enabled with permissive Phase 2A demo policies (migration `phase2a_demo_policies`); `supabase_rls.sql` replaces them with strict per-user policies in Phase 2B — read its warning header first.
-- **Still localStorage/demo:** hosted-archive registry, review queue/grading, leaderboard scores, and segment reports (`archiveInstanceStorage.js` + inline page data).
+- **Review workflow + leaderboard:** real and Supabase-backed — 3-reviewer consensus with merge-on-approval and points applied by a Postgres trigger; `/leaderboard` reads live points.
+- **Still localStorage/demo:** hosted-archive registry and segment reports (`archiveInstanceStorage.js` + inline page data).
+- **Feature inventory:** `PHASE_2A_FEATURES.md` lists everything Phase 2A delivered and its verification status.
