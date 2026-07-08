@@ -1663,7 +1663,9 @@ const GridCell = memo(function GridCell({
     background: isEmpty
       ? (isDark ? 'rgba(7,5,15,0.4)' : 'rgba(240,245,250,0.4)')
       : (isDark ? '#06040e' : '#ffffff'),
-    cursor: (isEmpty && layer >= 5 && layer <= 8) ? 'pointer' : 'default',
+    // layer >= 4: matches handleCellClick's actual guard (layer < 4 || layer > 8)
+    // — L4 empty cells were clickable but never showed a pointer cursor.
+    cursor: (isEmpty && layer >= 4 && layer <= 8) ? 'pointer' : 'default',
   }
 
   const handleCellClick = useCallback(() => {
@@ -2587,7 +2589,7 @@ export default function ArchiveGrid() {
   const [viewportInteractMode, setViewportInteractMode] = useState('pan')
   const drag = useRef({ active: false, sx: 0, sy: 0, svx: 0, svy: 0 })
   const touch = useRef({
-    active: false, isPinch: false,
+    active: false, isPinch: false, moved: false,
     startX: 0, startY: 0, startVX: 0, startVY: 0,
     startDist: 0, startZoom: 1,
     lastVX: 0, lastVY: 0, lastZoom: 1,
@@ -3084,6 +3086,11 @@ export default function ArchiveGrid() {
       return Math.sqrt(dx * dx + dy * dy)
     }
 
+    // Finger wiggle tolerance before a single-finger touch counts as a pan
+    // rather than a tap — below this, onTouchMove leaves the gesture alone
+    // (no preventDefault) so touchend still synthesizes a normal click.
+    const TAP_SLOP_PX = 8
+
     const onTouchStart = (e) => {
       if (viewportInteractModeRef.current === 'select') return
       // Don't intercept touches on interactive controls
@@ -3092,11 +3099,18 @@ export default function ArchiveGrid() {
 
       const touches = e.touches
       if (touches.length === 1) {
-        e.preventDefault()
+        // Do NOT preventDefault here: a still finger is indistinguishable from a
+        // tap. Calling preventDefault on touchstart suppresses the browser's
+        // synthetic click that would otherwise fire on touchend, which is what
+        // was silently breaking tap-to-submit on empty grid cells on mobile —
+        // the cell's onClick never ran. onTouchMove only starts panning (and
+        // only then calls preventDefault) once the finger actually moves past
+        // TAP_SLOP_PX, so a real drag still works exactly as before.
         const { x: vx, y: vy } = viewXYRef.current
         const z = zoomRef.current
         ts.active = true
         ts.isPinch = false
+        ts.moved = false
         ts.startX = touches[0].clientX
         ts.startY = touches[0].clientY
         ts.startVX = vx
@@ -3108,6 +3122,7 @@ export default function ArchiveGrid() {
         e.preventDefault()
         ts.active = true
         ts.isPinch = true
+        ts.moved = true
         ts.startDist = getDist(touches)
         ts.startZoom = ts.lastZoom !== undefined ? ts.lastZoom : zoomRef.current
         ts.startX = (touches[0].clientX + touches[1].clientX) / 2
@@ -3121,12 +3136,12 @@ export default function ArchiveGrid() {
     const onTouchMove = (e) => {
       if (!ts.active) return
       if (viewportInteractModeRef.current === 'select') return
-      e.preventDefault()
 
       const touches = e.touches
       const lay = layerRef.current
 
       if (ts.isPinch && touches.length >= 2) {
+        e.preventDefault()
         // Pinch-to-zoom with simultaneous pan
         const dist = getDist(touches)
         const scale = dist / ts.startDist
@@ -3154,6 +3169,13 @@ export default function ArchiveGrid() {
         ts.lastVY = y
         ts.lastZoom = nZ
       } else if (!ts.isPinch && touches.length === 1) {
+        if (!ts.moved) {
+          const dx0 = touches[0].clientX - ts.startX
+          const dy0 = touches[0].clientY - ts.startY
+          if (Math.hypot(dx0, dy0) < TAP_SLOP_PX) return // still a tap candidate
+          ts.moved = true
+        }
+        e.preventDefault()
         // Single-finger pan
         const zPan = ts.lastZoom !== undefined ? ts.lastZoom : zoomRef.current
         const cp = CELL_PX[lay] * zPan

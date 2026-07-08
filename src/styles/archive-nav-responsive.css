@@ -611,6 +611,20 @@
   .archive-controls-overlay {
     bottom: max(10px, env(safe-area-inset-bottom)) !important;
     gap: 10px !important;
+    /* One solid panel behind the whole cluster — without this, the gaps
+       between the D-pad's individual glass buttons leave raw grid cells
+       (titles, coordinates) visible on narrow screens, reading as clutter
+       rather than a single control panel. */
+    border-radius: 24px;
+    background: rgba(4, 9, 20, 0.55);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  }
+
+  .light .archive-controls-overlay {
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
   }
 
   .archive-controls-overlay__pad-row {
