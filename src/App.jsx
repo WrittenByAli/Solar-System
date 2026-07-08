@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import StarField from './components/StarField.jsx'
 import FoundationArchiveStar from './components/FoundationArchiveStar.jsx'
 import FoundationLogo from './components/FoundationLogo.jsx'
+import GuestGate from './components/GuestGate.jsx'
 
 // Route-level code splitting: each page (and everything only it imports —
 // notably three.js/@react-three, which only Home touches) loads on first
@@ -56,17 +57,29 @@ function LoadingScreen({ message }) {
     )
 }
 
-/** Auth gate: every route except /join requires a signed-in account. */
+/** Auth gate: browse routes admit signed-in members AND explicit guest
+    sessions; everyone else is sent to /join. */
 function RequireAuth({ children }) {
-    const { isLoggedIn, authLoaded } = useAuth()
+    const { isLoggedIn, isGuest, authLoaded } = useAuth()
     if (!authLoaded) return <LoadingScreen message="Restoring your session…" />
-    if (!isLoggedIn) return <Navigate to="/join" replace />
+    if (!isLoggedIn && !isGuest) return <Navigate to="/join" replace />
     return children
+}
+
+/** Member gate: contribution surfaces (submit, reviews, account…). Guests
+    see an upgrade prompt instead of the page — never a silent bounce. */
+function RequireMember({ children }) {
+    const { isLoggedIn, isGuest, authLoaded } = useAuth()
+    if (!authLoaded) return <LoadingScreen message="Restoring your session…" />
+    if (isLoggedIn) return children
+    if (isGuest) return <GuestGate />
+    return <Navigate to="/join" replace />
 }
 
 function AnimatedRoutes() {
     const location = useLocation()
     const guard = (node) => <RequireAuth>{node}</RequireAuth>
+    const memberGuard = (node) => <RequireMember>{node}</RequireMember>
     return (
         <Routes location={location}>
             <Route path="/" element={guard(<PageWrap immersive><Home /></PageWrap>)} />
@@ -74,15 +87,15 @@ function AnimatedRoutes() {
             <Route path="/join" element={<PageWrap><Join /></PageWrap>} />
             <Route path="/sso-callback" element={<SsoCallback />} />
             <Route path="/email-link-verified" element={<PageWrap><EmailLinkVerified /></PageWrap>} />
-            <Route path="/account" element={guard(<PageWrap><AccountSecurity /></PageWrap>)} />
+            <Route path="/account" element={memberGuard(<PageWrap><AccountSecurity /></PageWrap>)} />
             <Route path="/archive/beacon" element={<Navigate to="/archive/star" replace />} />
             <Route path="/archive/:planetId" element={guard(<PageWrap><ArchiveGrid /></PageWrap>)} />
             <Route path="/leaderboard" element={guard(<PageWrap><Leaderboard /></PageWrap>)} />
-            <Route path="/reviews" element={guard(<PageWrap><Reviews /></PageWrap>)} />
-            <Route path="/review-queue" element={guard(<PageWrap><GradeSubmissions /></PageWrap>)} />
-            <Route path="/submit" element={guard(<PageWrap><SubmitArchive /></PageWrap>)} />
-            <Route path="/create-archive" element={guard(<PageWrap><CreateArchive /></PageWrap>)} />
-            <Route path="/host-archive" element={guard(<PageWrap><HostArchive /></PageWrap>)} />
+            <Route path="/reviews" element={memberGuard(<PageWrap><Reviews /></PageWrap>)} />
+            <Route path="/review-queue" element={memberGuard(<PageWrap><GradeSubmissions /></PageWrap>)} />
+            <Route path="/submit" element={memberGuard(<PageWrap><SubmitArchive /></PageWrap>)} />
+            <Route path="/create-archive" element={memberGuard(<PageWrap><CreateArchive /></PageWrap>)} />
+            <Route path="/host-archive" element={memberGuard(<PageWrap><HostArchive /></PageWrap>)} />
             <Route path="/directory" element={guard(<PageWrap><ArchiveDirectory /></PageWrap>)} />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

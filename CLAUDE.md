@@ -44,6 +44,8 @@ All routes are defined in `src/App.jsx` inside `<AnimatedRoutes>`:
 
 All routes except `/join`, `/sso-callback`, and `/email-link-verified` are wrapped in `RequireAuth` (App.jsx) — signed-out users are redirected to `/join`. Auth is real (Clerk); see `AUTH_SETUP.md`.
 
+**Guest mode:** `/join` offers "Continue as guest" — a browse-only localStorage session (`AuthContext.isGuest`; no Clerk account, no Supabase row). Guests pass `RequireAuth` (Home, Map, Archive, Leaderboard, Directory), but contribution routes (`/submit`, `/reviews`, `/review-queue`, `/account`, `/create-archive`, `/host-archive`) use `RequireMember`, which shows guests an upgrade prompt (`src/components/GuestGate.jsx`). The authorization policy (`src/auth/authorization.js`) has a `GUEST` role holding only `archive:read`. A real sign-in permanently clears the guest flag.
+
 ## Theme System
 
 **Context:** `ThemeContext` is exported from `src/App.jsx`. Consume it with the named export `useTheme`:

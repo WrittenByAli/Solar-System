@@ -7,10 +7,34 @@ import { NEW_ACCOUNT_STARTER_POINTS } from '../constants/reviewWorkflow.js'
 
 const AuthContext = createContext(null)
 
+/* Guest mode: an explicit browse-only session with no Clerk account, no
+   email, and no Supabase profile row. It is a localStorage flag, nothing
+   more — reads go through the public anon key like any signed-out client,
+   and every write surface is gated behind RequireMember / permissions. */
+const GUEST_LS_KEY = 'sa-guest-session'
+
+function readGuestFlag() {
+    try { return localStorage.getItem(GUEST_LS_KEY) === '1' } catch { return false }
+}
+
 export function AuthProvider({ children }) {
     const { user, isLoaded, isSignedIn } = useUser()
     const { signOut } = useClerk()
     const [profile, setProfile] = useState(null)
+    const [guestSession, setGuestSession] = useState(readGuestFlag)
+
+    // A real sign-in supersedes guest mode permanently.
+    useEffect(() => {
+        if (isSignedIn && guestSession) {
+            setGuestSession(false)
+            try { localStorage.removeItem(GUEST_LS_KEY) } catch { /* storage unavailable */ }
+        }
+    }, [isSignedIn, guestSession])
+
+    const startGuestSession = useCallback(() => {
+        setGuestSession(true)
+        try { localStorage.setItem(GUEST_LS_KEY, '1') } catch { /* storage unavailable */ }
+    }, [])
 
     useEffect(() => {
         if (!isLoaded) return
@@ -80,8 +104,12 @@ export function AuthProvider({ children }) {
 
     const logout = useCallback(async () => {
         setProfile(null)
-        await signOut()
-    }, [signOut])
+        setGuestSession(false)
+        try { localStorage.removeItem(GUEST_LS_KEY) } catch { /* storage unavailable */ }
+        // Guests have no Clerk session — calling signOut for them is a no-op
+        // round-trip at best, so only sign out when one actually exists.
+        if (isSignedIn) await signOut()
+    }, [signOut, isSignedIn])
 
     const refreshProfile = useCallback(async () => {
         if (!user) return
@@ -108,11 +136,13 @@ export function AuthProvider({ children }) {
     const avatarUrl = isSignedIn ? (user?.imageUrl || null) : null
     const points = profile?.points ?? 0
 
+    const isGuest = guestSession && !isSignedIn
+
     // Authorization is delegated to the central policy (src/auth/authorization.js).
     // AuthContext answers "who is this?"; the policy answers "what may they do?".
     const can = useCallback(
-        (permission) => hasPermission({ isLoggedIn: !!isSignedIn, points }, permission),
-        [isSignedIn, points],
+        (permission) => hasPermission({ isLoggedIn: !!isSignedIn, isGuest, points }, permission),
+        [isSignedIn, isGuest, points],
     )
     const canAccessReviewerQueue = can('review:grade')
 
@@ -120,6 +150,7 @@ export function AuthProvider({ children }) {
         session: isSignedIn ? { username } : null,
         profile,
         isLoggedIn: !!isSignedIn,
+        isGuest,
         authLoaded: isLoaded,
         username,
         email,
@@ -127,10 +158,11 @@ export function AuthProvider({ children }) {
         points,
         can,
         canAccessReviewerQueue,
+        startGuestSession,
         logout,
         refreshProfile,
         setProfileDirect,
-    }), [isSignedIn, isLoaded, username, email, avatarUrl, profile, points, can, canAccessReviewerQueue, logout, refreshProfile, setProfileDirect])
+    }), [isSignedIn, isGuest, isLoaded, username, email, avatarUrl, profile, points, can, canAccessReviewerQueue, startGuestSession, logout, refreshProfile, setProfileDirect])
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

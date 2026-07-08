@@ -11,21 +11,26 @@
 import { MIN_POINTS_REVIEWER_ACCESS } from '../constants/reviewWorkflow.js'
 
 export const ROLES = Object.freeze({
+    GUEST: 'guest',         // anonymous browse-only session — no account, no PII
     MEMBER: 'member',       // any authenticated user
     REVIEWER: 'reviewer',   // earned: points >= MIN_POINTS_REVIEWER_ACCESS
 })
 
-/** Derive roles from the authenticated identity + profile state. */
-export function rolesFor({ isLoggedIn, points = 0 }) {
-    if (!isLoggedIn) return []
-    const roles = [ROLES.MEMBER]
-    if (points >= MIN_POINTS_REVIEWER_ACCESS) roles.push(ROLES.REVIEWER)
-    return roles
+/** Derive roles from the authenticated identity + profile state.
+    A real sign-in always wins over a guest flag — the two are exclusive. */
+export function rolesFor({ isLoggedIn, isGuest = false, points = 0 }) {
+    if (isLoggedIn) {
+        const roles = [ROLES.MEMBER]
+        if (points >= MIN_POINTS_REVIEWER_ACCESS) roles.push(ROLES.REVIEWER)
+        return roles
+    }
+    if (isGuest) return [ROLES.GUEST]
+    return []
 }
 
 /** Permission → roles that hold it. Add new capabilities here only. */
 export const PERMISSIONS = Object.freeze({
-    'archive:read': [ROLES.MEMBER, ROLES.REVIEWER],
+    'archive:read': [ROLES.GUEST, ROLES.MEMBER, ROLES.REVIEWER],
     'archive:submit': [ROLES.MEMBER, ROLES.REVIEWER],
     'archive:host': [ROLES.MEMBER, ROLES.REVIEWER],
     'review:grade': [ROLES.REVIEWER],

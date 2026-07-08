@@ -547,6 +547,23 @@
 .sj-social__btn:active:not(:disabled) { transform: translateY(0); }
 .sj-social__btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Guest entry — spans the social grid; dashed border reads as "no account" */
+.sj-social__btn--guest {
+  grid-column: 1 / -1;
+  border-style: dashed;
+  color: var(--sj-ink-2);
+}
+.sj-social__btn--guest:hover:not(:disabled) { color: var(--sj-ink); }
+.sj-guest-hint {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--sj-ink-3);
+  margin-left: 2px;
+}
+@media (max-width: 420px) {
+  .sj-guest-hint { display: none; }
+}
+
 /* ── Links / switch ───────────────────────────────────────── */
 
 .sj-link-btn {

@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, Navigate } from 'react-router-dom'
+import { useNavigate, Navigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     UserPlus, LogIn, Lock, Eye, EyeOff, ArrowRight,
-    ShieldCheck, KeyRound, Check, Mail,
+    ShieldCheck, KeyRound, Check, Mail, Compass,
 } from 'lucide-react'
 import { useSignIn, useSignUp } from '@clerk/clerk-react'
 import { useTheme } from '../App.jsx'
@@ -103,7 +103,8 @@ const EMPTY_FORM = {
 
 export default function Join() {
     const navigate = useNavigate()
-    const { isLoggedIn, authLoaded } = useAuth()
+    const location = useLocation()
+    const { isLoggedIn, authLoaded, startGuestSession } = useAuth()
     const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn()
     const { signUp, setActive: setSignUpActive, isLoaded: signUpLoaded } = useSignUp()
     const { theme } = useTheme()
@@ -154,6 +155,13 @@ export default function Join() {
         setForm((f) => ({ ...f, [k]: v }))
         setFieldErrors((e) => (e[k] ? { ...e, [k]: undefined } : e))
     }
+
+    // Deep links (e.g. the guest upgrade prompt) can request the signup tab.
+    useEffect(() => {
+        if (new URLSearchParams(location.search).get('mode') === 'signup') {
+            setView('signup')
+        }
+    }, [location.search])
 
     // 1-second tick drives the resend countdown + expiry display
     const needsTimer = view === 'verify' || view === 'reset' || view === 'mfa'
@@ -728,6 +736,11 @@ export default function Join() {
         <p className="sj-notice" role="status">{notice}</p>
     )
 
+    const enterAsGuest = () => {
+        startGuestSession()
+        navigate('/')
+    }
+
     const oauthButtons = (
         <>
             <div className="sj-divider">or continue with</div>
@@ -743,6 +756,16 @@ export default function Join() {
                         {icon}{label}
                     </button>
                 ))}
+                <button
+                    type="button"
+                    className="sj-social__btn sj-social__btn--guest"
+                    onClick={enterAsGuest}
+                    disabled={loading}
+                >
+                    <Compass size={16} aria-hidden />
+                    Continue as guest
+                    <span className="sj-guest-hint">browse only · no email needed</span>
+                </button>
             </div>
         </>
     )

@@ -14,6 +14,7 @@ import {
     Moon,
     ClipboardCheck,
     LogOut,
+    Eye,
     Package,
     Library,
     Award,
@@ -33,6 +34,11 @@ const baseNavLinks = [
     { label: 'Directory', path: '/directory', icon: Library },
     { label: 'Reviews', path: '/reviews', icon: Star },
 ]
+
+// Guests browse; they don't contribute. Contribution routes stay out of
+// their nav entirely — deep links to them land on the GuestGate prompt.
+const GUEST_PATHS = new Set(['/', '/map', '/leaderboard', '/directory'])
+const guestNavLinks = baseNavLinks.filter((l) => GUEST_PATHS.has(l.path))
 
 /** Circular account avatar; falls back to the username initial. */
 function AvatarCircle({ avatarUrl, username, size = 34 }) {
@@ -58,7 +64,7 @@ function AvatarCircle({ avatarUrl, username, size = 34 }) {
 export default function Navbar() {
     const location = useLocation()
     const { theme, toggleTheme } = useTheme()
-    const { isLoggedIn, username, email, avatarUrl, points, canAccessReviewerQueue, logout } = useAuth()
+    const { isLoggedIn, isGuest, username, email, avatarUrl, points, canAccessReviewerQueue, logout } = useAuth()
     const [mobileOpen, setMobileOpen] = useState(false)
     const [accountOpen, setAccountOpen] = useState(false)
 
@@ -71,8 +77,9 @@ export default function Navbar() {
         return next
     }, [canAccessReviewerQueue])
 
-    // Signed-out users only ever see /join — no nav links to gated pages
-    const visibleLinks = isLoggedIn ? navLinks : []
+    // Members see everything; guests see browse-only routes; signed-out
+    // visitors only ever see /join — no nav links to gated pages.
+    const visibleLinks = isLoggedIn ? navLinks : isGuest ? guestNavLinks : []
 
     const isArchive = location.pathname.startsWith('/archive/')
     if (isArchive) return null
@@ -140,7 +147,7 @@ export default function Navbar() {
         >
             {/* Logo */}
             <Link
-                to={isLoggedIn ? '/' : '/join'}
+                to={isLoggedIn || isGuest ? '/' : '/join'}
                 aria-label="THE SOLAR ARCHIVE — Home"
                 className="solar-navbar__logo-link flex items-center gap-2 sm:gap-2.5 group select-none shrink-0 min-w-0 max-w-[calc(100vw-5.5rem)] md:max-w-none"
             >
@@ -209,6 +216,28 @@ export default function Navbar() {
                         </button>
                         {accountMenu}
                     </div>
+                ) : isGuest ? (
+                    <div className="flex items-center gap-2 ml-2 shrink-0">
+                        <span className="snav-guest-chip" title="Browsing as guest — view only">
+                            <Eye size={12} aria-hidden />
+                            Guest
+                        </span>
+                        <Link to="/join?mode=signup">
+                            <button type="button" className="snav-cta">
+                                <UserPlus size={14} className="shrink-0" aria-hidden />
+                                Create account
+                            </button>
+                        </Link>
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="snav-icon-btn"
+                            title="Exit guest mode"
+                            aria-label="Exit guest mode"
+                        >
+                            <LogOut size={15} />
+                        </button>
+                    </div>
                 ) : (
                     <Link to="/join" className="ml-2 shrink-0">
                         <button type="button" className="snav-cta">
@@ -250,6 +279,16 @@ export default function Navbar() {
                             <AvatarCircle avatarUrl={avatarUrl} username={username} size={32} />
                         </button>
                         {accountMenu}
+                    </div>
+                ) : isGuest ? (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="snav-guest-chip" title="Browsing as guest — view only">
+                            <Eye size={11} aria-hidden />
+                            Guest
+                        </span>
+                        <Link to="/join?mode=signup" className="shrink-0">
+                            <span className="snav-cta snav-cta--compact">Create account</span>
+                        </Link>
                     </div>
                 ) : (
                     <Link to="/join" className="shrink-0">
@@ -300,6 +339,21 @@ export default function Navbar() {
                             </div>
                         )}
 
+                        {/* Profile row — guest session */}
+                        {isGuest && (
+                            <div className="snav-sheet__profile flex items-center gap-3 px-4 py-3 mb-1 rounded-xl">
+                                <AvatarCircle avatarUrl={null} username="Guest" size={38} />
+                                <div className="min-w-0 flex-1">
+                                    <p className="snav-menu__name truncate">Browsing as guest</p>
+                                    <p className="snav-menu__email">View only — create an account to contribute</p>
+                                </div>
+                                <span className="snav-guest-chip">
+                                    <Eye size={11} aria-hidden />
+                                    Guest
+                                </span>
+                            </div>
+                        )}
+
                         {visibleLinks.map(({ label, path, icon: Icon }) => {
                             const isActive = isNavActive(path)
                             return (
@@ -336,6 +390,27 @@ export default function Navbar() {
                                 <LogOut size={18} aria-hidden />
                                 Log out
                             </button>
+                        ) : isGuest ? (
+                            <>
+                                <Link
+                                    to="/join?mode=signup"
+                                    onClick={() => setMobileOpen(false)}
+                                    className="mt-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold min-h-[48px]"
+                                >
+                                    <span className="snav-cta w-full justify-center">
+                                        <UserPlus size={18} aria-hidden />
+                                        Create free account
+                                    </span>
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={handleLogout}
+                                    className="snav-menu__item snav-menu__item--danger mt-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold min-h-[48px]"
+                                >
+                                    <LogOut size={18} aria-hidden />
+                                    Exit guest mode
+                                </button>
+                            </>
                         ) : (
                             <Link
                                 to="/join"
