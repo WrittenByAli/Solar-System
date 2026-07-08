@@ -136,3 +136,4 @@ supabase_*.sql
 qa-*.mjs
 test-*.mjs
 shot-*.mjs
+.vercel

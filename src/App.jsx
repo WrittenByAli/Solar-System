@@ -1,34 +1,39 @@
-import React, { useState, useEffect, createContext, useContext } from 'react'
+import React, { useState, useEffect, createContext, useContext, lazy, Suspense } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useLocation, useMatch } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import Navbar from './components/Navbar.jsx'
 import Footer from './components/Footer.jsx'
-import Home from './pages/Home.jsx'
-import MapView from './pages/MapView.jsx'
-import ArchiveGrid from './pages/ArchiveGrid.jsx'
-import Join from './pages/Join.jsx'
-import Leaderboard from './pages/Leaderboard.jsx'
-import Reviews from './pages/Reviews.jsx'
-import SubmitArchive from './pages/SubmitArchive.jsx'
-import GradeSubmissions from './pages/GradeSubmissions.jsx'
-import CreateArchive from './pages/CreateArchive.jsx'
-import HostArchive from './pages/HostArchive.jsx'
-import ArchiveDirectory from './pages/ArchiveDirectory.jsx'
-import AccountSecurity from './pages/AccountSecurity.jsx'
-import SsoCallback from './pages/SsoCallback.jsx'
-import EmailLinkVerified from './pages/EmailLinkVerified.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import StarField from './components/StarField.jsx'
 import FoundationArchiveStar from './components/FoundationArchiveStar.jsx'
 import FoundationLogo from './components/FoundationLogo.jsx'
 
+// Route-level code splitting: each page (and everything only it imports —
+// notably three.js/@react-three, which only Home touches) loads on first
+// visit to its route instead of shipping in the entry bundle.
+const Home = lazy(() => import('./pages/Home.jsx'))
+const MapView = lazy(() => import('./pages/MapView.jsx'))
+const ArchiveGrid = lazy(() => import('./pages/ArchiveGrid.jsx'))
+const Join = lazy(() => import('./pages/Join.jsx'))
+const Leaderboard = lazy(() => import('./pages/Leaderboard.jsx'))
+const Reviews = lazy(() => import('./pages/Reviews.jsx'))
+const SubmitArchive = lazy(() => import('./pages/SubmitArchive.jsx'))
+const GradeSubmissions = lazy(() => import('./pages/GradeSubmissions.jsx'))
+const CreateArchive = lazy(() => import('./pages/CreateArchive.jsx'))
+const HostArchive = lazy(() => import('./pages/HostArchive.jsx'))
+const ArchiveDirectory = lazy(() => import('./pages/ArchiveDirectory.jsx'))
+const AccountSecurity = lazy(() => import('./pages/AccountSecurity.jsx'))
+const SsoCallback = lazy(() => import('./pages/SsoCallback.jsx'))
+const EmailLinkVerified = lazy(() => import('./pages/EmailLinkVerified.jsx'))
+
 // Theme context
 export const ThemeContext = createContext()
 export const useTheme = () => useContext(ThemeContext)
 
-/** Shown while Clerk restores the session on page load — prevents a
-    redirect-to-/join flash for users who are actually signed in. */
-function AuthLoadingScreen() {
+/** Full-viewport pulsing-logo loader. Doubles as the auth-restore screen
+    (prevents a redirect-to-/join flash for signed-in users) and the
+    Suspense fallback while a route's chunk downloads. */
+function LoadingScreen({ message }) {
     return (
         <div className="min-h-[100dvh] flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
@@ -44,7 +49,7 @@ function AuthLoadingScreen() {
                     <FoundationLogo fillCircle alt="" />
                 </motion.div>
                 <p className="text-xs tracking-wide" style={{ color: '#64748b' }}>
-                    Restoring your session…
+                    {message}
                 </p>
             </div>
         </div>
@@ -54,7 +59,7 @@ function AuthLoadingScreen() {
 /** Auth gate: every route except /join requires a signed-in account. */
 function RequireAuth({ children }) {
     const { isLoggedIn, authLoaded } = useAuth()
-    if (!authLoaded) return <AuthLoadingScreen />
+    if (!authLoaded) return <LoadingScreen message="Restoring your session…" />
     if (!isLoggedIn) return <Navigate to="/join" replace />
     return children
 }
@@ -111,7 +116,9 @@ function AppShell() {
             {!isHome && <StarField theme={theme} />}
             <Navbar />
             <FoundationArchiveStar />
-            <AnimatedRoutes />
+            <Suspense fallback={<LoadingScreen message="Loading…" />}>
+                <AnimatedRoutes />
+            </Suspense>
             <Footer />
         </div>
     )
