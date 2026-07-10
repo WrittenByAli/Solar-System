@@ -4,6 +4,7 @@ import {
   Search, ChevronLeft, ChevronRight, ChevronUp, ChevronDown,
   ArrowLeft, BookOpen, Layers, Target, ZoomIn, ZoomOut, Crosshair,
   Shield, Zap, Database, Moon, Sun, Download, PenLine, Hand, TextCursor, Globe, Flag, Plus,
+  Move, Navigation, ArrowUpDown,
 } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { buildMergedSectionEntries } from '../utils/archiveSectionEntries.js'
@@ -2587,6 +2588,44 @@ export default function ArchiveGrid() {
   const hasCompassTaxonomy = !!hubTaxonomy
   /** pan = drag / touch moves grid; select = text selection & copy (no drag-pan on viewport) */
   const [viewportInteractMode, setViewportInteractMode] = useState('pan')
+  /**
+   * D-pad / arrow-key direction scheme (drag and wheel stay grab-the-map in both):
+   *  'view'   (default) — arrows move your viewport across the archive (map-app standard)
+   *  'planet'           — arrows push the planet/grid content in the arrow direction (legacy)
+   */
+  const [panScheme, setPanScheme] = useState(() => {
+    try {
+      return localStorage.getItem('solar-archive-pan-scheme') === 'planet' ? 'planet' : 'view'
+    } catch {
+      return 'view'
+    }
+  })
+  const togglePanScheme = useCallback(() => {
+    setPanScheme((prev) => {
+      const next = prev === 'view' ? 'planet' : 'view'
+      try { localStorage.setItem('solar-archive-pan-scheme', next) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+  /**
+   * Drag / touch / trackpad-pan direction:
+   *  'natural'  (default) — grid follows your pointer (drag down → grid moves down)
+   *  'inverted'           — view follows your pointer (drag down → view moves down, grid up)
+   */
+  const [dragScheme, setDragScheme] = useState(() => {
+    try {
+      return localStorage.getItem('solar-archive-drag-scheme') === 'inverted' ? 'inverted' : 'natural'
+    } catch {
+      return 'natural'
+    }
+  })
+  const toggleDragScheme = useCallback(() => {
+    setDragScheme((prev) => {
+      const next = prev === 'natural' ? 'inverted' : 'natural'
+      try { localStorage.setItem('solar-archive-drag-scheme', next) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
   const drag = useRef({ active: false, sx: 0, sy: 0, svx: 0, svy: 0 })
   const touch = useRef({
     active: false, isPinch: false, moved: false,
@@ -2687,6 +2726,7 @@ export default function ArchiveGrid() {
     setFocusedCell(null)
     setCompassDomainId(null)
     setCompassSubfieldId(null)
+    compassTopicCellRef.current = null
     const el = vpRef.current
     const r = el?.getBoundingClientRect?.()
     const vpW = Math.max(1, r?.width ?? document.documentElement.clientWidth)
@@ -2739,11 +2779,102 @@ export default function ArchiveGrid() {
   vpSizeRef.current = vpSize
   const viewportInteractModeRef = useRef(viewportInteractMode)
   viewportInteractModeRef.current = viewportInteractMode
+  const panSchemeRef = useRef(panScheme)
+  panSchemeRef.current = panScheme
+  const dragSchemeRef = useRef(dragScheme)
+  dragSchemeRef.current = dragScheme
+  /** Grid cell of the last topic clicked on the L3 compass — the deep-layer (L6+) reading anchor. */
+  const compassTopicCellRef = useRef(null)
+  /** +1 grid-follows-pointer, −1 view-follows-pointer; applied to drag/touch/wheel pan deltas */
+  const dragDirRef = useRef(1)
+  dragDirRef.current = dragScheme === 'inverted' ? -1 : 1
 
-  // When compass selection changes while already on L4, smoothly pan so first filled cell is top-left
+  /**
+   * Viewport top-left (grid units) so the current compass selection's cells
+   * land in the screen corner matching where the user clicked:
+   *  - subfield selected → corner = the subfield's own l3Slot (tl/tr/bl/br),
+   *    so picking the bottom-right panel on L3 puts its cells bottom-right on L4+;
+   *  - domain only → corner = the domain's compass quadrant.
+   * Works for any grid layer (L4–L6; cell size comes from `nl`), which chains
+   * the position through +Z: L4 depends on L3, L5 on L4, L6 on L5.
+   * Pass explicit ids to bypass not-yet-committed React state (topic clicks).
+   * Returns { x, y, bbox } or null when nothing is selected.
+   */
+  const compassAnchorViewXY = useCallback((nl, zoomLevel, domainIdArg, subfieldIdArg) => {
+    if (!hubTaxonomy) return null
+    const sfId = subfieldIdArg !== undefined ? subfieldIdArg : compassSubfieldId
+    const domId = domainIdArg !== undefined ? domainIdArg : compassDomainId
+    const subfield = sfId ? hubTaxonomy.subfields.find((s) => s.id === sfId) : null
+    const domain = hubTaxonomy.domains.find((d) => d.id === (subfield?.domainId || domId))
+    if (!domain) return null
+    let left, top, cells
+    if (subfield) {
+      left = subfield.l3Slot === 'tl' || subfield.l3Slot === 'bl'
+      top = subfield.l3Slot === 'tl' || subfield.l3Slot === 'tr'
+      cells = hubTaxonomy.leaves
+        .filter((l) => l.subfieldId === subfield.id)
+        .map((l) => ({ gx: l.lx + halfW, gy: halfH - l.ly }))
+    } else {
+      left = domain.quadrant.includes('left')
+      top = domain.quadrant.includes('top')
+      cells = hubTaxonomy.leaves
+        .filter((l) => domain.subfields.some((sf) => sf.id === l.subfieldId))
+        .map((l) => ({ gx: l.lx + halfW, gy: halfH - l.ly }))
+      // include DB entries (seeds/user rows) sitting in this quadrant of the compass neighbourhood
+      for (const key of Object.keys(sectionEntries)) {
+        if (!sectionEntries[key]) continue
+        const [gx, gy] = key.split(',').map(Number)
+        const lx = gx - halfW
+        const ly = halfH - gy
+        if (Math.abs(lx) > 8 || Math.abs(ly) > 8) continue
+        if ((lx < 0) === left && (ly > 0) === top) cells.push({ gx, gy })
+      }
+    }
+    if (!cells.length) return null
+    const bbox = {
+      minGx: Math.min(...cells.map((c) => c.gx)),
+      maxGx: Math.max(...cells.map((c) => c.gx)),
+      minGy: Math.min(...cells.map((c) => c.gy)),
+      maxGy: Math.max(...cells.map((c) => c.gy)),
+    }
+    const cp = CELL_PX[nl] * zoomLevel
+    const cols = vpSize.w / cp
+    const rows = vpSize.h / cp
+    // keep the corner gap visually similar across layers (~90px), never > 1.5 cells
+    const M = Math.min(1.5, 90 / cp)
+    const fitsW = bbox.maxGx + 1 - bbox.minGx + 2 * M <= cols
+    const fitsH = bbox.maxGy + 1 - bbox.minGy + 2 * M <= rows
+    let vx, vy
+    if (fitsW && fitsH) {
+      // Centre the block inside its screen quadrant (not squeezed into the
+      // corner): position reads clearly, neighbours stay visible as context.
+      const fx = left ? 0.27 : 0.73
+      const fy = top ? 0.30 : 0.70
+      vx = (bbox.minGx + bbox.maxGx + 1) / 2 - fx * cols
+      vy = (bbox.minGy + bbox.maxGy + 1) / 2 - fy * rows
+    } else {
+      // Block larger than the viewport (L6+): the corner metaphor is exhausted —
+      // open at the reading position instead: the clicked topic's cell if we
+      // have one, else the block's first cell, top-left aligned.
+      const t = compassTopicCellRef.current
+      const anchor =
+        t && t.gx >= bbox.minGx && t.gx <= bbox.maxGx && t.gy >= bbox.minGy && t.gy <= bbox.maxGy
+          ? t
+          : { gx: bbox.minGx, gy: bbox.minGy }
+      vx = anchor.gx - M
+      vy = anchor.gy - M
+    }
+    return { ...clamp(vx, vy, nl, zoomLevel), bbox }
+  }, [hubTaxonomy, compassDomainId, compassSubfieldId, sectionEntries, halfW, halfH, vpSize, clamp])
+
+  // When compass selection changes while already on L4, pan so the selected
+  // cells sit in the screen corner matching where they were picked.
   useEffect(() => {
     if (layer !== 4) return
     if (!compassDomainId && !compassSubfieldId) return
+    const q = compassAnchorViewXY(4, zoom)
+    if (q) { animatePanTo(q.x, q.y, 650); return }
+    // Fallback (hub without compass taxonomy): first filled cell top-left
     const entries = Object.keys(sectionEntries)
       .filter((k) => !!sectionEntries[k])
       .map((k) => k.split(',').map(Number))
@@ -2827,6 +2958,8 @@ export default function ArchiveGrid() {
       }, 380)
       return
     }
+    /* 'view' scheme: arrows move the viewport, so the content shifts the opposite way */
+    if (panSchemeRef.current === 'view') { dx = -dx; dy = -dy }
     /* at L1 — move the planet globe instead of the invisible grid */
     if (layer === 1 && planetMoverRef.current) {
       /* Negate both so +X moves right, +Y moves up (screen coords are inverted) */
@@ -2897,21 +3030,43 @@ export default function ArchiveGrid() {
     let defaultZoom = 1.0
     if (nl === 7) defaultZoom = 0.60
     if (nl === 8) defaultZoom = 0.08
+    // Arriving on L4 with a subfield picked: zoom in so the 2×2 topic block
+    // is prominent in its quadrant instead of a 128px speck.
+    if (nl === 4 && compassSubfieldId && hasCompassTaxonomy) defaultZoom = 1.8
 
     const cp = CELL_PX[nl] * defaultZoom
     const offsetX = (vpSize.w / cp) / 2
     const offsetY = (vpSize.h / cp) / 2
 
     let targetX, targetY
-    if (nl === 4 && (compassDomainId || compassSubfieldId)) {
-      const entries = Object.keys(sectionEntries)
-        .filter((k) => !!sectionEntries[k])
-        .map((k) => k.split(',').map(Number))
-        .sort((a, b) => a[1] - b[1] || a[0] - b[0])
-      if (entries.length > 0) {
-        const [firstGx, firstGy] = entries[0]
-        const clamped = clamp(firstGx - 1, firstGy - 1, nl, defaultZoom)
-        targetX = clamped.x; targetY = clamped.y
+    if (nl >= 4 && nl <= 6 && (compassDomainId || compassSubfieldId)) {
+      // Keep the selected cells anchored to their compass corner through the
+      // zoom chain (L3→L4→L5→L6) — but only when arriving from the compass or
+      // when the anchored block is currently on screen; if the user panned
+      // away, plain centre-preserving zoom is less disorienting.
+      const q = compassAnchorViewXY(nl, defaultZoom)
+      if (q) {
+        const cameFromCompass = layer <= 3
+        const vpMinGx = viewX
+        const vpMaxGx = viewX + vpSize.w / oldCp
+        const vpMinGy = viewY
+        const vpMaxGy = viewY + vpSize.h / oldCp
+        const blockOnScreen =
+          q.bbox.maxGx + 1 > vpMinGx && q.bbox.minGx < vpMaxGx &&
+          q.bbox.maxGy + 1 > vpMinGy && q.bbox.minGy < vpMaxGy
+        if (cameFromCompass || blockOnScreen) {
+          targetX = q.x; targetY = q.y
+        }
+      } else if (nl === 4) {
+        const entries = Object.keys(sectionEntries)
+          .filter((k) => !!sectionEntries[k])
+          .map((k) => k.split(',').map(Number))
+          .sort((a, b) => a[1] - b[1] || a[0] - b[0])
+        if (entries.length > 0) {
+          const [firstGx, firstGy] = entries[0]
+          const clamped = clamp(firstGx - 1, firstGy - 1, nl, defaultZoom)
+          targetX = clamped.x; targetY = clamped.y
+        }
       }
     }
     if (targetX === undefined) {
@@ -2934,7 +3089,7 @@ export default function ArchiveGrid() {
     setViewX(targetX)
     setViewY(targetY)
     setLayerTrans({ from: fromLayer, to: nl })
-  }, [clamp, focusedCell, vpSize, viewX, viewY, layer, zoom, compassDomainId, compassSubfieldId, sectionEntries])
+  }, [clamp, focusedCell, vpSize, viewX, viewY, layer, zoom, compassDomainId, compassSubfieldId, sectionEntries, compassAnchorViewXY])
 
   /** Center viewport on absolute grid cell (gx, gy) at layer nl -- used by L2/L3 static map and drill. */
   const focusSubjectCell = useCallback(
@@ -2957,6 +3112,61 @@ export default function ArchiveGrid() {
     },
     [clamp, vpSize.w, vpSize.h],
   )
+
+  /**
+   * L3 topic click: open L4 with the topic's subfield block anchored to the
+   * subfield's own compass corner (explicit ids — React state for the
+   * selection hasn't committed yet when this runs).
+   */
+  const openTopicFromCompass = useCallback((leaf, subfield) => {
+    const fromLayer = layerRef.current
+    const TOPIC_ZOOM = 1.8 // match switchLayer's subfield-selected L4 zoom
+    compassTopicCellRef.current = { gx: leaf.lx + halfW, gy: halfH - leaf.ly }
+    const q = compassAnchorViewXY(4, TOPIC_ZOOM, subfield.domainId, subfield.id)
+    setFocusedCell(null)
+    setLayer(4)
+    setZoom(TOPIC_ZOOM)
+    if (q) {
+      setViewX(q.x)
+      setViewY(q.y)
+    } else {
+      // hub without leaf cells — fall back to centering the topic cell
+      const ncp = CELL_PX[4] * TOPIC_ZOOM
+      const { x, y } = clamp(leaf.lx + halfW - vpSize.w / (2 * ncp), halfH - leaf.ly - vpSize.h / (2 * ncp), 4, TOPIC_ZOOM)
+      setViewX(x)
+      setViewY(y)
+    }
+    if (fromLayer !== 4) setLayerTrans({ from: fromLayer, to: 4 })
+  }, [compassAnchorViewXY, clamp, halfW, halfH, vpSize])
+
+  /**
+   * L2/L3 "add subject": pick the first free cell orthogonally adjacent to the
+   * selected domain's (or subfield's) topic cells and open /submit prefilled.
+   * New subjects enter as L4 pending entries — the same 3-reviewer consensus
+   * pipeline as every other submission.
+   */
+  const proposeSubjectSlot = useCallback((domainId, subfieldId) => {
+    if (!hubTaxonomy) return
+    const domain = hubTaxonomy.domains.find((d) => d.id === domainId)
+    const leaves = subfieldId
+      ? hubTaxonomy.leaves.filter((l) => l.subfieldId === subfieldId)
+      : hubTaxonomy.leaves.filter((l) => domain?.subfields?.some((sf) => sf.id === l.subfieldId))
+    const sorted = [...leaves].sort((a, b) => b.ly - a.ly || a.lx - b.lx)
+    for (const leaf of sorted) {
+      for (const [dx, dy] of [[0, 1], [-1, 0], [1, 0], [0, -1]]) {
+        const lx = leaf.lx + dx
+        const ly = leaf.ly + dy
+        const gx = lx + halfW
+        const gy = halfH - ly
+        if (gx < 0 || gy < 0 || gx >= gridW || gy >= gridH) continue
+        if (sectionEntries[`${gx},${gy}`]) continue
+        navigate(`/submit?planet=${encodeURIComponent(hubId)}&coordX=${lx}&coordY=${ly}&archiveLayer=4`)
+        return
+      }
+    }
+    // every adjacent cell taken — let the form's slot picker offer the rest
+    navigate(`/submit?planet=${encodeURIComponent(hubId)}&archiveLayer=4`)
+  }, [hubTaxonomy, sectionEntries, halfW, halfH, gridW, gridH, hubId, navigate])
 
   /** L2/L3: center a viewport sub-tile and step one layer deeper (matches 4× lattice drill). */
   const drillSubfield = useCallback(
@@ -3029,8 +3239,9 @@ export default function ArchiveGrid() {
       } else {
         setFocusedCell(null)
         const cp = CELL_PX[layerRef.current] * zoomRef.current
-        // Match drag: wheel/trackpad moves the planet with your gesture (+Y → up, +X → right).
-        move(-e.deltaX / cp, -e.deltaY / cp)
+        // Match drag: wheel/trackpad pan follows the same direction scheme as dragging.
+        const dir = dragDirRef.current
+        move((dir * -e.deltaX) / cp, (dir * -e.deltaY) / cp)
       }
     }
     el.addEventListener('wheel', onWheel, { passive: false })
@@ -3053,8 +3264,9 @@ export default function ArchiveGrid() {
       if (!drag.current.active) return
       setFocusedCell(null)
       const cp = CELL_PX[layerRef.current] * zoomRef.current
-      const dx = (drag.current.sx - e.clientX) / cp
-      const dy = (drag.current.sy - e.clientY) / cp
+      const dir = dragDirRef.current
+      const dx = (dir * (drag.current.sx - e.clientX)) / cp
+      const dy = (dir * (drag.current.sy - e.clientY)) / cp
       const { x, y } = clampRef.current(drag.current.svx + dx, drag.current.svy + dy, layerRef.current, zoomRef.current)
       viewXYRef.current = { x, y }
       setViewX(x)
@@ -3179,8 +3391,9 @@ export default function ArchiveGrid() {
         // Single-finger pan
         const zPan = ts.lastZoom !== undefined ? ts.lastZoom : zoomRef.current
         const cp = CELL_PX[lay] * zPan
-        const dx = (ts.startX - touches[0].clientX) / cp
-        const dy = (ts.startY - touches[0].clientY) / cp
+        const dir = dragDirRef.current
+        const dx = (dir * (ts.startX - touches[0].clientX)) / cp
+        const dy = (dir * (ts.startY - touches[0].clientY)) / cp
         const { x, y } = clampRef.current(ts.startVX + dx, ts.startVY + dy, lay, zPan)
         viewXYRef.current = { x, y }
         setViewX(x)
@@ -3244,12 +3457,14 @@ export default function ArchiveGrid() {
       }
       const cp = CELL_PX[layer] * zoom
       const step = Math.max(1, (vpSize.w / cp) * 0.1)
+      // Same scheme as the D-pad: 'view' moves the viewport with the arrow,
+      // 'planet' pushes the content in the arrow direction.
+      const s = panScheme === 'view' ? -step : step
       switch (e.key) {
-        // Screen-semantic pan: +X → planet right, −X → left; +Y → top, −Y → bottom (same as D-pad).
-        case 'ArrowLeft':  move(step, 0); break
-        case 'ArrowRight': move(-step, 0); break
-        case 'ArrowUp':    move(0, step); break
-        case 'ArrowDown':  move(0, -step); break
+        case 'ArrowLeft':  move(s, 0); break
+        case 'ArrowRight': move(-s, 0); break
+        case 'ArrowUp':    move(0, s); break
+        case 'ArrowDown':  move(0, -s); break
         case '1': switchLayer(1); break
         case '2': switchLayer(2); break
         case '3': switchLayer(3); break
@@ -3263,7 +3478,7 @@ export default function ArchiveGrid() {
     }
     window.addEventListener('keydown', fn)
     return () => window.removeEventListener('keydown', fn)
-  }, [layer, move, switchLayer, vpSize, zoom, applySegmentNav, viewportInteractMode])
+  }, [layer, move, switchLayer, vpSize, zoom, applySegmentNav, viewportInteractMode, panScheme])
 
   const col = planet.color
   // Display coords: viewport corner (L1-L6); L7/L8 use archive cell under crosshair (see hudCenterCell).
@@ -3355,7 +3570,10 @@ export default function ArchiveGrid() {
         overflow: 'hidden',
       }}
     >
-      <PlanetIntro planet={planet} isDark={isDark} onEnter={() => setShowGrid(true)} gridDims={gridDims} archiveCfg={archiveCfg} />
+      {/* key={hubId}: remount per hub so the intro's internal "gone" state resets —
+          without it, switching research lens leaves showGrid=false with no intro,
+          i.e. a black screen with only the HUD in the DOM. */}
+      <PlanetIntro key={hubId} planet={planet} isDark={isDark} onEnter={() => setShowGrid(true)} gridDims={gridDims} archiveCfg={archiveCfg} />
 
       <div style={{ 
         opacity: showGrid ? 1 : 0, 
@@ -3395,6 +3613,26 @@ export default function ArchiveGrid() {
             </div>
 
             <div className="archive-nav-overlay__tools">
+              <button
+                type="button"
+                className="archive-hud-tool-btn"
+                aria-label={dragScheme === 'natural'
+                  ? 'Drag direction: grid follows your finger. Switch to inverted.'
+                  : 'Drag direction: inverted. Switch back to grid follows your finger.'}
+                aria-pressed={dragScheme === 'inverted'}
+                title={dragScheme === 'natural'
+                  ? 'Drag direction — NATURAL: drag down, grid moves down. Click to invert (drag down, view moves down).'
+                  : 'Drag direction — INVERTED: drag down, view moves down. Click for natural (grid follows your finger).'}
+                onClick={toggleDragScheme}
+                style={{
+                  ...hudChipStyle,
+                  border: dragScheme === 'inverted' ? `2px solid ${col}` : hudChipStyle.border,
+                  background: dragScheme === 'inverted' ? (isDark ? `${col}26` : `${col}18`) : hudChipStyle.background,
+                  color: col,
+                }}
+              >
+                <ArrowUpDown size={20} aria-hidden />
+              </button>
               {isLarge && (
                 <SearchBar
                   col={col}
@@ -3633,10 +3871,12 @@ export default function ArchiveGrid() {
                   halfH={halfH}
                   focusSubjectCell={focusSubjectCell}
                   onSelectDomain={(domainId) => {
+                    compassTopicCellRef.current = null
                     setCompassDomainId(domainId)
                     setCompassSubfieldId(null)
                   }}
                   onSelectSubfield={(subfieldId) => {
+                    compassTopicCellRef.current = null
                     setCompassSubfieldId(subfieldId)
                   }}
                   onDrillToL3={() => switchLayer(3)}
@@ -3647,6 +3887,8 @@ export default function ArchiveGrid() {
                   }}
                   onExitToL1={() => switchLayer(1)}
                   onAdvanceToL4={() => switchLayer(4)}
+                  onProposeSubject={proposeSubjectSlot}
+                  onOpenTopic={openTopicFromCompass}
                 />
               )}
               <SubjectLatticeOverlay
@@ -3727,7 +3969,7 @@ export default function ArchiveGrid() {
                 className="archive-pan-btn" 
                 style={controlButtonStyle} 
                 type="button"
-                title={segNavMode ? 'Previous segment row' : 'Pan +Y (planet toward top)'}
+                title={segNavMode ? 'Previous segment row' : (panScheme === 'view' ? 'Move view up (+Y)' : 'Pan +Y (planet toward top)')}
                 onPointerDown={(e) => handlePadPointerDown(e, 0, 1)}
                 onPointerUp={handlePadPointerEnd}
                 onPointerCancel={handlePadPointerEnd}
@@ -3743,7 +3985,7 @@ export default function ArchiveGrid() {
                 className="archive-pan-btn" 
                 style={controlButtonStyle} 
                 type="button"
-                title={segNavMode ? 'Previous segment column' : 'Pan −X (planet toward left)'}
+                title={segNavMode ? 'Previous segment column' : (panScheme === 'view' ? 'Move view left (−X)' : 'Pan −X (planet toward left)')}
                 onPointerDown={(e) => handlePadPointerDown(e, 1, 0)}
                 onPointerUp={handlePadPointerEnd}
                 onPointerCancel={handlePadPointerEnd}
@@ -3760,7 +4002,7 @@ export default function ArchiveGrid() {
                 className="archive-pan-btn" 
                 style={controlButtonStyle} 
                 type="button"
-                title={segNavMode ? 'Next segment column' : 'Pan +X (planet toward right)'}
+                title={segNavMode ? 'Next segment column' : (panScheme === 'view' ? 'Move view right (+X)' : 'Pan +X (planet toward right)')}
                 onPointerDown={(e) => handlePadPointerDown(e, -1, 0)}
                 onPointerUp={handlePadPointerEnd}
                 onPointerCancel={handlePadPointerEnd}
@@ -3776,7 +4018,7 @@ export default function ArchiveGrid() {
                 className="archive-pan-btn" 
                 style={controlButtonStyle} 
                 type="button"
-                title={segNavMode ? 'Next segment row' : 'Pan −Y (planet toward bottom)'}
+                title={segNavMode ? 'Next segment row' : (panScheme === 'view' ? 'Move view down (−Y)' : 'Pan −Y (planet toward bottom)')}
                 onPointerDown={(e) => handlePadPointerDown(e, 0, -1)}
                 onPointerUp={handlePadPointerEnd}
                 onPointerCancel={handlePadPointerEnd}
@@ -3831,6 +4073,20 @@ export default function ArchiveGrid() {
               >
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <ZoomOut size={18} /><span style={{ fontSize: 8, fontWeight: 900 }}>-ZOOM</span>
+                </div>
+              </button>
+              <button
+                className="archive-pan-btn"
+                style={controlButtonStyle}
+                type="button"
+                title={panScheme === 'view'
+                  ? 'Movement: arrows move your view across the archive. Click to switch — arrows move the map instead.'
+                  : 'Movement: arrows move the map in the arrow direction. Click to switch — arrows move your view instead.'}
+                onClick={togglePanScheme}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  {panScheme === 'view' ? <Navigation size={18} /> : <Move size={18} />}
+                  <span style={{ fontSize: 8, fontWeight: 900 }}>{panScheme === 'view' ? 'VIEW' : 'MAP'}</span>
                 </div>
               </button>
             </div>

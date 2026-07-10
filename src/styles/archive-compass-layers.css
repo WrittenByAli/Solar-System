@@ -485,3 +485,48 @@
     font-size: 8px;
   }
 }
+
+/* ── "Add subject" proposal buttons (L2 domain cards + L3 nav bar) ── */
+.cv-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 7px;
+  padding: 6px 10px;
+  width: 100%;
+  border-radius: 9px;
+  border: 1.5px dashed var(--dc-30, rgba(148,163,184,0.35));
+  background: var(--dc-08, rgba(148,163,184,0.06));
+  color: var(--dc, #94a3b8);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.16s, border-color 0.16s;
+}
+.cv-add-btn:hover {
+  background: var(--dc-15, rgba(148,163,184,0.12));
+  border-color: var(--dc, rgba(148,163,184,0.6));
+}
+.cv-light .cv-domain-card .cv-add-btn { background: var(--dc-08, rgba(15,23,42,0.04)); }
+
+/* nav-bar variant (L3): compact pill, keeps its own width */
+.cv-add-btn--nav {
+  width: auto;
+  margin-top: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border-style: dashed;
+  background: transparent;
+  text-transform: none;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.cv-add-btn--nav:hover { background: rgba(148,163,184,0.1); }
+
+@media (max-width: 640px) {
+  .cv-add-btn--nav span { display: none; }
+  .cv-add-btn--nav { padding: 8px 12px; }
+}

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import {
   displayToGrid,
   leavesForSubfieldGrid,
@@ -122,7 +122,7 @@ function CompassHub({ taxonomy, isDark }) {
 /* ═══════════════════════════════════════════
    L2 DOMAIN CARD
 ═══════════════════════════════════════════ */
-function L2DomainCard({ domain, taxonomy, onSubfieldClick }) {
+function L2DomainCard({ domain, taxonomy, onSubfieldClick, onProposeSubject }) {
   const sorted = [...subfieldsForDomain(taxonomy, domain.id)].sort(
     (a, b) => L3_SLOT_ORDER.indexOf(a.l3Slot) - L3_SLOT_ORDER.indexOf(b.l3Slot),
   )
@@ -169,6 +169,19 @@ function L2DomainCard({ domain, taxonomy, onSubfieldClick }) {
           </motion.button>
         ))}
       </div>
+
+      {onProposeSubject && (
+        <motion.button
+          type="button"
+          className="cv-add-btn"
+          title={`Propose a new subject under ${domain.label} — it goes through the same 3-reviewer approval as every submission.`}
+          onClick={() => onProposeSubject(domain.id)}
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
+        >
+          <Plus size={13} aria-hidden />
+          <span>Add subject</span>
+        </motion.button>
+      )}
     </motion.div>
   )
 }
@@ -176,7 +189,7 @@ function L2DomainCard({ domain, taxonomy, onSubfieldClick }) {
 /* ═══════════════════════════════════════════
    L2 VIEW
 ═══════════════════════════════════════════ */
-function CompassL2({ taxonomy, isDark, onSubfieldClick, onExitToL1, onDrillToL3 }) {
+function CompassL2({ taxonomy, isDark, onSubfieldClick, onExitToL1, onDrillToL3, onProposeSubject }) {
   const color = taxonomy.accentColor
 
   return (
@@ -203,6 +216,7 @@ function CompassL2({ taxonomy, isDark, onSubfieldClick, onExitToL1, onDrillToL3 
               domain={dom}
               taxonomy={taxonomy}
               onSubfieldClick={onSubfieldClick}
+              onProposeSubject={onProposeSubject}
             />
           ))}
         </motion.div>
@@ -298,7 +312,7 @@ function L3SubfieldPanel({ subfield, domain, taxonomy, isActive, onTopicClick })
 /* ═══════════════════════════════════════════
    L3 VIEW
 ═══════════════════════════════════════════ */
-function CompassL3({ taxonomy, isDark, activeSubfieldId, onBack, onTopicClick, onAdvanceToL4 }) {
+function CompassL3({ taxonomy, isDark, activeSubfieldId, onBack, onTopicClick, onAdvanceToL4, onProposeSubject }) {
   const domain = taxonomy.domains.find((d) => d.id === taxonomy._activeDomainId)
   if (!domain) return null
 
@@ -375,6 +389,20 @@ function CompassL3({ taxonomy, isDark, activeSubfieldId, onBack, onTopicClick, o
           <span className="cv-nav-pip cv-nav-pip--active" style={{ background: domain.color, boxShadow: `0 0 8px ${domain.color}` }} />
         </div>
 
+        {onProposeSubject && (
+          <motion.button
+            type="button"
+            className="cv-nav-btn cv-add-btn cv-add-btn--nav"
+            title={`Propose a new subject under ${domain.label} — reviewed by 3 reviewers before it appears in the archive.`}
+            onClick={() => onProposeSubject(domain.id, activeSubfieldId || undefined)}
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
+            style={{ color: domain.color, borderColor: `${domain.color}55` }}
+          >
+            <Plus size={14} aria-hidden />
+            <span>Add subject</span>
+          </motion.button>
+        )}
+
         <motion.button
           type="button"
           className="cv-nav-btn cv-nav-btn--fwd"
@@ -405,6 +433,8 @@ export default function ArchiveCompassView({
   onBackToL2,
   onExitToL1,
   onAdvanceToL4,
+  onProposeSubject,
+  onOpenTopic,
   focusSubjectCell,
   halfW,
   halfH,
@@ -421,6 +451,11 @@ export default function ArchiveCompassView({
 
   const handleTopic = (leaf, subfield) => {
     onSelectSubfield?.(subfield.id)
+    if (typeof onOpenTopic === 'function') {
+      // anchor the subfield block to its own compass corner on L4
+      onOpenTopic(leaf, subfield)
+      return
+    }
     if (typeof focusSubjectCell === 'function' && Number.isFinite(halfW) && Number.isFinite(halfH)) {
       const { gx, gy } = displayToGrid(leaf.lx, leaf.ly, halfW, halfH)
       focusSubjectCell(gx, gy, 4)
@@ -438,6 +473,7 @@ export default function ArchiveCompassView({
             onSubfieldClick={handleSubfieldL2}
             onExitToL1={onExitToL1}
             onDrillToL3={onDrillToL3}
+            onProposeSubject={onProposeSubject}
           />
         )}
         {layer === 3 && activeDomainId && (
@@ -449,6 +485,7 @@ export default function ArchiveCompassView({
             onBack={onBackToL2}
             onTopicClick={handleTopic}
             onAdvanceToL4={onAdvanceToL4}
+            onProposeSubject={onProposeSubject}
           />
         )}
         {layer === 3 && !activeDomainId && (
