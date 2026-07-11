@@ -7,6 +7,18 @@ export const STATIC_UP_TO = 3
 
 export const CELL_PX = [0, 1, 4, 16, 64, 256, 1024, 4096, 16384]
 
+/**
+ * L4 subject lattice — every filled cell (taxonomy topic, seed, submission
+ * cluster origin) sits on a 28×13 stride, leaving 27 empty columns and 12
+ * empty rows between neighbouring subjects for user submissions (/submit
+ * offers cells adjacent to filled ones, so clusters grow into this apron).
+ * Applied at the coordinate SOURCES (compileHubTaxonomy leaves, foundation
+ * leaves, DB rows — migrated in supabase_seed.sql), never at render time,
+ * so L5–L8 keep opening at the exact cell that was clicked on L4.
+ */
+export const SUBJECT_STRIDE_X = 28
+export const SUBJECT_STRIDE_Y = 13
+
 /** L7 fixed segment count; last two segments = cited facts + grid references */
 export const L7_SEGMENT_COUNT = 32
 /** L8: 450 segments (30×15); bottom row (30) = cited fact + source pairs */

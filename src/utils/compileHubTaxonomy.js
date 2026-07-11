@@ -1,5 +1,7 @@
 /** Compile compact hub taxonomy -> domains, subfields, leaves, sections, static map */
 
+import { SUBJECT_STRIDE_X, SUBJECT_STRIDE_Y } from './archiveLayerSpecs.js'
+
 const QUADRANTS = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
 const DOMAIN_COLORS = ['#34d399', '#60a5fa', '#a78bfa', '#f97316']
 const L3_SLOTS = ['tl', 'tr', 'bl', 'br']
@@ -48,7 +50,15 @@ export function compileHubTaxonomy(hubId, raw) {
       sf.topics.forEach((title, ti) => {
         const corner = L3_SLOTS[ti]
         const [ox, oy] = CORNER_OFFSET[corner]
-        leaves.push({ subfieldId: sf.id, title, lx: sflx + ox, ly: sfly + oy, corner })
+        // Subject-lattice stride: neighbouring topics sit 28/13 cells apart on
+        // L4, leaving a 27×12 apron of empty submittable cells around each.
+        leaves.push({
+          subfieldId: sf.id,
+          title,
+          lx: (sflx + ox) * SUBJECT_STRIDE_X,
+          ly: (sfly + oy) * SUBJECT_STRIDE_Y,
+          corner,
+        })
       })
     }
   }

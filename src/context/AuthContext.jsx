@@ -133,16 +133,17 @@ export function AuthProvider({ children }) {
     const email = isSignedIn
         ? (user?.emailAddresses?.[0]?.emailAddress || profile?.email || null)
         : null
-    const avatarUrl = isSignedIn ? (user?.imageUrl || null) : null
+    const avatarUrl = isSignedIn ? (profile?.avatar_url || user?.imageUrl || null) : null
     const points = profile?.points ?? 0
+    const role = profile?.role ?? null
 
     const isGuest = guestSession && !isSignedIn
 
     // Authorization is delegated to the central policy (src/auth/authorization.js).
     // AuthContext answers "who is this?"; the policy answers "what may they do?".
     const can = useCallback(
-        (permission) => hasPermission({ isLoggedIn: !!isSignedIn, isGuest, points }, permission),
-        [isSignedIn, isGuest, points],
+        (permission) => hasPermission({ isLoggedIn: !!isSignedIn, isGuest, points, role }, permission),
+        [isSignedIn, isGuest, points, role],
     )
     const canAccessReviewerQueue = can('review:grade')
 

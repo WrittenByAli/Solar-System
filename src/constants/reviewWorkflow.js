@@ -13,5 +13,5 @@ export const POINTS_AUTHOR_ON_APPROVAL = 220
 /** Max characters for reviewer recommendations / notes shown to the submitter */
 export const REVIEW_RECOMMENDATION_MAX_CHARS = 1200
 
-/** Starter points for new accounts (demo — replace with server logic in production) */
-export const NEW_ACCOUNT_STARTER_POINTS = 2600
+/** Starter points for new accounts — reviewer status is earned via role, not a starting grant */
+export const NEW_ACCOUNT_STARTER_POINTS = 0

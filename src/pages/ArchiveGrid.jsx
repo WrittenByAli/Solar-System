@@ -43,6 +43,8 @@ import {
   L8_FINAL_SEGMENT_INDEX,
   L8_CITED_SEGMENT_START_INDEX,
   LAYER_LABELS,
+  SUBJECT_STRIDE_X,
+  SUBJECT_STRIDE_Y,
   nextNarrativeSegmentSubmitSlot,
   getNarrativeSubmitState,
   L56_NARRATIVE_GATE_MESSAGE,
@@ -2820,13 +2822,14 @@ export default function ArchiveGrid() {
       cells = hubTaxonomy.leaves
         .filter((l) => domain.subfields.some((sf) => sf.id === l.subfieldId))
         .map((l) => ({ gx: l.lx + halfW, gy: halfH - l.ly }))
-      // include DB entries (seeds/user rows) sitting in this quadrant of the compass neighbourhood
+      // include DB entries (seeds/user rows) sitting in this quadrant of the
+      // compass neighbourhood (±8 packed units, scaled to the subject lattice)
       for (const key of Object.keys(sectionEntries)) {
         if (!sectionEntries[key]) continue
         const [gx, gy] = key.split(',').map(Number)
         const lx = gx - halfW
         const ly = halfH - gy
-        if (Math.abs(lx) > 8 || Math.abs(ly) > 8) continue
+        if (Math.abs(lx) > 8 * SUBJECT_STRIDE_X || Math.abs(ly) > 8 * SUBJECT_STRIDE_Y) continue
         if ((lx < 0) === left && (ly > 0) === top) cells.push({ gx, gy })
       }
     }

@@ -5,6 +5,7 @@ import {
 import {
   compileHubTaxonomy, buildHubResearchSections, buildHubStaticLayerMap,
 } from './compileHubTaxonomy.js'
+import { SUBJECT_STRIDE_X, SUBJECT_STRIDE_Y } from './archiveLayerSpecs.js'
 
 function compileFoundationAsHub() {
   const raw = {
@@ -21,7 +22,13 @@ function compileFoundationAsHub() {
   }
   const compiled = compileHubTaxonomy(FOUNDATION_TAXONOMY_HUB_ID, raw)
   if (!compiled) return null
-  compiled.leaves = FOUNDATION_LEAVES.map((l) => ({ ...l }))
+  // Foundation leaves are hand-authored in packed units — project them onto
+  // the same 28×13 subject lattice compileHubTaxonomy applies to hub leaves.
+  compiled.leaves = FOUNDATION_LEAVES.map((l) => ({
+    ...l,
+    lx: l.lx * SUBJECT_STRIDE_X,
+    ly: l.ly * SUBJECT_STRIDE_Y,
+  }))
   return compiled
 }
 

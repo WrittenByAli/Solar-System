@@ -13,15 +13,24 @@ import { MIN_POINTS_REVIEWER_ACCESS } from '../constants/reviewWorkflow.js'
 export const ROLES = Object.freeze({
     GUEST: 'guest',         // anonymous browse-only session — no account, no PII
     MEMBER: 'member',       // any authenticated user
-    REVIEWER: 'reviewer',   // earned: points >= MIN_POINTS_REVIEWER_ACCESS
+    REVIEWER: 'reviewer',   // earned: points >= MIN_POINTS_REVIEWER_ACCESS, or users_profile.role
+    ADMIN: 'admin',         // users_profile.role only — no admin-specific permissions wired yet
 })
 
 /** Derive roles from the authenticated identity + profile state.
-    A real sign-in always wins over a guest flag — the two are exclusive. */
-export function rolesFor({ isLoggedIn, isGuest = false, points = 0 }) {
+    A real sign-in always wins over a guest flag — the two are exclusive.
+    Reviewer access is granted by EITHER the database role column (earned
+    via admin promotion or the points-threshold trigger, see users_profile.
+    role) OR the legacy points-threshold check — the two are additive, not
+    exclusive, so an account promoted by role never loses access even if
+    its points value later drops. */
+export function rolesFor({ isLoggedIn, isGuest = false, points = 0, role = null }) {
     if (isLoggedIn) {
         const roles = [ROLES.MEMBER]
-        if (points >= MIN_POINTS_REVIEWER_ACCESS) roles.push(ROLES.REVIEWER)
+        if (role === ROLES.ADMIN) roles.push(ROLES.ADMIN)
+        if (role === ROLES.REVIEWER || role === ROLES.ADMIN || points >= MIN_POINTS_REVIEWER_ACCESS) {
+            roles.push(ROLES.REVIEWER)
+        }
         return roles
     }
     if (isGuest) return [ROLES.GUEST]
