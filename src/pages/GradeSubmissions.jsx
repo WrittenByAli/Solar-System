@@ -1,17 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ClipboardCheck, ShieldCheck, AlertTriangle, ChevronDown, ChevronUp, Layers } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { supabase } from '../utils/supabaseClient.js'
 import {
-    MIN_POINTS_REVIEWER_ACCESS,
     REVIEWERS_REQUIRED,
     REVIEW_RECOMMENDATION_MAX_CHARS,
     POINTS_PER_REVIEW_COMPLETED,
 } from '../constants/reviewWorkflow.js'
-import FoundationLogo from '../components/FoundationLogo.jsx'
 import fallbackData from '../data/researchData.json'
 
 const researchData = window.SOLAR_CONTENT_DATA || fallbackData
@@ -29,10 +26,8 @@ export default function GradeSubmissions() {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
     const {
-        isLoggedIn,
         profile,
         points,
-        canAccessReviewerQueue,
         refreshProfile,
     } = useAuth()
 
@@ -52,7 +47,7 @@ export default function GradeSubmissions() {
     const myId = profile?.id || null
 
     useEffect(() => {
-        if (!isLoggedIn || !myId || !canAccessReviewerQueue) { setLoading(false); return }
+        if (!myId) { setLoading(false); return }
         let active = true
         setLoading(true)
 
@@ -105,7 +100,7 @@ export default function GradeSubmissions() {
         }
         load()
         return () => { active = false }
-    }, [isLoggedIn, myId, canAccessReviewerQueue, listTick])
+    }, [myId, listTick])
 
     useEffect(() => {
         if (!expandedId) return
@@ -149,84 +144,11 @@ export default function GradeSubmissions() {
     const border = isDark ? 'rgba(79,195,247,0.18)' : 'rgba(15,23,42,0.1)'
     const muted = isDark ? '#64748b' : '#94a3b8'
 
-    if (!isLoggedIn) {
-        return (
-            <div className="solar-page solar-page--center">
-                <div className="solar-page__inner max-w-lg mx-auto text-center w-full">
-                <ClipboardCheck size={40} color={isDark ? '#4fc3f7' : '#0284c7'} className="mb-4" />
-                <h1 className="font-solar text-2xl font-black mb-2" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
-                    Sign in to review
-                </h1>
-                <p className="text-sm mb-6" style={{ color: muted }}>
-                    Archive reviewers sign in so grades are attributed correctly.
-                </p>
-                <Link
-                    to="/join"
-                    className="px-6 py-3 rounded-xl text-sm font-bold text-white"
-                    style={{ background: 'linear-gradient(135deg, #7c3aed, #4fc3f7)' }}
-                >
-                    Go to Join / Login
-                </Link>
-                </div>
-            </div>
-        )
-    }
-
-    if (!canAccessReviewerQueue) {
-        const need = Math.max(0, MIN_POINTS_REVIEWER_ACCESS - points)
-        return (
-            <div className="solar-page">
-                <div className="solar-page__inner max-w-lg mx-auto">
-                <div className="solar-page__hero text-center">
-                    <motion.div
-                        className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden"
-                        style={{ background: 'linear-gradient(135deg, #f5a623, #ff6b35)' }}
-                    >
-                        <FoundationLogo fillCircle alt="" />
-                    </motion.div>
-                    <h1 className="font-solar text-2xl font-black mb-2" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
-                        Reviewer access locked
-                    </h1>
-                    <p className="text-sm" style={{ color: muted }}>
-                        Reach <strong style={{ color: isDark ? '#4fc3f7' : '#0284c7' }}>{MIN_POINTS_REVIEWER_ACCESS.toLocaleString()}</strong>{' '}
-                        leaderboard points to unlock grading submissions. Each completed grade earns points.
-                    </p>
-                </div>
-                <div
-                    className="p-5 rounded-2xl mb-6"
-                    style={{ background: cardBg, border: `1px solid ${border}` }}
-                >
-                    <div className="flex justify-between text-sm mb-2" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
-                        <span>Your points</span>
-                        <span className="font-black tabular-nums">{points.toLocaleString()}</span>
-                    </div>
-                    <div
-                        className="h-2 rounded-full overflow-hidden"
-                        style={{ background: isDark ? 'rgba(79,195,247,0.12)' : 'rgba(2,132,199,0.12)' }}
-                    >
-                        <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{
-                                width: `${Math.min(100, (points / MIN_POINTS_REVIEWER_ACCESS) * 100)}%`,
-                                background: 'linear-gradient(90deg, #7c3aed, #4fc3f7)',
-                            }}
-                        />
-                    </div>
-                    <p className="text-xs mt-3" style={{ color: muted }}>
-                        {need > 0 ? `${need.toLocaleString()} more points needed.` : 'You qualify — refresh if this screen is stale.'}
-                    </p>
-                </div>
-                <Link
-                    to="/leaderboard"
-                    className="block text-center text-sm font-semibold"
-                    style={{ color: isDark ? '#4fc3f7' : '#0284c7' }}
-                >
-                    View leaderboard
-                </Link>
-                </div>
-            </div>
-        )
-    }
+    // No in-component auth/role gate here — the /review-queue route is
+    // wrapped in RequireReviewer (App.jsx), which handles signed-out,
+    // guest, and non-reviewer cases before this component ever mounts,
+    // matching how every other member-gated page in this app relies
+    // solely on its route guard (see Reviews.jsx).
 
     return (
         <div className="solar-page">

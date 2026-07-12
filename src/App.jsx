@@ -26,6 +26,7 @@ const ArchiveDirectory = lazy(() => import('./pages/ArchiveDirectory.jsx'))
 const AccountSecurity = lazy(() => import('./pages/AccountSecurity.jsx'))
 const SsoCallback = lazy(() => import('./pages/SsoCallback.jsx'))
 const EmailLinkVerified = lazy(() => import('./pages/EmailLinkVerified.jsx'))
+const AdminPanel = lazy(() => import('./pages/AdminPanel.jsx'))
 
 // Theme context
 export const ThemeContext = createContext()
@@ -76,10 +77,36 @@ function RequireMember({ children }) {
     return <Navigate to="/join" replace />
 }
 
+/** Reviewer gate: /review-queue. Guests get the same upgrade prompt as any
+    other contribution route; signed-in members without reviewer access are
+    redirected to /leaderboard rather than shown an in-place locked screen. */
+function RequireReviewer({ children }) {
+    const { isLoggedIn, isGuest, authLoaded, canAccessReviewerQueue } = useAuth()
+    if (!authLoaded) return <LoadingScreen message="Restoring your session…" />
+    if (!isLoggedIn && !isGuest) return <Navigate to="/join" replace />
+    if (isGuest) return <GuestGate />
+    if (!canAccessReviewerQueue) return <Navigate to="/leaderboard" replace />
+    return children
+}
+
+/** Admin gate: /admin. No admin "waiting room" exists, so a non-admin is
+    sent home rather than shown an upgrade prompt — admin isn't something
+    a member can request or earn through the UI. */
+function RequireAdmin({ children }) {
+    const { isLoggedIn, isGuest, authLoaded, canAccessAdmin } = useAuth()
+    if (!authLoaded) return <LoadingScreen message="Restoring your session…" />
+    if (!isLoggedIn && !isGuest) return <Navigate to="/join" replace />
+    if (isGuest) return <GuestGate />
+    if (!canAccessAdmin) return <Navigate to="/" replace />
+    return children
+}
+
 function AnimatedRoutes() {
     const location = useLocation()
     const guard = (node) => <RequireAuth>{node}</RequireAuth>
     const memberGuard = (node) => <RequireMember>{node}</RequireMember>
+    const reviewerGuard = (node) => <RequireReviewer>{node}</RequireReviewer>
+    const adminGuard = (node) => <RequireAdmin>{node}</RequireAdmin>
     return (
         <Routes location={location}>
             <Route path="/" element={guard(<PageWrap immersive><Home /></PageWrap>)} />
@@ -92,7 +119,8 @@ function AnimatedRoutes() {
             <Route path="/archive/:planetId" element={guard(<PageWrap><ArchiveGrid /></PageWrap>)} />
             <Route path="/leaderboard" element={guard(<PageWrap><Leaderboard /></PageWrap>)} />
             <Route path="/reviews" element={memberGuard(<PageWrap><Reviews /></PageWrap>)} />
-            <Route path="/review-queue" element={memberGuard(<PageWrap><GradeSubmissions /></PageWrap>)} />
+            <Route path="/review-queue" element={reviewerGuard(<PageWrap><GradeSubmissions /></PageWrap>)} />
+            <Route path="/admin" element={adminGuard(<PageWrap><AdminPanel /></PageWrap>)} />
             <Route path="/submit" element={memberGuard(<PageWrap><SubmitArchive /></PageWrap>)} />
             <Route path="/create-archive" element={memberGuard(<PageWrap><CreateArchive /></PageWrap>)} />
             <Route path="/host-archive" element={memberGuard(<PageWrap><HostArchive /></PageWrap>)} />

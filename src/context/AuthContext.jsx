@@ -141,11 +141,14 @@ export function AuthProvider({ children }) {
 
     // Authorization is delegated to the central policy (src/auth/authorization.js).
     // AuthContext answers "who is this?"; the policy answers "what may they do?".
+    // role comes straight from users_profile.role — no points inference here,
+    // promotion happens in the database (see the auto_promote_reviewer trigger).
     const can = useCallback(
-        (permission) => hasPermission({ isLoggedIn: !!isSignedIn, isGuest, points, role }, permission),
-        [isSignedIn, isGuest, points, role],
+        (permission) => hasPermission({ isLoggedIn: !!isSignedIn, isGuest, role }, permission),
+        [isSignedIn, isGuest, role],
     )
     const canAccessReviewerQueue = can('review:grade')
+    const canAccessAdmin = can('admin:access')
 
     const value = useMemo(() => ({
         session: isSignedIn ? { username } : null,
@@ -157,13 +160,15 @@ export function AuthProvider({ children }) {
         email,
         avatarUrl,
         points,
+        role,
         can,
         canAccessReviewerQueue,
+        canAccessAdmin,
         startGuestSession,
         logout,
         refreshProfile,
         setProfileDirect,
-    }), [isSignedIn, isGuest, isLoaded, username, email, avatarUrl, profile, points, can, canAccessReviewerQueue, startGuestSession, logout, refreshProfile, setProfileDirect])
+    }), [isSignedIn, isGuest, isLoaded, username, email, avatarUrl, profile, points, role, can, canAccessReviewerQueue, canAccessAdmin, startGuestSession, logout, refreshProfile, setProfileDirect])
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

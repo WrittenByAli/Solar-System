@@ -8,29 +8,28 @@
  * at the data layer (Supabase RLS, see supabase_rls.sql) where the
  * server verifies the Clerk JWT on every query.
  */
-import { MIN_POINTS_REVIEWER_ACCESS } from '../constants/reviewWorkflow.js'
 
 export const ROLES = Object.freeze({
     GUEST: 'guest',         // anonymous browse-only session — no account, no PII
     MEMBER: 'member',       // any authenticated user
-    REVIEWER: 'reviewer',   // earned: points >= MIN_POINTS_REVIEWER_ACCESS, or users_profile.role
-    ADMIN: 'admin',         // users_profile.role only — no admin-specific permissions wired yet
+    REVIEWER: 'reviewer',   // users_profile.role = 'reviewer' — earned via the DB
+                             // auto-promotion trigger (points crossing app_settings.
+                             // reviewer_points_threshold) or granted manually by an admin
+    ADMIN: 'admin',         // users_profile.role = 'admin' — manual only, dashboard-granted
 })
 
 /** Derive roles from the authenticated identity + profile state.
     A real sign-in always wins over a guest flag — the two are exclusive.
-    Reviewer access is granted by EITHER the database role column (earned
-    via admin promotion or the points-threshold trigger, see users_profile.
-    role) OR the legacy points-threshold check — the two are additive, not
-    exclusive, so an account promoted by role never loses access even if
-    its points value later drops. */
-export function rolesFor({ isLoggedIn, isGuest = false, points = 0, role = null }) {
+    Reviewer/admin access reads users_profile.role directly — NOT a
+    points-threshold inference. Points still drive promotion, but that
+    happens in the database (the auto_promote_reviewer trigger), so by
+    the time a client sees an updated profile, role already reflects it.
+    Admin implies reviewer (a stricter role always has the lesser one). */
+export function rolesFor({ isLoggedIn, isGuest = false, role = null }) {
     if (isLoggedIn) {
         const roles = [ROLES.MEMBER]
-        if (role === ROLES.ADMIN) roles.push(ROLES.ADMIN)
-        if (role === ROLES.REVIEWER || role === ROLES.ADMIN || points >= MIN_POINTS_REVIEWER_ACCESS) {
-            roles.push(ROLES.REVIEWER)
-        }
+        if (role === ROLES.ADMIN) roles.push(ROLES.ADMIN, ROLES.REVIEWER)
+        else if (role === ROLES.REVIEWER) roles.push(ROLES.REVIEWER)
         return roles
     }
     if (isGuest) return [ROLES.GUEST]
@@ -42,7 +41,8 @@ export const PERMISSIONS = Object.freeze({
     'archive:read': [ROLES.GUEST, ROLES.MEMBER, ROLES.REVIEWER],
     'archive:submit': [ROLES.MEMBER, ROLES.REVIEWER],
     'archive:host': [ROLES.MEMBER, ROLES.REVIEWER],
-    'review:grade': [ROLES.REVIEWER],
+    'review:grade': [ROLES.REVIEWER], // admin also holds REVIEWER via rolesFor's implication
+    'admin:access': [ROLES.ADMIN],
 })
 
 export function hasPermission(ctx, permission) {

@@ -36,15 +36,18 @@ All routes are defined in `src/App.jsx` inside `<AnimatedRoutes>`:
 | `/archive/:planetId` | `ArchiveGrid` |
 | `/leaderboard` | `Leaderboard` |
 | `/reviews` | `Reviews` |
-| `/review-queue` | `GradeSubmissions` |
+| `/review-queue` | `GradeSubmissions` — reviewer/admin only |
 | `/submit` | `SubmitArchive` |
 | `/create-archive` | `CreateArchive` |
 | `/host-archive` | `HostArchive` |
 | `/directory` | `ArchiveDirectory` |
+| `/admin` | `AdminPanel` — admin only, genuine stub (route + guard exist, no management UI yet) |
 
 All routes except `/join`, `/sso-callback`, and `/email-link-verified` are wrapped in `RequireAuth` (App.jsx) — signed-out users are redirected to `/join`. Auth is real (Clerk); see `AUTH_SETUP.md`.
 
-**Guest mode:** `/join` offers "Continue as guest" — a browse-only localStorage session (`AuthContext.isGuest`; no Clerk account, no Supabase row). Guests pass `RequireAuth` (Home, Map, Archive, Leaderboard, Directory), but contribution routes (`/submit`, `/reviews`, `/review-queue`, `/account`, `/create-archive`, `/host-archive`) use `RequireMember`, which shows guests an upgrade prompt (`src/components/GuestGate.jsx`). The authorization policy (`src/auth/authorization.js`) has a `GUEST` role holding only `archive:read`. A real sign-in permanently clears the guest flag.
+**Guest mode:** `/join` offers "Continue as guest" — a browse-only localStorage session (`AuthContext.isGuest`; no Clerk account, no Supabase row). Guests pass `RequireAuth` (Home, Map, Archive, Leaderboard, Directory), but contribution routes (`/submit`, `/reviews`, `/account`, `/create-archive`, `/host-archive`) use `RequireMember`, which shows guests an upgrade prompt (`src/components/GuestGate.jsx`). The authorization policy (`src/auth/authorization.js`) has a `GUEST` role holding only `archive:read`. A real sign-in permanently clears the guest flag.
+
+**Role system:** `users_profile.role` (`student` / `reviewer` / `admin`, default `student`) is the sole source of truth for elevated access — `authorization.js`'s `rolesFor()` reads it directly, no points-threshold inference. Promotion is automatic: a Postgres trigger (`auto_promote_reviewer`, fires on every `users_profile` insert/update) flips `student` → `reviewer` the moment `points` crosses the threshold stored in `app_settings.reviewer_points_threshold` (default 2500, DB-configurable, not hardcoded). Admin is manual-only — no promotion path exists in the UI, set `role='admin'` via the Supabase dashboard/service-role. `/review-queue` (`RequireReviewer`) redirects non-reviewers to `/leaderboard`; `/admin` (`RequireAdmin`) redirects non-admins home — both guards live in `App.jsx` alongside `RequireAuth`/`RequireMember`. Admin implies reviewer (`rolesFor` grants both roles to an admin). The Navbar (`Navbar.jsx`) shows "Review queue"/"Admin" links conditionally via `useAuth().canAccessReviewerQueue`/`canAccessAdmin`.
 
 ## Theme System
 
@@ -169,8 +172,10 @@ The submit form at `/submit` handles L4–L8. The preview sidebar uses `Submissi
 There is no application server — Clerk is the auth backend and Supabase is the data backend, both called directly from the browser.
 
 - **Auth:** real Clerk accounts (`AuthContext` wraps `useUser`); profiles sync to the Supabase `users_profile` table.
-- **Archive entries:** seeded subjects + user submissions live in the Supabase `archive_entries` table (`supabase_schema.sql`, `supabase_seed.sql`). `ArchiveGrid` reads approved entries per hub; `ArchiveDirectory` lists them; `/submit` inserts pending entries.
-- **RLS:** enabled with permissive Phase 2A demo policies (migration `phase2a_demo_policies`); `supabase_rls.sql` replaces them with strict per-user policies in Phase 2B — read its warning header first.
+- **Archive entries:** seeded subjects + user submissions live in the Supabase `archive_entries` table (`supabase_schema.sql`, `supabase_seed.sql`). `ArchiveGrid` reads approved entries per hub; `ArchiveDirectory` lists them; `/submit` inserts pending entries. Also has `is_draft`/`draft_saved_at`/`deleted_at`/`layer_data` columns (Final Phase schema migration) — unused until the draft-autosave/edit/delete features that consume them ship.
+- **Roles:** `users_profile.role` (student/reviewer/admin) + `app_settings.reviewer_points_threshold` (DB-configurable auto-promotion threshold) + the `auto_promote_reviewer` trigger — see the Role system paragraph under Routing above.
+- **RLS:** enabled with permissive Phase 2A demo policies (migration `phase2a_demo_policies`) on `users_profile`/`archive_entries`/`reviews`; `notifications`/`rate_limits` are deny-all by design (no policies yet); `planets`/`hubs`/`app_settings` are public-read, service-role-write. `supabase_rls.sql` replaces the permissive policies with strict per-user ones in Phase 2B — read its warning header first.
 - **Review workflow + leaderboard:** real and Supabase-backed — 3-reviewer consensus with merge-on-approval and points applied by a Postgres trigger; `/leaderboard` reads live points.
+- **Reference tables (unused by UI yet):** `planets`/`hubs` seeded 1:1 from the current hardcoded taxonomy (`hubTaxonomyRaw.js`/`foundationTaxonomy.js`) — not wired to `/submit`'s dropdowns until that task ships. `notifications`/`rate_limits` exist with no producer/consumer yet.
 - **Still localStorage/demo:** hosted-archive registry and segment reports (`archiveInstanceStorage.js` + inline page data).
 - **Feature inventory:** `PHASE_2A_FEATURES.md` lists everything Phase 2A delivered and its verification status.

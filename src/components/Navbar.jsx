@@ -19,6 +19,7 @@ import {
     Library,
     Award,
     ShieldCheck,
+    Shield,
 } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -64,18 +65,22 @@ function AvatarCircle({ avatarUrl, username, size = 34 }) {
 export default function Navbar() {
     const location = useLocation()
     const { theme, toggleTheme } = useTheme()
-    const { isLoggedIn, isGuest, username, email, avatarUrl, points, canAccessReviewerQueue, logout } = useAuth()
+    const { isLoggedIn, isGuest, username, email, avatarUrl, points, canAccessReviewerQueue, canAccessAdmin, logout } = useAuth()
     const [mobileOpen, setMobileOpen] = useState(false)
     const [accountOpen, setAccountOpen] = useState(false)
 
     const navLinks = useMemo(() => {
-        if (!canAccessReviewerQueue) return baseNavLinks
-        const reviewItem = { label: 'Review queue', path: '/review-queue', icon: ClipboardCheck }
-        const i = baseNavLinks.findIndex((l) => l.path === '/leaderboard')
-        const next = [...baseNavLinks]
-        next.splice(i + 1, 0, reviewItem)
+        let next = baseNavLinks
+        if (canAccessReviewerQueue) {
+            const reviewItem = { label: 'Review queue', path: '/review-queue', icon: ClipboardCheck }
+            const i = next.findIndex((l) => l.path === '/leaderboard')
+            next = [...next.slice(0, i + 1), reviewItem, ...next.slice(i + 1)]
+        }
+        if (canAccessAdmin) {
+            next = [...next, { label: 'Admin', path: '/admin', icon: Shield }]
+        }
         return next
-    }, [canAccessReviewerQueue])
+    }, [canAccessReviewerQueue, canAccessAdmin])
 
     // Members see everything; guests see browse-only routes; signed-out
     // visitors only ever see /join — no nav links to gated pages.
