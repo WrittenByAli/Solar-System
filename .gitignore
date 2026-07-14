@@ -107,6 +107,14 @@ jspm_packages/
 # Temporary folders
 tmp/
 temp/
+tmp-screenshots/
+
+# Local design-prompt scratch files
+prompts/
+
+# Accidental Windows NUL-redirect artifacts
+NUL
+NUL.*
 
 # Editor directories and files
 !.vscode/extensions.json

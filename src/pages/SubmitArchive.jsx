@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Upload, CheckCircle, ChevronDown, AlertCircle, X, Link2, PenLine, Flag, Info, Lock, ShieldCheck, Zap } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
+import { Upload, CheckCircle, ChevronDown, AlertCircle, X, Link2, PenLine, Flag, Info, Lock, ShieldCheck, Zap, Star } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import SubmissionLayerGuide, {
     LayerGuidelinesOverlay,
@@ -27,12 +28,16 @@ import { buildMergedSectionEntries } from '../utils/archiveSectionEntries.js'
 import { buildSortedSegments } from '../utils/segmentDifficulty.js'
 import { getHubResearchSections, getHubTaxonomy } from '../utils/hubTaxonomyRegistry.js'
 import { readGridDimensionsFromStorage, normalizeHubId } from '../utils/archiveInstanceStorage.js'
+import { fetchPlanetOptions } from '../utils/planetOptions.js'
 
 import fallbackData from '../data/researchData.json'
 import '../styles/solar-submit.css'
 
 const researchData = window.SOLAR_CONTENT_DATA || fallbackData;
-const PLANETS = researchData.planets.map(p => ({
+// Static fallback only — the live dropdown is populated from the `planets`
+// table (see fetchPlanetOptions) so contributors always see the DB's
+// current taxonomy, not a build-time snapshot.
+const FALLBACK_PLANETS = researchData.planets.map(p => ({
     id: p.id,
     label: p.planet,
     domain: p.domain,
@@ -50,7 +55,7 @@ const KIND_OPTIONS = [
     { value: 'graph', label: 'Chart / graph' },
 ]
 
-const PLANET_IDS = new Set(PLANETS.map((p) => String(p.id || '').toLowerCase()))
+const DRAFT_AUTOSAVE_MS = 30_000
 
 function normalizeCoordString(value) {
     const n = parseInt(String(value ?? '').trim(), 10)
@@ -128,6 +133,37 @@ function parseAlternatePerspectives(input) {
         })
 }
 
+/** Hydrate the submit form from an existing archive_entries row — shared by
+    draft-resume and edit-mode, since both "load my own past work back into
+    the form" the same way. */
+function entryRowToFormPatch(row) {
+    const rowAttachments = Array.isArray(row.attachments) ? row.attachments : []
+    const sourceLinksText = rowAttachments
+        .filter((a) => a.kind === 'source')
+        .map((a) => (a.label && a.label !== a.url ? `${a.label} | ${a.url}` : a.url))
+        .join('\n')
+    const nonSourceAttachments = rowAttachments.filter((a) => a.kind !== 'source')
+    const alternatePerspectivesText = (Array.isArray(row.alternate_perspectives) ? row.alternate_perspectives : [])
+        .map((ap) => (ap.label && ap.label !== ap.hubId ? `${ap.hubId} | ${ap.label}` : ap.hubId))
+        .join('\n')
+    return {
+        patch: {
+            planet: row.planet_id || '',
+            subject: row.title || '',
+            summary: row.short_summary || '',
+            detail: row.content || '',
+            difficulty: row.difficulty || 3,
+            tags: Array.isArray(row.tags) ? row.tags.join(', ') : '',
+            coordX: String(row.coord_x ?? ''),
+            coordY: String(row.coord_y ?? ''),
+            sourceLinks: sourceLinksText,
+            alternatePerspectives: alternatePerspectivesText,
+        },
+        attachments: nonSourceAttachments,
+        layer: row.layer || 5,
+    }
+}
+
 function buildTaxonomyCellMeta(taxonomy, halfW, halfH) {
     const byDomain = Object.fromEntries((taxonomy?.domains || []).map((d) => [d.id, d]))
     const bySubfield = Object.fromEntries((taxonomy?.subfields || []).map((s) => [s.id, s]))
@@ -183,9 +219,9 @@ function Field({ label, children, required }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         >
-            <label className="text-[11px] font-black uppercase tracking-[0.16em] flex items-center gap-1.5" style={{ color: 'inherit' }}>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.12em] flex items-center gap-1.5" style={{ color: 'inherit', opacity: 0.75 }}>
                 {label}
-                {required && <span style={{ color: '#f87171', fontSize: 14 }}>*</span>}
+                {required && <span style={{ color: '#f87171', fontSize: 13 }}>*</span>}
             </label>
             {children}
         </motion.div>
@@ -205,20 +241,21 @@ function AuthorSubmissionOverview({ username, isDark, accent }) {
                 .filter((s) => s.authorUsername === username)
                 .map(migrateSubmission)
                 .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- tick invalidates localStorage-backed data the inputs can't see
         [username, tick],
     )
 
     if (!username || rows.length === 0) return null
 
-    const border = isDark ? 'rgba(79,195,247,0.18)' : 'rgba(15,23,42,0.1)'
-    const cardBg = isDark ? 'rgba(7,20,40,0.85)' : 'rgba(255,255,255,0.92)'
-    const muted = isDark ? '#94a3b8' : '#64748b'
-    const a = accent || (isDark ? '#4fc3f7' : '#0284c7')
+    const border = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'
+    const cardBg = isDark ? 'rgba(6, 8, 16, 0.58)' : 'rgba(255, 255, 255, 0.62)'
+    const muted = isDark ? '#cbd5e1' : '#475569'
+    const a = accent || (isDark ? '#f5a623' : '#d97706')
 
     return (
         <div
-            className="mb-6 p-4 rounded-2xl text-sm"
-            style={{ background: cardBg, border: `1px solid ${border}` }}
+            className="mb-6 p-4 rounded-2xl text-sm backdrop-blur-xl"
+            style={{ background: cardBg, border: `1px solid ${border}`, backdropFilter: 'blur(20px) saturate(1.12)' }}
         >
             <p className="font-bold mb-3" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
                 Your submissions
@@ -232,8 +269,9 @@ function AuthorSubmissionOverview({ username, isDark, accent }) {
                             key={s.id}
                             className="rounded-xl p-3"
                             style={{
-                                background: isDark ? 'rgba(2,4,8,0.35)' : 'rgba(241,245,249,0.95)',
-                                border: `1px solid ${isDark ? 'rgba(79,195,247,0.1)' : 'rgba(15,23,42,0.06)'}`,
+                                background: isDark ? 'rgba(6, 8, 16, 0.42)' : 'rgba(255, 255, 255, 0.55)',
+                                border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)'}`,
+                                backdropFilter: 'blur(16px) saturate(1.1)',
                             }}
                         >
                             <div className="flex flex-wrap justify-between gap-2">
@@ -293,6 +331,7 @@ function AuthorSubmissionOverview({ username, isDark, accent }) {
 export default function SubmitArchive() {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
+    const [sceneReveal, setSceneReveal] = useState(0)
     const { isLoggedIn, username, profile } = useAuth()
     const [searchParams, setSearchParams] = useSearchParams()
     const isSegmentReport = searchParams.get('intent') === 'segmentReport'
@@ -311,6 +350,53 @@ export default function SubmitArchive() {
     const [submissionMergeTick, setSubmissionMergeTick] = useState(0)
     const [showL2Topics, setShowL2Topics] = useState(true)
     const [showL3Topics, setShowL3Topics] = useState(true)
+
+    // Live planet/hub dropdown — replaces the build-time researchData.json
+    // snapshot with a query against the `planets` table.
+    const [planetOptions, setPlanetOptions] = useState(FALLBACK_PLANETS)
+    useEffect(() => {
+        let active = true
+        fetchPlanetOptions(FALLBACK_PLANETS).then((opts) => {
+            if (active && opts.length > 0) setPlanetOptions(opts)
+        })
+        return () => { active = false }
+    }, [])
+
+    useLayoutEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    }, [])
+
+    useEffect(() => {
+        let frame
+        const start = performance.now()
+        const duration = 900
+        const tick = (now) => {
+            const p = Math.min(1, (now - start) / duration)
+            setSceneReveal(1 - Math.pow(1 - p, 3))
+            if (p < 1) frame = requestAnimationFrame(tick)
+        }
+        frame = requestAnimationFrame(tick)
+        return () => cancelAnimationFrame(frame)
+    }, [])
+
+    const planetIds = useMemo(
+        () => new Set(planetOptions.map((p) => String(p.id || '').toLowerCase())),
+        [planetOptions],
+    )
+
+    // Draft autosave + edit-existing-submission state. Edit mode reuses the
+    // same "fixed coordinate, no taxonomy picker" shape as deepen mode below.
+    const editEntryId = searchParams.get('editEntryId') || null
+    const isEditMode = !isSegmentReport && !!editEntryId
+    const [editSourceLoaded, setEditSourceLoaded] = useState(!isEditMode)
+    const [editSourceError, setEditSourceError] = useState('')
+    const [editSourceMeta, setEditSourceMeta] = useState(null) // { updatesEntryId, planetId, coordX, coordY, layer }
+
+    const draftIdRef = React.useRef(null)
+    const draftPristineRef = React.useRef(true)
+    const [draftBanner, setDraftBanner] = useState(null) // { id, savedAt } | null
+    const [draftSaveState, setDraftSaveState] = useState('idle') // idle | saving | saved
+    const canDraft = !isSegmentReport && !isEditMode && !searchParams.get('updatesEntryId')
 
     useEffect(() => {
         const bump = () => setSubmissionMergeTick((t) => t + 1)
@@ -334,6 +420,9 @@ export default function SubmitArchive() {
     // instead of creating an independent new topic at an empty coordinate.
     const updatesEntryId = searchParams.get('updatesEntryId') || null
     const isDeepenMode = !isSegmentReport && !!updatesEntryId
+    // Edit mode also targets a fixed, already-occupied coordinate (the entry
+    // being edited), so it shares deepen mode's validation/effect exemptions.
+    const isFixedCoordMode = isDeepenMode || isEditMode
     const nextSegmentSlotHint = searchParams.get('nextSegmentSlot')
     const highlightSegmentSlot = useMemo(() => {
         if (archiveLayerNum !== 7 && archiveLayerNum !== 8) return null
@@ -342,6 +431,7 @@ export default function SubmitArchive() {
     const isNarrativeDeepLink = !isSegmentReport && (archiveLayerNum === 7 || archiveLayerNum === 8) && highlightSegmentSlot != null
 
     const hubIdForForm = normalizeHubId(form.planet || 'earth')
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tick invalidates localStorage-backed data the inputs can't see
     const gridDimsForMerge = useMemo(() => readGridDimensionsFromStorage(hubIdForForm), [hubIdForForm, submissionMergeTick])
     const { gridW: mergeGridW, gridH: mergeGridH, halfW: mergeHalfW, halfH: mergeHalfH } = gridDimsForMerge
 
@@ -431,6 +521,7 @@ export default function SubmitArchive() {
     const mergedSectionEntries = useMemo(() => {
         if (!planetDataForMerge || !form.planet) return {}
         return { ...buildMergedSectionEntries(planetDataForMerge, mergeHalfW, mergeHalfH), ...dbEntriesForForm }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tick invalidates localStorage-backed data the inputs can't see
     }, [planetDataForMerge, form.planet, mergeHalfW, mergeHalfH, submissionMergeTick, dbEntriesForForm])
 
     const submitMergeCellKey = useMemo(
@@ -496,6 +587,7 @@ export default function SubmitArchive() {
         })
 
         return nextSlots
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- tick invalidates localStorage-backed data the inputs can't see
     }, [
         form.planet,
         form.topicKey,
@@ -587,8 +679,12 @@ export default function SubmitArchive() {
         [setSearchParams, l7GateBlocksL8, l56GateBlocksNarrative, isSegmentReport],
     )
 
-    const set = useCallback((key, val) => setForm((f) => ({ ...f, [key]: val })), [])
+    const set = useCallback((key, val) => {
+        draftPristineRef.current = false
+        setForm((f) => ({ ...f, [key]: val }))
+    }, [])
     const setPlanet = useCallback((planet) => {
+        draftPristineRef.current = false
         setForm((f) => ({
             ...f,
             planet,
@@ -692,15 +788,148 @@ export default function SubmitArchive() {
         return () => { active = false }
     }, [isDeepenMode, updatesEntryId])
 
+    // Edit mode: load the full source row, verify ownership + editable status,
+    // then hydrate the form from it. Only pending/rejected entries owned by
+    // the current user may be edited.
     useEffect(() => {
-        // In deepen mode the coordinate deliberately targets an already-occupied
-        // cell (that's the whole point), so it will never appear in availableSlots
-        // -- don't let this effect wipe it out.
-        if (isSegmentReport || isDeepenMode || !form.coordX || !form.coordY) return
+        if (!isEditMode || !editEntryId || !profile?.id) return
+        let active = true
+        supabase
+            .from('archive_entries')
+            .select('*')
+            .eq('id', editEntryId)
+            .maybeSingle()
+            .then(({ data, error }) => {
+                if (!active) return
+                if (error || !data) {
+                    setEditSourceError('Could not load this submission.')
+                    setEditSourceLoaded(true)
+                    return
+                }
+                if (data.submitted_by !== profile.id) {
+                    setEditSourceError('You can only edit your own submissions.')
+                    setEditSourceLoaded(true)
+                    return
+                }
+                if (!['pending', 'rejected'].includes(data.status)) {
+                    setEditSourceError('Only pending or rejected submissions can be edited.')
+                    setEditSourceLoaded(true)
+                    return
+                }
+                const { patch, attachments: atts, layer } = entryRowToFormPatch(data)
+                setForm((f) => ({ ...f, ...patch }))
+                setAttachments(atts)
+                setPreviewLayer(layer)
+                setEditSourceMeta({ updatesEntryId: data.updates_entry_id || null })
+                setEditSourceLoaded(true)
+            })
+        return () => { active = false }
+    }, [isEditMode, editEntryId, profile?.id])
+
+    // Continue-draft banner: only offered on a genuinely fresh /submit visit
+    // (no deep-link prefill params competing for the form).
+    useEffect(() => {
+        if (!canDraft || !profile?.id) return
+        const hasPrefillParams = ['planet', 'coordX', 'coordY', 'domainId', 'subfieldId', 'topicKey', 'tags']
+            .some((k) => searchParams.get(k))
+        if (hasPrefillParams) return
+        let active = true
+        supabase
+            .from('archive_entries')
+            .select('id, title, draft_saved_at')
+            .eq('submitted_by', profile.id)
+            .eq('is_draft', true)
+            .is('deleted_at', null)
+            .order('draft_saved_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+            .then(({ data }) => {
+                if (!active || !data) return
+                draftIdRef.current = data.id
+                setDraftBanner({ id: data.id, title: data.title, savedAt: data.draft_saved_at })
+            })
+        return () => { active = false }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [canDraft, profile?.id])
+
+    // Draft autosave: fixed 30s cadence, reading the latest form state via a
+    // ref so typing doesn't reset the timer. Only fires once planet + title
+    // are set (no point drafting an empty row).
+    const draftPayloadRef = React.useRef(null)
+    useEffect(() => {
+        draftPayloadRef.current = { form, previewLayer, attachments }
+    }, [form, previewLayer, attachments])
+
+    const performDraftSave = useCallback(async () => {
+        if (!canDraft || !profile?.id) return
+        const snapshot = draftPayloadRef.current
+        if (!snapshot?.form?.planet || !snapshot.form.subject.trim()) return
+        setDraftSaveState('saving')
+        const payload = {
+            title: snapshot.form.subject.trim(),
+            content: snapshot.form.detail.trim(),
+            short_summary: snapshot.form.summary.trim(),
+            layer: snapshot.previewLayer,
+            planet_id: snapshot.form.planet,
+            hub_id: snapshot.form.planet,
+            coord_x: parseInt(normalizeCoordString(snapshot.form.coordX), 10) || 0,
+            coord_y: parseInt(normalizeCoordString(snapshot.form.coordY), 10) || 0,
+            status: 'pending',
+            submitted_by: profile.id,
+            tags: normalizeSubmissionTags(snapshot.form.tags),
+            attachments: snapshot.attachments,
+            alternate_perspectives: parseAlternatePerspectives(snapshot.form.alternatePerspectives),
+            is_draft: true,
+            draft_saved_at: new Date().toISOString(),
+        }
+        if (draftIdRef.current) {
+            const { error } = await supabase.from('archive_entries').update(payload).eq('id', draftIdRef.current)
+            setDraftSaveState(error ? 'idle' : 'saved')
+        } else {
+            const { data, error } = await supabase.from('archive_entries').insert(payload).select('id').maybeSingle()
+            if (!error && data) {
+                draftIdRef.current = data.id
+                setDraftSaveState('saved')
+            } else {
+                setDraftSaveState('idle')
+            }
+        }
+    }, [canDraft, profile?.id])
+
+    useEffect(() => {
+        if (!canDraft || !profile?.id) return undefined
+        const id = setInterval(performDraftSave, DRAFT_AUTOSAVE_MS)
+        return () => clearInterval(id)
+    }, [canDraft, profile?.id, performDraftSave])
+
+    const resumeDraft = useCallback(async () => {
+        if (!draftBanner) return
+        const { data } = await supabase.from('archive_entries').select('*').eq('id', draftBanner.id).maybeSingle()
+        setDraftBanner(null)
+        if (!data) return
+        const { patch, attachments: atts, layer } = entryRowToFormPatch(data)
+        draftPristineRef.current = false
+        setForm((f) => ({ ...f, ...patch }))
+        setAttachments(atts)
+        setPreviewLayer(layer)
+    }, [draftBanner])
+
+    const discardDraft = useCallback(async () => {
+        if (!draftBanner) return
+        await supabase.from('archive_entries').update({ deleted_at: new Date().toISOString() }).eq('id', draftBanner.id)
+        draftIdRef.current = null
+        setDraftBanner(null)
+    }, [draftBanner])
+
+    useEffect(() => {
+        // In deepen/edit mode the coordinate deliberately targets an already-
+        // occupied cell (that's the whole point), so it will never appear in
+        // availableSlots -- don't let this effect wipe it out.
+        if (isSegmentReport || isFixedCoordMode || !form.coordX || !form.coordY) return
         if (selectedTaxonomy && (!form.domainId || !form.topicKey)) return
         if (selectedCoordinateIsValid) return
         setForm((f) => ({ ...f, coordX: '', coordY: '' }))
-    }, [form.planet, form.domainId, form.subfieldId, form.topicKey, form.coordX, form.coordY, previewLayer, selectedTaxonomy, selectedCoordinateIsValid, isSegmentReport, isDeepenMode])
+    }, [form.planet, form.domainId, form.subfieldId, form.topicKey, form.coordX, form.coordY, previewLayer, selectedTaxonomy, selectedCoordinateIsValid, isSegmentReport, isFixedCoordMode])
 
     const appendFiles = useCallback((fileList, kind) => {
         const files = Array.from(fileList || [])
@@ -757,7 +986,7 @@ export default function SubmitArchive() {
     }
 
     const removeAttachment = (id) => setAttachments((a) => a.filter((x) => x.id !== id))
-    const showTopicSelectors = !isSegmentReport
+    const showTopicSelectors = !isSegmentReport && !isEditMode
     const showTagsField = isSegmentReport || previewLayer >= 5
     // L6 can be submitted without a new L5 summary if L5 already exists at the coordinate
     const l5ExistsAtTarget = cellHasL5(mergedCellAtTarget)
@@ -787,7 +1016,7 @@ export default function SubmitArchive() {
         }
         const errs = {}
         if (!form.planet) errs.planet = 'Select a planet/domain'
-        if (!isDeepenMode) {
+        if (!isFixedCoordMode) {
             if (selectedTaxonomy && !form.domainId) errs.domainId = 'Select an L2 topic'
             if (selectedTaxonomy && form.domainId && !form.topicKey) errs.subfieldId = 'Select an L3 subtopic'
         }
@@ -798,9 +1027,9 @@ export default function SubmitArchive() {
         } else if (isNaN(parseInt(form.coordX)) || isNaN(parseInt(form.coordY))) {
             errs.coordX = 'Valid X coordinate required'
             errs.coordY = 'Valid Y coordinate required'
-        } else if (!isDeepenMode && !selectedCoordinateIsValid) {
-            // Deepen mode deliberately targets an already-occupied coordinate --
-            // that's the entry being deepened, not a fresh adjacent slot.
+        } else if (!isFixedCoordMode && !selectedCoordinateIsValid) {
+            // Deepen/edit mode deliberately targets an already-occupied coordinate --
+            // that's the entry being deepened or edited, not a fresh adjacent slot.
             const coordMessage = previewLayer === 4
                 ? 'Choose one of the valid adjacent coordinates'
                 : 'Choose one of the valid adjacent coordinates for this topic/subtopic'
@@ -827,7 +1056,7 @@ export default function SubmitArchive() {
             if (invalidSource) errs.sourceLinks = 'Each source line must end with a valid http:// or https:// URL'
         }
         if (showAlternatePerspectivesField) {
-            const invalidPerspective = parseAlternatePerspectives(form.alternatePerspectives).find((ap) => ap.hubId && !PLANET_IDS.has(ap.hubId))
+            const invalidPerspective = parseAlternatePerspectives(form.alternatePerspectives).find((ap) => ap.hubId && !planetIds.has(ap.hubId))
             if (invalidPerspective) errs.alternatePerspectives = `Unknown hub "${invalidPerspective.hubId}". Use a planet id like earth, mars, jupiter, etc.`
         }
         if (!isSegmentReport && (previewLayer === 7 || previewLayer === 8) && l56GateBlocksNarrative) {
@@ -848,20 +1077,24 @@ export default function SubmitArchive() {
 
         if (isSegmentReport) {
             const attachmentCount = attachments.length
-            appendSegmentReport({
-                planet: form.planet,
-                coordX: String(form.coordX).trim(),
-                coordY: String(form.coordY).trim(),
-                archiveLayer: searchParams.get('archiveLayer') || '',
-                segmentIndex: searchParams.get('segmentIndex') || '',
-                segmentLabel: searchParams.get('segmentLabel') || '',
-                excerptAtOpen: searchParams.get('excerpt') || '',
-                subject: form.subject.trim(),
-                summary: form.summary.trim(),
-                detail: form.detail.trim(),
-                authorUsername,
-                attachments,
-            })
+            try {
+                await appendSegmentReport({
+                    planet: form.planet,
+                    coordX: String(form.coordX).trim(),
+                    coordY: String(form.coordY).trim(),
+                    archiveLayer: searchParams.get('archiveLayer') || '',
+                    segmentIndex: searchParams.get('segmentIndex') || '',
+                    segmentLabel: searchParams.get('segmentLabel') || '',
+                    excerptAtOpen: searchParams.get('excerpt') || '',
+                    subject: form.subject.trim(),
+                    summary: form.summary.trim(),
+                    detail: form.detail.trim(),
+                    authorUsername,
+                    attachments,
+                })
+            } catch (err) {
+                console.error('Segment report submit failed:', err?.cause?.message || err?.message)
+            }
             setAttachmentCountSubmitted(attachmentCount)
             setSubmitted(true)
             return
@@ -879,7 +1112,7 @@ export default function SubmitArchive() {
         // Save to Supabase. In deepen mode this is a pending draft attached to an
         // existing entry via updates_entry_id -- it merges into the base entry
         // once reviewed, rather than becoming an independent topic.
-        const { error: dbError } = await supabase.from('archive_entries').insert({
+        const entryPayload = {
             title: form.subject.trim(),
             content: previewLayer >= 6 ? form.detail.trim() : '',
             short_summary: previewLayer >= 5 ? form.summary.trim() : '',
@@ -890,20 +1123,38 @@ export default function SubmitArchive() {
             coord_y: parseInt(normalizeCoordString(form.coordY), 10) || 0,
             status: 'pending',
             submitted_by: profile?.id ?? null,
-            updates_entry_id: updatesEntryId || null,
+            updates_entry_id: (isEditMode ? editSourceMeta?.updatesEntryId : updatesEntryId) || null,
             tags: normalizedTags,
             attachments: submittedAttachments,
             alternate_perspectives: normalizedPerspectives,
-        })
+            is_draft: false,
+            draft_saved_at: null,
+        }
+
+        let dbError = null
+        if (isEditMode && editEntryId) {
+            // Soft-delete the prior copy rather than mutating it in place --
+            // any reviews already attached to the old row's id stay attached
+            // to that (now hidden) row instead of poisoning a fresh consensus
+            // count on the edited version.
+            await supabase.from('archive_entries').update({ deleted_at: new Date().toISOString() }).eq('id', editEntryId)
+            ;({ error: dbError } = await supabase.from('archive_entries').insert(entryPayload))
+        } else if (draftIdRef.current) {
+            // Finalize the autosaved draft in place instead of inserting a duplicate row.
+            ;({ error: dbError } = await supabase.from('archive_entries').update(entryPayload).eq('id', draftIdRef.current))
+            draftIdRef.current = null
+        } else {
+            ;({ error: dbError } = await supabase.from('archive_entries').insert(entryPayload))
+        }
 
         if (dbError) {
             console.error('Supabase insert failed:', dbError.message)
         }
 
-        // Deepen-mode drafts are Supabase-only -- the localStorage fallback merge
-        // doesn't understand updates_entry_id and would show it as a competing,
-        // independent entry at the same coordinate.
-        if (!isDeepenMode) {
+        // Deepen-mode and edit-mode submissions are Supabase-only -- the
+        // localStorage fallback merge doesn't understand updates_entry_id and
+        // would show them as a competing, independent entry at the same coordinate.
+        if (!isDeepenMode && !isEditMode) {
             appendPendingSubmission({
                 ...form,
                 coordX: normalizeCoordString(form.coordX),
@@ -926,8 +1177,8 @@ export default function SubmitArchive() {
         setSubmitted(true)
     }
 
-    const selectedPlanet = PLANETS.find(p => p.id === form.planet)
-    const accent = selectedPlanet?.color || (isDark ? '#4fc3f7' : '#0284c7')
+    const selectedPlanet = planetOptions.find(p => p.id === form.planet)
+    const accent = selectedPlanet?.color || (isDark ? '#f5a623' : '#d97706')
 
     const archiveLayerHint = searchParams.get('archiveLayer')
     const narrativeStateForHint =
@@ -975,14 +1226,15 @@ export default function SubmitArchive() {
         padding: '12px 15px',
         borderRadius: 14,
         border: `1px solid ${isDark ? `${accent}28` : 'rgba(15,23,42,0.12)'}`,
-        background: isDark ? 'rgba(2,6,23,0.72)' : 'rgba(255,255,255,0.88)',
+        background: isDark ? 'rgba(6, 8, 16, 0.52)' : 'rgba(255, 255, 255, 0.62)',
         color: isDark ? '#f8fafc' : '#0f172a',
         fontSize: 13,
         outline: 'none',
         width: '100%',
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Inter, system-ui, sans-serif',
         boxShadow: isDark ? `inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 0 ${accent}` : 'inset 0 1px 0 rgba(255,255,255,0.9)',
-        backdropFilter: 'blur(14px)',
+        backdropFilter: 'blur(16px) saturate(1.1)',
+        WebkitBackdropFilter: 'blur(16px) saturate(1.1)',
         transition: 'border-color 0.25s, box-shadow 0.25s',
     }
 
@@ -998,12 +1250,19 @@ export default function SubmitArchive() {
         setPreviewLayer(5)
         setShowRichPreview(false)
         setForm(emptyForm())
+        draftIdRef.current = null
+        draftPristineRef.current = true
+        setDraftBanner(null)
+        setDraftSaveState('idle')
+        setEditSourceMeta(null)
+        setEditSourceError('')
         setSearchParams(
             (prev) => {
                 const next = new URLSearchParams(prev)
                 next.delete('archiveLayer')
                 next.delete('nextSegmentSlot')
                 next.delete('updatesEntryId')
+                next.delete('editEntryId')
                 return next
             },
             { replace: true },
@@ -1012,7 +1271,7 @@ export default function SubmitArchive() {
 
     const readinessItems = [
         { key: 'hub',    label: 'Research hub selected',   done: !!form.planet,                                                                              required: true  },
-        { key: 'coord',  label: 'Coordinate ready',        done: isDeepenMode ? !!(form.coordX && form.coordY) : selectedCoordinateIsValid,                    required: true  },
+        { key: 'coord',  label: 'Coordinate ready',        done: isFixedCoordMode ? !!(form.coordX && form.coordY) : selectedCoordinateIsValid,                    required: true  },
         { key: 'title',  label: 'Entry title set',         done: form.subject.trim().length > 0,                                                             required: true  },
         { key: 'sum',    label: 'Summary completeness',    done: !showSummaryField  || (form.summary.trim().length >= 50 && form.summary.length <= 400),     required: showSummaryField  },
         { key: 'detail', label: 'Technical detail filled', done: !showDetailField   || (form.detail.trim().length  >= 100 && form.detail.length  <= 2500),   required: showDetailField   },
@@ -1027,7 +1286,23 @@ export default function SubmitArchive() {
     if (submitted) {
         const wasSegmentReport = searchParams.get('intent') === 'segmentReport'
         return (
-            <div className="solar-page solar-page--center sa-submit-page">
+            <div className={`solar-page solar-page--center sa-submit-page${isDark ? ' sa-submit-page--dark' : ' sa-submit-page--light'}`}>
+                <VantaFogBackground
+                    isDark={isDark}
+                    entryReveal={sceneReveal}
+                    className="sa-submit-page__vanta"
+                />
+                <div
+                    className="sa-submit-page__veil"
+                    style={{ opacity: Math.max(0, (isDark ? 0.14 : 0.1) - sceneReveal * (isDark ? 0.22 : 0.16)) }}
+                    aria-hidden="true"
+                />
+                <div
+                    className="sa-submit-page__vignette"
+                    style={{ opacity: isDark ? 0.2 + sceneReveal * 0.06 : 0.14 + sceneReveal * 0.04 }}
+                    aria-hidden="true"
+                />
+                <div className="sa-submit-page__inner" style={{ opacity: sceneReveal }}>
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -1049,12 +1324,16 @@ export default function SubmitArchive() {
                     </motion.div>
                     <CheckCircle size={48} className="mx-auto mb-4" color="#34d399" />
                     <h2 className="font-solar text-2xl font-black mb-2" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
-                        {wasSegmentReport ? 'Report Sent' : 'Entry Submitted!'}
+                        {wasSegmentReport ? 'Report Sent' : isEditMode ? 'Resubmitted!' : 'Entry Submitted!'}
                     </h2>
-                    <p className="mb-2" style={{ color: isDark ? '#64748b' : '#64748b', fontSize: 14 }}>
+                    <p className="mb-2" style={{ color: isDark ? '#e2e8f0' : '#475569', fontSize: 14 }}>
                         {wasSegmentReport ? (
                             <>
                                 Your segment report for <strong style={{ color: selectedPlanet?.color }}>{selectedPlanet?.label}</strong> at ({submittedCoords.x}, {submittedCoords.y}) was saved locally for the moderation queue demo.
+                            </>
+                        ) : isEditMode ? (
+                            <>
+                                Your edited version of <strong style={{ color: selectedPlanet?.color }}>{form.subject}</strong> replaced the previous submission and re-enters the review queue.
                             </>
                         ) : isDeepenMode ? (
                             <>
@@ -1066,7 +1345,7 @@ export default function SubmitArchive() {
                             </>
                         )}
                     </p>
-                    <p className="text-sm mb-6" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                    <p className="text-sm mb-6" style={{ color: isDark ? '#e2e8f0' : '#475569' }}>
                         {wasSegmentReport
                             ? 'Reports are stored in this browser (solarArchiveSegmentReports). Attachments, if any, are included in the report record.'
                             : isDeepenMode
@@ -1075,62 +1354,54 @@ export default function SubmitArchive() {
                                       attachmentCountSubmitted > 0 ? ` ${attachmentCountSubmitted} file(s) attached (stored in this browser).` : ''
                                   }`}
                     </p>
-                    <motion.button
-                        whileHover={{ scale: 1.04 }}
-                        whileTap={{ scale: 0.96 }}
-                        className="px-8 py-3 rounded-full font-bold text-white"
-                        style={{ background: 'linear-gradient(135deg, #7c3aed, #4fc3f7)' }}
-                        onClick={resetForm}
-                    >
-                        Submit Another
-                    </motion.button>
+                    <div className="flex flex-wrap gap-3 justify-center">
+                        <motion.button
+                            whileHover={{ scale: 1.04 }}
+                            whileTap={{ scale: 0.96 }}
+                            className="px-8 py-3 rounded-full font-bold text-white"
+                            style={{ background: 'linear-gradient(135deg, #f6a92c, #ec8d10)' }}
+                            onClick={resetForm}
+                        >
+                            Submit Another
+                        </motion.button>
+                        {!wasSegmentReport && (
+                            <Link to="/my-submissions" className="px-8 py-3 rounded-full font-bold text-sm inline-flex items-center"
+                                style={{ color: isDark ? '#f8fafc' : '#0f172a', border: `1px solid ${isDark ? 'rgba(255,255,255,0.16)' : 'rgba(15,23,42,0.15)'}` }}>
+                                View my submissions
+                            </Link>
+                        )}
+                    </div>
                 </motion.div>
+                </div>
             </div>
         )
     }
 
     return (
-        <div className="solar-page sa-submit-page">
-
-            {/* ── Coordinate Entry Ignition Background ── */}
-            <div className="sa-bg" aria-hidden="true">
-                <div className="sa-bg__grid" />
-                <div className="sa-bg__stars" />
-                <div className="sa-bg__node-area">
-                    <div className="sa-bg__pulse sa-bg__pulse--a" />
-                    <div className="sa-bg__pulse sa-bg__pulse--b" />
-                    <div className="sa-bg__pulse sa-bg__pulse--c" />
-                    <div className="sa-bg__node-dot" />
-                    <svg className="sa-bg__conn-svg" viewBox="0 0 600 400" fill="none" aria-hidden="true">
-                        <line x1="300" y1="200" x2="108" y2="82"  className="sa-bg__conn-line" style={{ animationDelay: '0s' }} />
-                        <line x1="300" y1="200" x2="478" y2="105" className="sa-bg__conn-line" style={{ animationDelay: '0.5s' }} />
-                        <line x1="300" y1="200" x2="158" y2="318" className="sa-bg__conn-line" style={{ animationDelay: '0.9s' }} />
-                        <line x1="300" y1="200" x2="502" y2="308" className="sa-bg__conn-line" style={{ animationDelay: '1.3s' }} />
-                        <circle cx="108" cy="82"  r="3"   className="sa-bg__conn-node" style={{ animationDelay: '0.3s' }} />
-                        <circle cx="478" cy="105" r="2.5" className="sa-bg__conn-node" style={{ animationDelay: '0.8s' }} />
-                        <circle cx="158" cy="318" r="2"   className="sa-bg__conn-node" style={{ animationDelay: '1.2s' }} />
-                        <circle cx="502" cy="308" r="3"   className="sa-bg__conn-node" style={{ animationDelay: '1.6s' }} />
-                    </svg>
-                </div>
-                {[...Array(6)].map((_, i) => (
-                    <div key={i} className="sa-bg__fragment" style={{
-                        '--fx': `${(i % 2 === 0 ? -1 : 1) * (28 + i * 4)}px`,
-                        '--fy': `${(i % 3 === 0 ? -1 : 1) * (18 + i * 3)}px`,
-                        left:  `${10 + i * 13}%`,
-                        top:   `${25 + ((i * 19) % 55)}%`,
-                        animationDuration: `${5 + i * 1.1}s`,
-                        animationDelay:    `${-i * 0.9}s`,
-                    }} />
-                ))}
-                <div className="sa-bg__vignette" />
-            </div>
+        <div className={`solar-page sa-submit-page${isDark ? ' sa-submit-page--dark' : ' sa-submit-page--light'}`}>
+            <VantaFogBackground
+                isDark={isDark}
+                entryReveal={sceneReveal}
+                className="sa-submit-page__vanta"
+            />
+            <div
+                className="sa-submit-page__veil"
+                style={{ opacity: Math.max(0, (isDark ? 0.14 : 0.1) - sceneReveal * (isDark ? 0.22 : 0.16)) }}
+                aria-hidden="true"
+            />
+            <div
+                className="sa-submit-page__vignette"
+                style={{ opacity: isDark ? 0.2 + sceneReveal * 0.06 : 0.14 + sceneReveal * 0.04 }}
+                aria-hidden="true"
+            />
 
             {/* Planet accent glow */}
             {isDark && accent && (
                 <div className="pointer-events-none fixed inset-0" aria-hidden
-                    style={{ background: `radial-gradient(ellipse 80% 50% at 50% 0%, ${accent}10 0%, transparent 65%)`, zIndex: 0 }} />
+                    style={{ background: `radial-gradient(ellipse 80% 50% at 50% 0%, ${accent}10 0%, transparent 65%)`, zIndex: 3 }} />
             )}
 
+            <div className="sa-submit-page__inner" style={{ opacity: sceneReveal }}>
             <div className="solar-page__inner solar-page__inner--lg" style={{ position: 'relative', zIndex: 1 }}>
 
                 {/* ── HERO ── */}
@@ -1144,20 +1415,20 @@ export default function SubmitArchive() {
                         style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
                     >
                         {isSegmentReport ? (
-                            <span style={{ color: '#fca5a5' }}>Report a Segment</span>
+                            <span style={{ color: '#fca5a5' }}>Report Segment</span>
                         ) : (
-                            <>Submit Knowledge<br /><span className="sa-hero__title--accent">to the Archive</span></>
+                            <>Submit Research</>
                         )}
                     </motion.h1>
 
                     {/* Subtitle */}
                     <motion.p className="sa-hero__sub"
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}
-                        style={{ color: isDark ? '#64748b' : '#64748b' }}
+                        style={{ color: isDark ? '#e2e8f0' : '#475569' }}
                     >
                         {isSegmentReport
-                            ? 'Flag inaccurate, offensive, or misplaced archive text on layers 6–8. Your context block is pre-filled; add specifics below.'
-                            : 'Add research entries, citations, technical details, and evidence into the coordinate grid for community review.'}
+                            ? 'Report inaccurate, offensive, or misplaced text in layers 6–8.'
+                            : 'Add research and citations to the coordinate grid for peer review.'}
                     </motion.p>
 
                     {!isSegmentReport && (
@@ -1166,17 +1437,82 @@ export default function SubmitArchive() {
                         >
                             <button type="button" onClick={() => setGuidelinesOpen(true)} className="sa-btn-secondary">
                                 <Info size={14} />
-                                View Review Rules
+                                Review Rules
                             </button>
                         </motion.div>
                     )}
                 </motion.div>
 
                 {/* ── BANNERS ── */}
+                {isEditMode && editSourceError && (
+                    <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
+                        className="mb-6 rounded-2xl text-sm flex gap-3 items-start overflow-hidden"
+                        style={{ border: '1px solid rgba(248,113,113,0.35)', background: isDark ? 'rgba(127,29,29,0.22)' : 'rgba(254,226,226,0.72)', color: isDark ? '#fecaca' : '#7f1d1d' }}
+                    >
+                        <div className="shrink-0 w-1 self-stretch rounded-l-2xl" style={{ background: 'linear-gradient(180deg, #f87171, #fb923c)' }} />
+                        <div className="py-4 pr-4 flex gap-3 items-start">
+                            <AlertCircle size={17} className="shrink-0 mt-0.5" aria-hidden />
+                            <div>
+                                <p className="font-black text-[11px] uppercase tracking-widest mb-1">Can't edit this submission</p>
+                                <p className="text-xs leading-relaxed">{editSourceError} <Link to="/my-submissions" className="font-bold underline">Back to My Submissions</Link></p>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {isEditMode && editSourceLoaded && !editSourceError && (
+                    <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
+                        className="mb-6 rounded-2xl text-sm flex gap-3 items-start overflow-hidden"
+                        style={{ border: `1px solid ${accent}44`, background: isDark ? `${accent}10` : `${accent}09`, color: isDark ? '#f8fafc' : '#0f172a' }}
+                    >
+                        <div className="shrink-0 w-1 self-stretch rounded-l-2xl" style={{ background: `linear-gradient(180deg, ${accent}, ${accent}88)` }} />
+                        <div className="py-4 pr-4 pl-3 flex gap-3 items-start">
+                            <PenLine size={17} className="shrink-0 mt-0.5" style={{ color: accent }} aria-hidden />
+                            <div>
+                                <p className="font-black text-[11px] uppercase tracking-widest mb-1" style={{ color: accent }}>Editing your submission</p>
+                                <p className="text-xs leading-relaxed" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
+                                    The coordinate and hub are fixed to the entry being edited. Resubmitting replaces the previous version and restarts review from zero.
+                                </p>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {!isEditMode && draftBanner && (
+                    <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
+                        className="mb-6 rounded-2xl text-sm flex flex-col sm:flex-row sm:items-center gap-3 overflow-hidden"
+                        style={{ border: '1px solid rgba(245,166,35,0.24)', background: isDark ? 'rgba(245,166,35,0.06)' : 'rgba(245,166,35,0.06)', color: isDark ? '#f8fafc' : '#0f172a' }}
+                    >
+                        <div className="shrink-0 w-1 self-stretch rounded-l-2xl hidden sm:block" style={{ background: 'linear-gradient(180deg, #f5a623, #ec8d10)' }} />
+                        <div className="py-4 pr-4 pl-3 sm:pl-0 flex gap-3 items-start flex-1 min-w-0">
+                            <PenLine size={17} className="shrink-0 mt-0.5" style={{ color: '#f5a623' }} aria-hidden />
+                            <div className="min-w-0">
+                                <p className="font-black text-[11px] uppercase tracking-widest mb-1" style={{ color: isDark ? '#f5a623' : '#92400e' }}>Continue where you left off</p>
+                                <p className="text-xs leading-relaxed truncate">
+                                    Draft saved{draftBanner.title ? <>: <strong>{draftBanner.title}</strong></> : ''}
+                                    {draftBanner.savedAt ? ` · ${new Date(draftBanner.savedAt).toLocaleString()}` : ''}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 pb-4 pr-4 pl-3 sm:pl-0 sm:pb-0 shrink-0">
+                            <button type="button" onClick={resumeDraft}
+                                className="px-4 py-2 rounded-xl text-xs font-bold text-white"
+                                style={{ background: 'linear-gradient(135deg, #f6a92c, #ec8d10)' }}>
+                                Resume draft
+                            </button>
+                            <button type="button" onClick={discardDraft}
+                                className="px-4 py-2 rounded-xl text-xs font-bold"
+                                style={{ background: isDark ? 'rgba(248,113,113,0.12)' : 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)' }}>
+                                Discard
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+
                 {isSegmentReport && (
                     <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
                         className="mb-6 rounded-2xl text-sm flex gap-3 items-start overflow-hidden"
-                        style={{ border: '1px solid rgba(248,113,113,0.35)', background: isDark ? 'rgba(127,29,29,0.18)' : 'rgba(254,226,226,0.9)', color: isDark ? '#fecaca' : '#7f1d1d' }}
+                        style={{ border: '1px solid rgba(248,113,113,0.35)', background: isDark ? 'rgba(127,29,29,0.22)' : 'rgba(254,226,226,0.72)', color: isDark ? '#fecaca' : '#7f1d1d' }}
                     >
                         <div className="shrink-0 w-1 self-stretch rounded-l-2xl" style={{ background: 'linear-gradient(180deg, #f87171, #fb923c)' }} />
                         <div className="py-4 pr-4 flex gap-3 items-start">
@@ -1192,7 +1528,7 @@ export default function SubmitArchive() {
                 {showL56GateBanner && (
                     <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
                         className="mb-6 rounded-2xl text-sm flex items-start overflow-hidden"
-                        style={{ border: '1px solid rgba(251,191,36,0.38)', background: isDark ? 'rgba(120,53,15,0.3)' : 'rgba(254,243,199,0.9)', color: isDark ? '#fde68a' : '#854d0e' }}
+                        style={{ border: '1px solid rgba(251,191,36,0.38)', background: isDark ? 'rgba(120,53,15,0.28)' : 'rgba(254,243,199,0.72)', color: isDark ? '#fde68a' : '#854d0e' }}
                     >
                         <div className="shrink-0 w-1 self-stretch rounded-l-2xl" style={{ background: 'linear-gradient(180deg, #fbbf24, #f97316)' }} />
                         <div className="py-4 pr-4 pl-3 flex gap-3 items-start">
@@ -1211,7 +1547,7 @@ export default function SubmitArchive() {
                 {showL7GateBanner && !showL56GateBanner && (
                     <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
                         className="mb-6 rounded-2xl text-sm flex items-start overflow-hidden"
-                        style={{ border: '1px solid rgba(251,191,36,0.38)', background: isDark ? 'rgba(120,53,15,0.3)' : 'rgba(254,243,199,0.9)', color: isDark ? '#fde68a' : '#854d0e' }}
+                        style={{ border: '1px solid rgba(251,191,36,0.38)', background: isDark ? 'rgba(120,53,15,0.28)' : 'rgba(254,243,199,0.72)', color: isDark ? '#fde68a' : '#854d0e' }}
                     >
                         <div className="shrink-0 w-1 self-stretch rounded-l-2xl" style={{ background: 'linear-gradient(180deg, #fbbf24, #f97316)' }} />
                         <div className="py-4 pr-4 pl-3 flex gap-3 items-start">
@@ -1234,7 +1570,7 @@ export default function SubmitArchive() {
                             <PenLine size={17} className="shrink-0 mt-0.5" style={{ color: accent }} aria-hidden />
                             <div>
                                 <p className="font-black text-[11px] uppercase tracking-widest mb-1" style={{ color: accent }}>Layer {archiveLayerHint} · narrative segment {nextSegmentSlotHint}</p>
-                                <p className="text-xs leading-relaxed" style={{ color: isDark ? '#94a3b8' : '#475569' }}>
+                                <p className="text-xs leading-relaxed" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
                                     Your detail field must split into sentences (20–250 characters each). After grading, sentences land on archive tiles in easiest-to-hardest order — slot <strong>{nextSegmentSlotHint}</strong> is the next empty narrative tile for this coordinate.
                                 </p>
                             </div>
@@ -1245,15 +1581,15 @@ export default function SubmitArchive() {
                 {!isLoggedIn && (
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
                         className="mb-6 p-4 rounded-2xl text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative overflow-hidden"
-                        style={{ background: isDark ? 'rgba(124,58,237,0.1)' : 'rgba(124,58,237,0.07)', border: '1px solid rgba(124,58,237,0.3)', color: isDark ? '#f8fafc' : '#0f172a' }}
+                        style={{ background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.62)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)'}`, color: isDark ? '#f8fafc' : '#0f172a' }}
                     >
-                        <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl" style={{ background: 'rgba(124,58,237,0.25)' }} aria-hidden />
+                        <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl" style={{ background: 'rgba(245,166,35,0.12)' }} aria-hidden />
                         <div className="flex items-center gap-2.5 relative">
-                            <Zap size={15} style={{ color: '#a78bfa', flexShrink: 0 }} />
+                            <Zap size={15} style={{ color: '#f5a623', flexShrink: 0 }} />
                             <span>Sign in to attribute your submission — without an account it will be submitted as <em>guest</em>.</span>
                         </div>
                         <Link to="/join" className="relative font-bold shrink-0 px-5 py-2.5 rounded-xl text-center text-white text-sm"
-                            style={{ background: 'linear-gradient(135deg, #7c3aed, #4fc3f7)', boxShadow: '0 0 20px rgba(124,58,237,0.4)' }}>
+                            style={{ background: 'linear-gradient(135deg, #f6a92c, #ec8d10)', boxShadow: '0 1px 0 rgba(255,255,255,0.2) inset, 0 8px 22px rgba(236,141,16,0.3)' }}>
                             Join / Login
                         </Link>
                     </motion.div>
@@ -1300,33 +1636,37 @@ export default function SubmitArchive() {
                                 )}
                                 <Field label="Planet / Research Domain" required>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                        {PLANETS.map((p, i) => {
+                                        {planetOptions.map((p, i) => {
                                             const active = form.planet === p.id
                                             return (
                                                 <motion.button key={p.id} type="button"
                                                     initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: i * 0.04 }}
-                                                    whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.97 }}
+                                                    transition={{ delay: i * 0.04, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                                                    whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
                                                     onClick={() => setPlanet(p.id)}
-                                                    className="relative text-left rounded-2xl p-3 border transition-all overflow-hidden"
+                                                    className="relative text-left rounded-xl p-3 border transition-colors duration-200 overflow-hidden"
                                                     style={{
-                                                        borderColor: active ? `${p.color}88` : isDark ? 'rgba(79,195,247,0.12)' : 'rgba(15,23,42,0.1)',
-                                                        background:   active ? isDark ? `linear-gradient(135deg, rgba(5,12,28,0.9), ${p.color}20)` : `linear-gradient(135deg, rgba(255,255,255,0.95), ${p.color}14)` : isDark ? 'rgba(2,6,23,0.55)' : 'rgba(255,255,255,0.8)',
-                                                        boxShadow:    active ? `0 0 28px ${p.color}28, inset 0 1px 0 rgba(255,255,255,0.08)` : 'none',
+                                                        borderColor: active ? `${p.color}55` : isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.08)',
+                                                        background:   active ? `${p.color}10` : isDark ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.8)',
+                                                        boxShadow:    active ? `inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 16px ${p.color}14` : 'none',
                                                     }}
                                                 >
-                                                    {active && <div className="pointer-events-none absolute inset-0 rounded-2xl" style={{ background: `radial-gradient(ellipse at top right, ${p.color}14, transparent 65%)` }} aria-hidden />}
                                                     <div className="flex items-center gap-2.5 relative">
                                                         <motion.div
-                                                            animate={active ? { scale: [1, 1.15, 1], boxShadow: [`0 0 10px ${p.color}88`, `0 0 20px ${p.color}`, `0 0 10px ${p.color}88`] } : {}}
-                                                            transition={{ duration: 1.8, repeat: active ? Infinity : 0, ease: 'easeInOut' }}
-                                                            className="h-7 w-7 rounded-full shrink-0"
-                                                            style={{ background: `radial-gradient(circle at 35% 32%, ${p.color}ff, ${p.color}77)`, boxShadow: active ? `0 0 14px ${p.color}aa` : `0 0 7px ${p.color}55` }}
+                                                            animate={{ scale: active ? 1.08 : 1 }}
+                                                            transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+                                                            className="h-6 w-6 rounded-full shrink-0"
+                                                            style={{ background: `radial-gradient(circle at 35% 32%, ${p.color}ff, ${p.color}88)`, boxShadow: active ? `0 0 0 3px ${p.color}22, 0 2px 8px ${p.color}44` : `0 1px 5px ${p.color}33` }}
                                                         />
                                                         <div className="min-w-0">
-                                                            <div className="text-xs font-black leading-tight" style={{ color: active ? p.color : isDark ? '#f8fafc' : '#0f172a' }}>{p.label}</div>
-                                                            <div className="text-[9px] mt-0.5 truncate" style={{ color: isDark ? '#475569' : '#64748b' }}>{p.domain}</div>
+                                                            <div className="text-xs font-semibold leading-tight" style={{ color: active ? p.color : isDark ? '#f8fafc' : '#0f172a' }}>{p.label}</div>
+                                                            <div className="text-[9px] mt-0.5 truncate" style={{ color: isDark ? 'rgba(255,255,255,0.4)' : '#475569' }}>{p.domain}</div>
                                                         </div>
+                                                        {active && (
+                                                            <motion.span initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }} className="ml-auto shrink-0" aria-hidden>
+                                                                <CheckCircle size={14} style={{ color: p.color }} />
+                                                            </motion.span>
+                                                        )}
                                                     </div>
                                                 </motion.button>
                                             )
@@ -1338,35 +1678,54 @@ export default function SubmitArchive() {
                                 {showTopicSelectors && selectedTaxonomy && (
                                     <Field label="L2 Topic" required>
                                         <button type="button" onClick={() => setShowL2Topics((v) => !v)}
-                                            className="flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-all"
-                                            style={{ borderColor: selectedDomain ? `${selectedDomain.color}55` : isDark ? 'rgba(79,195,247,0.16)' : 'rgba(15,23,42,0.1)', background: isDark ? 'rgba(15,23,42,0.48)' : 'rgba(255,255,255,0.78)', color: isDark ? '#f8fafc' : '#0f172a' }}
+                                            className="flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors duration-200"
+                                            style={{ borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.09)', background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.62)', color: isDark ? '#f8fafc' : '#0f172a' }}
                                             aria-expanded={showL2Topics}
                                         >
-                                            <span>
-                                                <span className="block text-[10px] font-black uppercase tracking-[0.16em]" style={{ color: selectedDomain?.color || selectedPlanet?.color || '#4fc3f7' }}>
-                                                    {showL2Topics ? 'Hide L2 topics' : 'Show L2 topics'}
+                                            <span className="flex items-center gap-3 min-w-0">
+                                                {selectedDomain && <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: selectedDomain.color }} aria-hidden />}
+                                                <span className="min-w-0">
+                                                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: isDark ? 'rgba(255,255,255,0.42)' : '#475569' }}>
+                                                        {showL2Topics ? 'Hide L2 topics' : 'Show L2 topics'}
+                                                    </span>
+                                                    <span className="block text-sm font-semibold mt-0.5 truncate">{selectedDomain?.label || 'Choose a topic group'}</span>
                                                 </span>
-                                                <span className="block text-sm font-bold mt-0.5">{selectedDomain?.label || 'Choose a topic group'}</span>
                                             </span>
-                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${showL2Topics ? 'rotate-180' : ''}`} />
+                                            <motion.span animate={{ rotate: showL2Topics ? 180 : 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="shrink-0 flex" aria-hidden>
+                                                <ChevronDown size={16} style={{ color: isDark ? 'rgba(255,255,255,0.4)' : '#475569' }} />
+                                            </motion.span>
                                         </button>
+                                        <AnimatePresence initial={false}>
                                         {showL2Topics && (
-                                            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                                                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                                 {selectedTaxonomy.domains.map((domain) => {
                                                     const active = form.domainId === domain.id
                                                     return (
                                                         <button key={domain.id} type="button"
                                                             onClick={() => { setDomain(domain.id); setShowL2Topics(false); setShowL3Topics(true); }}
-                                                            className="text-left rounded-2xl px-4 py-3 border transition-all"
-                                                            style={{ borderColor: active ? `${domain.color}88` : isDark ? 'rgba(79,195,247,0.14)' : 'rgba(15,23,42,0.1)', background: active ? `${domain.color}18` : isDark ? 'rgba(15,23,42,0.5)' : 'rgba(248,250,252,0.92)', boxShadow: active ? `0 0 24px ${domain.color}22` : 'none' }}
+                                                            className="flex items-center gap-3 text-left rounded-xl px-3.5 py-2.5 border transition-colors duration-200"
+                                                            style={{ borderColor: active ? `${domain.color}50` : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.07)', background: active ? `${domain.color}10` : isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.7)' }}
                                                         >
-                                                            <span className="block text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: domain.color }}>L2 topic</span>
-                                                            <span className="block text-sm font-extrabold mt-1" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>{domain.label}</span>
+                                                            <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full border transition-colors duration-200"
+                                                                style={{ borderColor: active ? domain.color : isDark ? 'rgba(255,255,255,0.22)' : 'rgba(15,23,42,0.25)' }} aria-hidden>
+                                                                {active && <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 24 }} className="h-2 w-2 rounded-full" style={{ background: domain.color }} />}
+                                                            </span>
+                                                            <span className="min-w-0">
+                                                                <span className="block text-[9px] font-semibold uppercase tracking-[0.14em]" style={{ color: active ? domain.color : isDark ? 'rgba(255,255,255,0.38)' : '#475569' }}>L2 topic</span>
+                                                                <span className="block text-[13px] font-semibold mt-0.5 truncate" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>{domain.label}</span>
+                                                            </span>
                                                         </button>
                                                     )
                                                 })}
+                                                </div>
                                             </motion.div>
                                         )}
+                                        </AnimatePresence>
                                         {errors.domainId && <p className="text-xs" style={{ color: errorColor }}>{errors.domainId}</p>}
                                     </Field>
                                 )}
@@ -1374,37 +1733,56 @@ export default function SubmitArchive() {
                                 {showTopicSelectors && selectedTaxonomy && form.domainId && (
                                     <Field label="L3 Subtopic" required>
                                         <button type="button" onClick={() => setShowL3Topics((v) => !v)}
-                                            className="flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-all"
-                                            style={{ borderColor: form.topicKey ? `${selectedDomain?.color || selectedPlanet?.color || '#4fc3f7'}55` : isDark ? 'rgba(79,195,247,0.16)' : 'rgba(15,23,42,0.1)', background: isDark ? 'rgba(15,23,42,0.48)' : 'rgba(255,255,255,0.78)', color: isDark ? '#f8fafc' : '#0f172a' }}
+                                            className="flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors duration-200"
+                                            style={{ borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.09)', background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.62)', color: isDark ? '#f8fafc' : '#0f172a' }}
                                             aria-expanded={showL3Topics}
                                         >
-                                            <span>
-                                                <span className="block text-[10px] font-black uppercase tracking-[0.16em]" style={{ color: selectedDomain?.color || selectedPlanet?.color || '#4fc3f7' }}>
-                                                    {showL3Topics ? 'Hide L3 subtopics' : 'Show L3 subtopics'}
+                                            <span className="flex items-center gap-3 min-w-0">
+                                                {selectedL3Topic && <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: selectedDomain?.color || selectedPlanet?.color || '#f5a623' }} aria-hidden />}
+                                                <span className="min-w-0">
+                                                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: isDark ? 'rgba(255,255,255,0.42)' : '#475569' }}>
+                                                        {showL3Topics ? 'Hide L3 subtopics' : 'Show L3 subtopics'}
+                                                    </span>
+                                                    <span className="block text-sm font-semibold mt-0.5 truncate">{selectedL3Topic?.title || 'Choose a subtopic'}</span>
                                                 </span>
-                                                <span className="block text-sm font-bold mt-0.5">{selectedL3Topic?.title || 'Choose a subtopic'}</span>
                                             </span>
-                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${showL3Topics ? 'rotate-180' : ''}`} />
+                                            <motion.span animate={{ rotate: showL3Topics ? 180 : 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="shrink-0 flex" aria-hidden>
+                                                <ChevronDown size={16} style={{ color: isDark ? 'rgba(255,255,255,0.4)' : '#475569' }} />
+                                            </motion.span>
                                         </button>
+                                        <AnimatePresence initial={false}>
                                         {showL3Topics && (
-                                            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                                                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                                 {availableL3Topics.map((topic) => {
                                                     const active = form.topicKey === topic.key
-                                                    const color  = selectedDomain?.color || selectedPlanet?.color || '#4fc3f7'
+                                                    const color  = selectedDomain?.color || selectedPlanet?.color || '#f5a623'
                                                     return (
                                                         <button key={topic.key} type="button"
                                                             onClick={() => { setL3Topic(topic); setShowL3Topics(false); }}
-                                                            className="text-left rounded-2xl px-4 py-3 border transition-all"
-                                                            style={{ borderColor: active ? `${color}88` : isDark ? 'rgba(79,195,247,0.14)' : 'rgba(15,23,42,0.1)', background: active ? `${color}18` : isDark ? 'rgba(2,6,23,0.55)' : 'rgba(255,255,255,0.92)' }}
+                                                            className="flex items-start gap-3 text-left rounded-xl px-3.5 py-2.5 border transition-colors duration-200"
+                                                            style={{ borderColor: active ? `${color}50` : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.07)', background: active ? `${color}10` : isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.7)' }}
                                                         >
-                                                            <span className="block text-[10px] font-black uppercase tracking-[0.18em]" style={{ color }}>L3 subtopic</span>
-                                                            <span className="block text-sm font-bold mt-1" style={{ color: isDark ? '#cbd5e1' : '#334155' }}>{topic.title}</span>
-                                                            <span className="block text-[10px] font-semibold mt-2 opacity-70" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>{topic.subfieldLabel}</span>
+                                                            <span className="mt-1 grid h-4 w-4 shrink-0 place-items-center rounded-full border transition-colors duration-200"
+                                                                style={{ borderColor: active ? color : isDark ? 'rgba(255,255,255,0.22)' : 'rgba(15,23,42,0.25)' }} aria-hidden>
+                                                                {active && <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 24 }} className="h-2 w-2 rounded-full" style={{ background: color }} />}
+                                                            </span>
+                                                            <span className="min-w-0">
+                                                                <span className="block text-[9px] font-semibold uppercase tracking-[0.14em]" style={{ color: active ? color : isDark ? 'rgba(255,255,255,0.38)' : '#475569' }}>L3 subtopic</span>
+                                                                <span className="block text-[13px] font-semibold mt-0.5" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>{topic.title}</span>
+                                                                <span className="block text-[10px] mt-1" style={{ color: isDark ? 'rgba(255,255,255,0.38)' : '#475569' }}>{topic.subfieldLabel}</span>
+                                                            </span>
                                                         </button>
                                                     )
                                                 })}
+                                                </div>
                                             </motion.div>
                                         )}
+                                        </AnimatePresence>
                                         {errors.subfieldId && <p className="text-xs" style={{ color: errorColor }}>{errors.subfieldId}</p>}
                                     </Field>
                                 )}
@@ -1420,7 +1798,7 @@ export default function SubmitArchive() {
                                     <Field label={`Tags (optional, up to ${MAX_TAGS_PER_SUBMISSION})`}>
                                         <input type="text" placeholder="e.g. fusion, materials-science, citation-needed"
                                             value={form.tags} onChange={e => set('tags', e.target.value)} style={inputStyle} />
-                                        <p className="text-xs mt-1" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                                        <p className="text-xs mt-1" style={{ color: isDark ? '#e2e8f0' : '#475569' }}>
                                             Comma or hashtag separated. Normalized for search — reuse tags to cross-link subjects across hubs.
                                         </p>
                                         {errors.tags && <p className="text-xs" style={{ color: errorColor }}>{errors.tags}</p>}
@@ -1441,7 +1819,7 @@ export default function SubmitArchive() {
                             }}
                         >
                             <div className="sa-panel__header">
-                                <div className="sa-panel__num" style={{ color: '#22d3ee', borderColor: 'rgba(34,211,238,0.35)', background: 'rgba(34,211,238,0.1)' }}>02</div>
+                                <div className="sa-panel__num" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.55)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.03)' }}>02</div>
                                 <div>
                                     <div className="sa-panel__label">Coordinate Placement</div>
                                     <div className="sa-panel__desc">Adjacent slot in the archive grid</div>
@@ -1453,13 +1831,13 @@ export default function SubmitArchive() {
                             <div className="flex flex-col gap-5">
                                 {form.coordX && form.coordY && (
                                     <div className="sa-coord-status" style={{
-                                        borderColor: selectedCoordinateIsValid ? 'rgba(52,211,153,0.38)' : 'rgba(248,113,113,0.38)',
-                                        background:  selectedCoordinateIsValid ? 'rgba(52,211,153,0.07)' : 'rgba(248,113,113,0.07)',
-                                        color:       selectedCoordinateIsValid ? '#34d399' : '#f87171',
+                                        borderColor: (isFixedCoordMode || selectedCoordinateIsValid) ? 'rgba(52,211,153,0.38)' : 'rgba(248,113,113,0.38)',
+                                        background:  (isFixedCoordMode || selectedCoordinateIsValid) ? 'rgba(52,211,153,0.07)' : 'rgba(248,113,113,0.07)',
+                                        color:       (isFixedCoordMode || selectedCoordinateIsValid) ? '#34d399' : '#f87171',
                                     }}>
-                                        <div className="sa-coord-status__dot" style={{ background: selectedCoordinateIsValid ? '#34d399' : '#f87171', boxShadow: `0 0 7px ${selectedCoordinateIsValid ? '#34d399' : '#f87171'}` }} />
+                                        <div className="sa-coord-status__dot" style={{ background: (isFixedCoordMode || selectedCoordinateIsValid) ? '#34d399' : '#f87171', boxShadow: `0 0 7px ${(isFixedCoordMode || selectedCoordinateIsValid) ? '#34d399' : '#f87171'}` }} />
                                         <span className="sa-coord-status__label">
-                                            {selectedCoordinateIsValid ? 'Coordinate ready' : 'Adjacent slot required'}
+                                            {isFixedCoordMode ? 'Fixed coordinate' : selectedCoordinateIsValid ? 'Coordinate ready' : 'Adjacent slot required'}
                                         </span>
                                         <span className="sa-coord-status__value">
                                             X{formatDisplayCoord(form.coordX)} · Y{formatDisplayCoord(form.coordY)}
@@ -1467,6 +1845,14 @@ export default function SubmitArchive() {
                                     </div>
                                 )}
 
+                                {isEditMode ? (
+                                    <Field label="Grid slot" required>
+                                        <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'default', color: isDark ? '#cbd5e1' : '#475569' }}>
+                                            <Lock size={13} className="shrink-0" aria-hidden />
+                                            X{formatDisplayCoord(form.coordX)} · Y{formatDisplayCoord(form.coordY)} — same slot as the original submission
+                                        </div>
+                                    </Field>
+                                ) : (
                                 <Field label="Available grid slot" required>
                                     <div className="relative">
                                         <select
@@ -1486,13 +1872,14 @@ export default function SubmitArchive() {
                                                 </option>
                                             )}
                                         </select>
-                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: isDark ? '#64748b' : '#64748b' }} />
+                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: isDark ? '#e2e8f0' : '#475569' }} />
                                     </div>
-                                    <p className="text-xs mt-1" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                                    <p className="text-xs mt-1" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
                                         Only coordinates adjacent to filled archive cells are listed for L4–L8 submissions.
                                     </p>
                                     {(errors.coordX || errors.coordY) && <p className="text-xs" style={{ color: errorColor }}>{errors.coordX || errors.coordY}</p>}
                                 </Field>
+                                )}
 
                                 {!showSummaryField && previewLayer === 6 && l5ExistsAtTarget && (
                                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
@@ -1513,7 +1900,7 @@ export default function SubmitArchive() {
                             transition={{ duration: 0.5, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
                         >
                             <div className="sa-panel__header">
-                                <div className="sa-panel__num" style={{ color: '#a78bfa', borderColor: 'rgba(167,139,250,0.35)', background: 'rgba(167,139,250,0.1)' }}>03</div>
+                                <div className="sa-panel__num" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.55)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.03)' }}>03</div>
                                 <div>
                                     <div className="sa-panel__label">Knowledge Content</div>
                                     <div className="sa-panel__desc">Summary, technical detail, and target layer</div>
@@ -1552,58 +1939,62 @@ export default function SubmitArchive() {
 
                                 {!isSegmentReport && (
                                     <Field label="Target layer" required={false}>
-                                        <div className="grid grid-cols-5 gap-1.5">
+                                        <div className="flex rounded-xl border p-1 gap-0.5"
+                                            style={{ borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.09)', background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(15,23,42,0.03)' }}>
                                             {[4, 5, 6, 7, 8].map((lyr) => {
                                                 const isActive = previewLayer === lyr
                                                 const isGated  = ((lyr === 7 || lyr === 8) && l56GateBlocksNarrative) || (lyr === 8 && l7GateBlocksL8)
                                                 return (
                                                     <button key={lyr} type="button"
                                                         onClick={() => handlePreviewLayerChange(lyr)}
-                                                        className="relative rounded-xl py-2.5 text-center transition-all"
-                                                        style={{
-                                                            background:  isActive ? `${accent}20` : isDark ? 'rgba(15,23,42,0.5)' : 'rgba(241,245,249,0.95)',
-                                                            border:      `1.5px solid ${isActive ? `${accent}66` : isDark ? 'rgba(79,195,247,0.12)' : 'rgba(15,23,42,0.1)'}`,
-                                                            boxShadow:   isActive ? `0 0 14px ${accent}28` : 'none',
-                                                        }}
+                                                        className="relative flex-1 rounded-lg py-2 text-center transition-colors duration-200"
                                                     >
-                                                        {isGated && <span className="absolute top-1 right-1.5" aria-hidden><Lock size={7} style={{ color: isDark ? '#64748b' : '#64748b' }} /></span>}
-                                                        <span className="block text-[13px] font-black" style={{ color: isActive ? accent : isDark ? '#94a3b8' : '#64748b' }}>L{lyr}</span>
+                                                        {isActive && (
+                                                            <motion.span
+                                                                layoutId="sa-form-layer-pill"
+                                                                transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                                                                className="absolute inset-0 rounded-lg"
+                                                                style={{ background: `${accent}1c`, border: `1px solid ${accent}45`, boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06)` }}
+                                                                aria-hidden
+                                                            />
+                                                        )}
+                                                        {isGated && <span className="absolute top-1 right-1.5 z-10" aria-hidden><Lock size={7} style={{ color: isDark ? 'rgba(255,255,255,0.35)' : '#64748b' }} /></span>}
+                                                        <span className="relative z-10 block text-[13px] font-semibold" style={{ color: isActive ? accent : isDark ? 'rgba(255,255,255,0.5)' : '#475569' }}>L{lyr}</span>
                                                     </button>
                                                 )
                                             })}
                                         </div>
-                                        <p className="text-xs mt-1.5" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                                        <p className="text-xs mt-1.5" style={{ color: isDark ? '#e2e8f0' : '#475569' }}>
                                             Drives the live preview and <code className="text-[10px]">archiveLayer</code> reviewer hint. L7/L8 require L5+L6 content at the target coordinate.
                                         </p>
                                         <motion.button type="button" onClick={() => setGuidelinesOpen(true)}
-                                            whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.985 }}
-                                            className="group relative mt-3 flex w-full items-center justify-between overflow-hidden rounded-2xl px-4 py-3 text-left transition-all"
-                                            style={{ color: isDark ? '#f8fafc' : '#0f172a', background: isDark ? `linear-gradient(135deg, rgba(15,23,42,0.9), ${accent}1f 52%, rgba(2,6,23,0.92))` : `linear-gradient(135deg, rgba(255,255,255,0.98), ${accent}16 58%, rgba(248,250,252,0.98))`, border: `1px solid ${accent}44`, boxShadow: `0 18px 44px ${accent}16, inset 0 1px 0 rgba(255,255,255,0.16)` }}
+                                            whileHover={{ y: -1 }} whileTap={{ scale: 0.99 }}
+                                            transition={{ type: 'spring', stiffness: 400, damping: 26 }}
+                                            className="group relative mt-3 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-colors duration-200"
+                                            style={{ color: isDark ? '#f8fafc' : '#0f172a', background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.62)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.09)'}` }}
                                             aria-label={`Open Layer ${previewLayer} details`}
                                         >
-                                            <span className="absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl transition-transform duration-500 group-hover:scale-125" style={{ background: `${accent}30` }} aria-hidden />
-                                            <span className="absolute inset-x-6 top-0 h-px opacity-80" style={{ background: `linear-gradient(90deg, transparent, ${accent}aa, transparent)` }} aria-hidden />
                                             <span className="relative flex min-w-0 items-center gap-3">
-                                                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border shadow-inner transition-transform duration-300 group-hover:rotate-3 group-hover:scale-105" style={{ color: accent, borderColor: `${accent}55`, background: `${accent}18` }}>
-                                                    <Info size={18} />
+                                                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border transition-transform duration-200 group-hover:scale-105" style={{ color: accent, borderColor: `${accent}35`, background: `${accent}10` }}>
+                                                    <Info size={16} />
                                                 </span>
                                                 <span className="min-w-0">
-                                                    <span className="block text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: accent }}>L{previewLayer} details</span>
-                                                    <span className="mt-0.5 block text-sm font-black">Rules, format &amp; writing tips</span>
-                                                    <span className="mt-1 block text-[10px] font-semibold" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Click to open the full layer-specific guidance.</span>
+                                                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: accent }}>L{previewLayer} details</span>
+                                                    <span className="mt-0.5 block text-sm font-semibold">Rules, format &amp; writing tips</span>
+                                                    <span className="mt-0.5 block text-[10px]" style={{ color: isDark ? 'rgba(255,255,255,0.42)' : '#475569' }}>Click to open the full layer-specific guidance.</span>
                                                 </span>
                                             </span>
-                                            <span className="relative shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] transition-all duration-300 group-hover:translate-x-0.5" style={{ color: accent, background: isDark ? 'rgba(2,6,23,0.55)' : 'rgba(255,255,255,0.78)', border: `1px solid ${accent}35` }}>
+                                            <span className="relative shrink-0 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] transition-transform duration-200 group-hover:translate-x-0.5" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.55)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'}` }}>
                                                 Open details
                                             </span>
                                         </motion.button>
                                         {(previewLayer === 7 || previewLayer === 8) && l56GateBlocksNarrative && (
-                                            <p className="text-xs mt-2 rounded-lg px-2 py-1.5" style={{ color: isDark ? '#fde68a' : '#854d0e', background: isDark ? 'rgba(120,53,15,0.35)' : 'rgba(254,243,199,0.95)', border: `1px solid ${isDark ? 'rgba(251,191,36,0.35)' : 'rgba(180,83,9,0.25)'}` }}>
+                                            <p className="text-xs mt-2 rounded-lg px-2 py-1.5" style={{ color: isDark ? '#fde68a' : '#854d0e', background: isDark ? 'rgba(120,53,15,0.28)' : 'rgba(254,243,199,0.72)', border: `1px solid ${isDark ? 'rgba(251,191,36,0.35)' : 'rgba(180,83,9,0.25)'}` }}>
                                                 {L56_NARRATIVE_GATE_MESSAGE}
                                             </p>
                                         )}
                                         {previewLayer === 8 && !l56GateBlocksNarrative && l7GateBlocksL8 && (
-                                            <p className="text-xs mt-2 rounded-lg px-2 py-1.5" style={{ color: isDark ? '#fde68a' : '#854d0e', background: isDark ? 'rgba(120,53,15,0.35)' : 'rgba(254,243,199,0.95)', border: `1px solid ${isDark ? 'rgba(251,191,36,0.35)' : 'rgba(180,83,9,0.25)'}` }}>
+                                            <p className="text-xs mt-2 rounded-lg px-2 py-1.5" style={{ color: isDark ? '#fde68a' : '#854d0e', background: isDark ? 'rgba(120,53,15,0.28)' : 'rgba(254,243,199,0.72)', border: `1px solid ${isDark ? 'rgba(251,191,36,0.35)' : 'rgba(180,83,9,0.25)'}` }}>
                                                 Layer 8 is locked until this coordinate has <strong>{L7_NARRATIVE_SEGMENT_COUNT} narrative sentences</strong> counted toward Layer&nbsp;7.
                                             </p>
                                         )}
@@ -1615,13 +2006,13 @@ export default function SubmitArchive() {
                                     <Field label={`Difficulty Level: ${form.difficulty}/5`}>
                                         <input type="range" min={1} max={5} step={1}
                                             value={form.difficulty} onChange={e => set('difficulty', parseInt(e.target.value, 10))}
-                                            className="w-full" style={{ accentColor: isDark ? '#4fc3f7' : '#0284c7' }} />
-                                        <div className="flex justify-between text-xs" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                                            className="w-full" style={{ accentColor: isDark ? '#f5a623' : '#d97706' }} />
+                                        <div className="flex justify-between text-xs" style={{ color: isDark ? '#e2e8f0' : '#475569' }}>
                                             <span>1 — Beginner</span><span>3 — Intermediate</span><span>5 — Expert</span>
                                         </div>
                                         <div className="flex gap-0.5 mt-1">
                                             {[1, 2, 3, 4, 5].map(i => (
-                                                <span key={i} style={{ fontSize: 18, color: i <= form.difficulty ? '#f5a623' : 'rgba(245,166,35,0.15)', transition: 'color 0.1s' }}>★</span>
+                                                <Star key={i} size={18} fill={i <= form.difficulty ? 'currentColor' : 'none'} style={{ color: i <= form.difficulty ? '#f5a623' : 'rgba(245,166,35,0.25)' }} aria-hidden />
                                             ))}
                                         </div>
                                     </Field>
@@ -1638,7 +2029,7 @@ export default function SubmitArchive() {
                             transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
                         >
                             <div className="sa-panel__header">
-                                <div className="sa-panel__num" style={{ color: '#34d399', borderColor: 'rgba(52,211,153,0.35)', background: 'rgba(52,211,153,0.1)' }}>04</div>
+                                <div className="sa-panel__num" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.55)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.03)' }}>04</div>
                                 <div>
                                     <div className="sa-panel__label">Evidence &amp; Citations</div>
                                     <div className="sa-panel__desc">Source-backed knowledge only</div>
@@ -1652,7 +2043,7 @@ export default function SubmitArchive() {
                                             value={form.alternatePerspectives}
                                             onChange={e => set('alternatePerspectives', e.target.value)}
                                             style={{ ...inputStyle, resize: 'vertical' }} />
-                                        <p className="text-xs mt-1" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                                        <p className="text-xs mt-1" style={{ color: isDark ? '#e2e8f0' : '#475569' }}>
                                             Appears in L5/L6 as "same subject, other scientific view" links. Use planet ids such as earth, mars, venus, jupiter, saturn, neptune.
                                         </p>
                                         {errors.alternatePerspectives && <p className="text-xs" style={{ color: errorColor }}>{errors.alternatePerspectives}</p>}
@@ -1666,7 +2057,7 @@ export default function SubmitArchive() {
                                             value={form.sourceLinks}
                                             onChange={e => set('sourceLinks', e.target.value)}
                                             style={{ ...inputStyle, resize: 'vertical' }} />
-                                        <p className="text-xs mt-1" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                                        <p className="text-xs mt-1" style={{ color: isDark ? '#e2e8f0' : '#475569' }}>
                                             These feed L6 downloads, L7 cited-fact previews, and L8 cited facts/source slots. Up to {MAX_SOURCE_LINKS} links.
                                         </p>
                                         {errors.sourceLinks && <p className="text-xs" style={{ color: errorColor }}>{errors.sourceLinks}</p>}
@@ -1681,13 +2072,13 @@ export default function SubmitArchive() {
                                                 {KIND_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                                             </select>
                                             <label className="text-xs font-medium cursor-pointer px-4 py-2.5 rounded-xl border text-center"
-                                                style={{ borderColor: isDark ? 'rgba(79,195,247,0.35)' : 'rgba(15,23,42,0.2)', color: isDark ? '#94a3b8' : '#475569' }}>
+                                                style={{ borderColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(15,23,42,0.2)', color: isDark ? '#cbd5e1' : '#475569' }}>
                                                 <input type="file" multiple accept="image/*,.svg,image/svg+xml,application/pdf" className="hidden"
                                                     onChange={(e) => { appendFiles(e.target.files, attachKind); e.target.value = '' }} />
                                                 Choose files…
                                             </label>
                                         </div>
-                                        <p className="text-xs mt-1" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                                        <p className="text-xs mt-1" style={{ color: isDark ? '#e2e8f0' : '#475569' }}>
                                             Up to {MAX_ATTACHMENTS} files. Surfaces from L5 through L8 as the same entry deepens.
                                         </p>
                                         <div className="flex flex-col sm:flex-row gap-2 mt-3 items-stretch sm:items-center">
@@ -1695,7 +2086,7 @@ export default function SubmitArchive() {
                                                 value={graphUrlDraft} onChange={(e) => setGraphUrlDraft(e.target.value)} style={inputStyle} />
                                             <button type="button" onClick={addRemoteGraphUrl}
                                                 className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold shrink-0"
-                                                style={{ background: isDark ? 'rgba(79,195,247,0.15)' : 'rgba(2,132,199,0.1)', color: isDark ? '#4fc3f7' : '#0284c7', border: `1px solid ${isDark ? 'rgba(79,195,247,0.3)' : 'rgba(2,132,199,0.25)'}` }}>
+                                                style={{ background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.62)', color: isDark ? '#f5a623' : '#d97706', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.12)'}` }}>
                                                 <Link2 size={16} /> Add URL
                                             </button>
                                         </div>
@@ -1704,7 +2095,7 @@ export default function SubmitArchive() {
                                             <ul className="mt-3 space-y-2">
                                                 {attachments.map((a) => (
                                                     <li key={a.id} className="flex items-center justify-between gap-2 text-xs px-3 py-2 rounded-lg"
-                                                        style={{ background: isDark ? 'rgba(15,23,42,0.6)' : 'rgba(241,245,249,0.95)', border: `1px solid ${isDark ? 'rgba(79,195,247,0.12)' : 'rgba(15,23,42,0.08)'}` }}>
+                                                        style={{ background: isDark ? 'rgba(6, 8, 16, 0.48)' : 'rgba(255, 255, 255, 0.55)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)'}` }}>
                                                         <span className="truncate" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
                                                             <span className="font-bold uppercase mr-2 opacity-70">{a.kind}</span>{a.label}
                                                         </span>
@@ -1723,7 +2114,7 @@ export default function SubmitArchive() {
                                     <div className="flex items-start gap-2 p-3 rounded-xl"
                                         style={{ background: isDark ? 'rgba(245,166,35,0.06)' : 'rgba(245,166,35,0.05)', border: `1px solid ${isDark ? 'rgba(245,166,35,0.18)' : 'rgba(245,166,35,0.22)'}` }}>
                                         <AlertCircle size={14} style={{ color: '#f5a623', flexShrink: 0, marginTop: 1 }} aria-hidden />
-                                        <p className="text-xs leading-relaxed" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                                        <p className="text-xs leading-relaxed" style={{ color: isDark ? '#e2e8f0' : '#475569' }}>
                                             All entries are reviewed for accuracy and relevance before being added to the archive. Entries with citations and real-world examples are prioritised. Coordinates are checked against the existing grid to avoid collisions.
                                         </p>
                                     </div>
@@ -1750,7 +2141,7 @@ export default function SubmitArchive() {
                                         <div className="sa-readiness__item-left">
                                             <div className={`sa-readiness__dot${item.done ? ' sa-readiness__dot--done' : ''}`}
                                                 style={{ background: item.done ? '#34d399' : isDark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.12)' }} />
-                                            <span style={{ color: item.done ? isDark ? '#f1f5f9' : '#1e293b' : isDark ? '#64748b' : '#64748b' }}>
+                                            <span style={{ color: item.done ? isDark ? '#f1f5f9' : '#1e293b' : isDark ? '#e2e8f0' : '#475569' }}>
                                                 {item.label}
                                             </span>
                                         </div>
@@ -1769,22 +2160,28 @@ export default function SubmitArchive() {
                                     background: isFormReady ? 'linear-gradient(90deg, #34d399, #10b981)' : 'linear-gradient(90deg, #f5a623, #fb923c)',
                                 }} />
                             </div>
-                            <p className="sa-readiness__status" style={{ color: isFormReady ? '#34d399' : isDark ? '#64748b' : '#64748b' }}>
+                            <p className="sa-readiness__status" style={{ color: isFormReady ? '#34d399' : isDark ? '#e2e8f0' : '#475569' }}>
                                 {isFormReady ? 'Ready for community review' : `Complete ${requiredTotal - requiredDone} more required field${requiredTotal - requiredDone !== 1 ? 's' : ''} to submit`}
                             </p>
                         </motion.div>
+
+                        {canDraft && (
+                            <p className="text-center text-[11px] font-semibold -mt-1" style={{ color: isDark ? '#e2e8f0' : '#475569' }}>
+                                {draftSaveState === 'saving' ? 'Saving draft…' : draftSaveState === 'saved' ? 'Draft saved' : draftIdRef.current ? 'Draft in progress — autosaves every 30s' : 'Autosaves as a draft every 30s once you add a hub and title'}
+                            </p>
+                        )}
 
                         {/* ── SUBMIT ── */}
                         <motion.button type="submit"
                             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                             className="sa-submit-btn"
                             style={{
-                                background:  isSegmentReport ? 'linear-gradient(135deg, #b91c1c, #f97316)' : isFormReady ? 'linear-gradient(135deg, #f5a623, #fb923c)' : `linear-gradient(135deg, #7c3aed, ${accent})`,
-                                boxShadow:   isSegmentReport ? '0 0 28px rgba(185,28,28,0.3)' : isFormReady ? '0 0 40px rgba(245,166,35,0.45), 0 0 80px rgba(245,166,35,0.12)' : `0 0 28px ${accent}44`,
+                                background:  isSegmentReport ? 'linear-gradient(135deg, #b91c1c, #f97316)' : isFormReady ? 'linear-gradient(135deg, #f5a623, #fb923c)' : isDark ? 'linear-gradient(135deg, #262a33, #16181d)' : 'linear-gradient(135deg, #3f4a5c, #23293a)',
+                                boxShadow:   isSegmentReport ? '0 8px 24px rgba(185,28,28,0.25)' : isFormReady ? '0 1px 0 rgba(255,255,255,0.2) inset, 0 10px 32px rgba(245,166,35,0.3)' : '0 1px 0 rgba(255,255,255,0.06) inset, 0 8px 24px rgba(0,0,0,0.3)',
                             }}
                         >
                             {isSegmentReport ? <Flag size={17} /> : <Upload size={17} />}
-                            {isSegmentReport ? 'Send segment report' : isFormReady ? 'Submit to the Archive' : 'Submit to the Archive'}
+                            {isSegmentReport ? 'Send segment report' : isEditMode ? 'Save changes' : 'Submit to the Archive'}
                             {isFormReady && !isSegmentReport && (
                                 <motion.span
                                     className="pointer-events-none absolute inset-0 rounded-2xl"
@@ -1813,10 +2210,11 @@ export default function SubmitArchive() {
                         form={form}
                         attachments={previewAttachmentsForGuide}
                         isDark={isDark}
-                        accent={selectedPlanet?.color || (isDark ? '#4fc3f7' : '#0284c7')}
+                        accent={selectedPlanet?.color || (isDark ? '#f5a623' : '#d97706')}
                         highlightSegmentSlot={highlightSegmentSlot}
                     />
                 </div>
+            </div>
             </div>
         </div>
     )

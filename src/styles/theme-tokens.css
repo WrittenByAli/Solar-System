@@ -2,31 +2,39 @@
 
 :root,
 .dark {
+  /* Clean geometric sans — matches archive body / mission-control UI */
+  --sa-font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sa-font-display: var(--sa-font);
+  --sa-font-mono: var(--sa-font);
+  --sa-font-body: var(--sa-font);
+  --sa-heading-tracking: -0.02em;
+
   --sa-bg: #020408;
   --sa-bg-elevated: #040c18;
   --sa-bg-subtle: #071428;
-  --sa-bg-card: rgba(6, 10, 22, 0.72);
+  --sa-bg-card: rgba(6, 10, 22, 0.58);
   --sa-bg-card-solid: #0a1220;
   --sa-bg-input: rgba(2, 6, 18, 0.6);
 
-  --sa-border-subtle: rgba(255, 255, 255, 0.06);
-  --sa-border-default: rgba(255, 255, 255, 0.1);
-  --sa-border-strong: rgba(125, 211, 252, 0.18);
+  --sa-border-subtle: #000000;
+  --sa-border-default: #000000;
+  --sa-border-strong: #000000;
 
   --sa-text: #f1f5f9;
   --sa-text-secondary: #94a3b8;
   --sa-text-muted: #64748b;
   --sa-text-faint: #475569;
+  --sa-title-color: #f8fafc;
 
-  --sa-accent: #0ea5e9;
-  --sa-accent-hover: #38bdf8;
-  --sa-accent-subtle: rgba(14, 165, 233, 0.12);
-  --sa-accent-border: rgba(14, 165, 233, 0.28);
+  --sa-accent: #f5a623;
+  --sa-accent-hover: #ffb84d;
+  --sa-accent-subtle: rgba(245, 166, 35, 0.12);
+  --sa-accent-border: rgba(245, 166, 35, 0.32);
   --sa-accent-gold: #f5a623;
 
-  --sa-btn-solid-bg: #ffffff;
-  --sa-btn-solid-text: #0f172a;
-  --sa-btn-solid-hover: #f1f5f9;
+  --sa-btn-solid-bg: #f5a623;
+  --sa-btn-solid-text: #160d02;
+  --sa-btn-solid-hover: #ffb84d;
 
   --sa-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
   --sa-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32);
@@ -38,8 +46,34 @@
   --sa-nav-text: #cbd5e1;
   --sa-nav-text-active: #38bdf8;
 
-  --sa-home-veil: radial-gradient(ellipse at 50% 45%, rgba(1, 1, 8, 0.06) 0%, rgba(0, 0, 0, 0.55) 100%);
-  --sa-home-vignette: radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.65) 100%);
+  /* Unified fog-page surfaces */
+  --sa-surface-border: rgba(255, 255, 255, 0.1);
+  --sa-section-divider: rgba(255, 255, 255, 0.08);
+  --sa-section-gap: clamp(1.5rem, 3vh, 2.5rem);
+
+  /* Dark Aurora Glassmorphism — transparent, tinted by aurora */
+  --sa-glass-fill: rgba(10, 16, 34, 0.30);
+  --sa-glass-fill-elevated: rgba(12, 20, 42, 0.40);
+  --sa-glass-aurora:
+    radial-gradient(ellipse 90% 60% at 10% -5%, rgba(56, 189, 248, 0.16), transparent 55%),
+    radial-gradient(ellipse 75% 55% at 92% 8%, rgba(167, 139, 250, 0.14), transparent 52%),
+    radial-gradient(ellipse 60% 45% at 50% 108%, rgba(245, 166, 35, 0.08), transparent 55%);
+  --sa-glass-blur: blur(22px) saturate(1.5);
+  --sa-glass-border: rgba(125, 211, 252, 0.16);
+  --sa-glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --sa-glass-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(56, 189, 248, 0.05),
+    0 0 48px rgba(139, 92, 246, 0.06);
+  --sa-glass-shadow-hover:
+    0 12px 40px rgba(0, 0, 0, 0.40),
+    0 0 0 1px rgba(56, 189, 248, 0.11),
+    0 0 56px rgba(139, 92, 246, 0.10);
+  --sa-glass-input-fill: rgba(8, 14, 30, 0.35);
+  --sa-glass-input-border: rgba(125, 211, 252, 0.16);
+
+  --sa-home-veil: radial-gradient(ellipse at 50% 45%, rgba(8, 14, 28, 0.08) 0%, rgba(0, 0, 0, 0.42) 100%);
+  --sa-home-vignette: radial-gradient(ellipse at center, transparent 42%, rgba(0, 0, 0, 0.55) 100%);
   --sa-home-title: #f8fafc;
   --sa-home-panel: linear-gradient(145deg, rgba(6, 10, 22, 0.72), rgba(4, 8, 18, 0.58));
 }
@@ -48,28 +82,29 @@
   --sa-bg: #f4f8fc;
   --sa-bg-elevated: #ffffff;
   --sa-bg-subtle: #eaf1f8;
-  --sa-bg-card: rgba(255, 255, 255, 0.78);
+  --sa-bg-card: rgba(255, 255, 255, 0.88);
   --sa-bg-card-solid: #ffffff;
   --sa-bg-input: #ffffff;
 
-  --sa-border-subtle: rgba(15, 23, 42, 0.08);
-  --sa-border-default: rgba(15, 23, 42, 0.13);
-  --sa-border-strong: rgba(15, 23, 42, 0.18);
+  --sa-border-subtle: #000000;
+  --sa-border-default: #000000;
+  --sa-border-strong: #000000;
 
   --sa-text: #08111f;
   --sa-text-secondary: #263244;
   --sa-text-muted: #475569;
   --sa-text-faint: #64748b;
+  --sa-title-color: #0f172a;
 
-  --sa-accent: #075985;
-  --sa-accent-hover: #0284c7;
-  --sa-accent-subtle: rgba(14, 165, 233, 0.1);
-  --sa-accent-border: rgba(14, 165, 233, 0.3);
+  --sa-accent: #b45309;
+  --sa-accent-hover: #d97706;
+  --sa-accent-subtle: rgba(180, 83, 9, 0.1);
+  --sa-accent-border: rgba(180, 83, 9, 0.3);
   --sa-accent-gold: #b45309;
 
-  --sa-btn-solid-bg: #111827;
+  --sa-btn-solid-bg: #b45309;
   --sa-btn-solid-text: #ffffff;
-  --sa-btn-solid-hover: #1f2937;
+  --sa-btn-solid-hover: #d97706;
 
   --sa-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
   --sa-shadow-md: 0 14px 34px rgba(15, 23, 42, 0.09);
@@ -80,6 +115,30 @@
   --sa-nav-glass-border: rgba(15, 23, 42, 0.08);
   --sa-nav-text: #4b5563;
   --sa-nav-text-active: #0369a1;
+
+  --sa-surface-border: rgba(15, 23, 42, 0.12);
+  --sa-section-divider: rgba(15, 23, 42, 0.1);
+  --sa-section-gap: clamp(1.5rem, 3vh, 2.5rem);
+
+  /* Premium Light Glassmorphism — transparent frosted, fog shows through */
+  --sa-glass-fill: rgba(255, 255, 255, 0.22);
+  --sa-glass-fill-elevated: rgba(255, 255, 255, 0.32);
+  --sa-glass-aurora:
+    radial-gradient(ellipse 90% 60% at 8% -5%, rgba(255, 255, 255, 0.30), transparent 55%),
+    radial-gradient(ellipse 75% 55% at 92% 10%, rgba(255, 246, 236, 0.20), transparent 52%);
+  --sa-glass-blur: blur(26px) saturate(1.6);
+  --sa-glass-border: rgba(255, 255, 255, 0.55);
+  --sa-glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  --sa-glass-shadow:
+    0 8px 32px rgba(15, 23, 42, 0.10),
+    0 2px 8px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --sa-glass-shadow-hover:
+    0 14px 40px rgba(15, 23, 42, 0.14),
+    0 4px 12px rgba(15, 23, 42, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --sa-glass-input-fill: rgba(255, 255, 255, 0.28);
+  --sa-glass-input-border: rgba(255, 255, 255, 0.6);
 
   --sa-home-veil: radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.08) 0%, rgba(232, 241, 250, 0.48) 100%);
   --sa-home-vignette: radial-gradient(ellipse at center, transparent 48%, rgba(215, 228, 241, 0.7) 100%);

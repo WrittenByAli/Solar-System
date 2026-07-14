@@ -13,7 +13,7 @@ export default function AdminPanel() {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
     const { username, role } = useAuth()
-    const muted = isDark ? '#64748b' : '#64748b'
+    const muted = isDark ? '#64748b' : '#475569'
 
     return (
         <div className="solar-page solar-page--center">

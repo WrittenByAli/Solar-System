@@ -29,7 +29,6 @@ function rgba(hex, a) {
 const ArchiveHubGlobe = memo(function ArchiveHubGlobe({
   hubId,
   planet,
-  isDark,
   accentColor,
   vpSize,
   zoom         = 1,
@@ -79,17 +78,17 @@ const ArchiveHubGlobe = memo(function ArchiveHubGlobe({
       mvY.set(Math.max(-maxY, Math.min(maxY, mvY.get() + dy)))
     }
     return () => { if (moverRef) moverRef.current = null }
-  }, [moverRef]) // registered once; reads from boundsRef for fresh bounds
+  }, [moverRef, mvX, mvY]) // mvX/mvY are stable MotionValues; reads boundsRef for fresh bounds
 
   /* reset to centre when hub changes */
-  useEffect(() => { mvX.set(0); mvY.set(0) }, [hubId])
+  useEffect(() => { mvX.set(0); mvY.set(0) }, [hubId, mvX, mvY])
 
   /* ORIGIN button → spring bounce back to centre */
   useEffect(() => {
     if (resetTrigger <= 0) return
     animate(mvX, 0, { type: 'spring', stiffness: 210, damping: 26, restDelta: 0.5 })
     animate(mvY, 0, { type: 'spring', stiffness: 210, damping: 26, restDelta: 0.5 })
-  }, [resetTrigger])
+  }, [resetTrigger, mvX, mvY])
 
   /* ── pointer handlers ── */
   const onPointerDown = useCallback((e) => {
@@ -102,7 +101,7 @@ const ArchiveHubGlobe = memo(function ArchiveHubGlobe({
       oy: mvY.get(),
     }
     e.currentTarget.setPointerCapture(e.pointerId)
-  }, [])
+  }, [mvX, mvY])
 
   const onPointerMove = useCallback((e) => {
     if (!dragRef.current) return
@@ -113,7 +112,7 @@ const ArchiveHubGlobe = memo(function ArchiveHubGlobe({
     const clamped = clampXY(raw.x, raw.y)
     mvX.set(clamped.x)
     mvY.set(clamped.y)
-  }, [clampXY])
+  }, [clampXY, mvX, mvY])
 
   const onPointerUp = useCallback(() => { dragRef.current = null }, [])
 

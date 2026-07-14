@@ -1,226 +1,127 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { motion, useScroll, useTransform } from 'framer-motion'
-import { Award, ChevronDown, ClipboardCheck, Medal, ShieldCheck, Sparkles, Trophy, Users } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import { RefreshCw } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
+import AvatarCircle from '../components/AvatarCircle.jsx'
 import { supabase } from '../utils/supabaseClient.js'
-import {
-    MIN_POINTS_REVIEWER_ACCESS,
-    POINTS_PER_REVIEW_COMPLETED,
-} from '../constants/reviewWorkflow.js'
-import FieldHonorTokens from '../components/FieldHonorTokens.jsx'
+import { buildObservatoryModel } from '../utils/leaderboardObservatory.js'
 import fallbackData from '../data/researchData.json'
 import '../styles/solar-leaderboard.css'
 
 const researchData = window.SOLAR_CONTENT_DATA || fallbackData
 
-const RANK_ICONS = {
-    1: <Trophy size={18} color="#c4a45a" />,
-    2: <Medal size={18} color="#94a3b8" />,
-    3: <Medal size={18} color="#b45309" />,
-}
-
-const PODIUM = ['🥇', '🥈', '🥉']
-
 const DEMO_PROFILES = [
-    {
-        username: 'aurora_reviewer',
-        points: 2840,
-        reviewsCompleted: 21,
-        contributionsByPlanet: { sun: 7, earth: 5, jupiter: 3 },
-        reviewsByPlanet: { sun: 9, earth: 5, mars: 4, jupiter: 3 },
-    },
-    {
-        username: 'orbit_cartographer',
-        points: 2360,
-        reviewsCompleted: 14,
-        contributionsByPlanet: { earth: 8, venus: 4, saturn: 3 },
-        reviewsByPlanet: { earth: 6, venus: 4, saturn: 4 },
-    },
-    {
-        username: 'solar_factcheck',
-        points: 1980,
-        reviewsCompleted: 18,
-        contributionsByPlanet: { jupiter: 5, mercury: 2 },
-        reviewsByPlanet: { jupiter: 10, mercury: 5, neptune: 3 },
-    },
-    {
-        username: 'bio_dome_archivist',
-        points: 1540,
-        reviewsCompleted: 9,
-        contributionsByPlanet: { earth: 6, venus: 3 },
-        reviewsByPlanet: { earth: 5, venus: 4 },
-    },
-    {
-        username: 'mars_systems',
-        points: 1210,
-        reviewsCompleted: 7,
-        contributionsByPlanet: { mars: 5, mercury: 2 },
-        reviewsByPlanet: { mars: 6, sun: 1 },
-    },
-    {
-        username: 'neptune_waterlab',
-        points: 930,
-        reviewsCompleted: 5,
-        contributionsByPlanet: { neptune: 4, saturn: 1 },
-        reviewsByPlanet: { neptune: 5 },
-    },
+    { username: 'OrionNova', points: 14520, reviewsCompleted: 412, approvedTotal: 188, contributionsByPlanet: { sun: 42, jupiter: 38, mars: 28 }, approvedByLayer: { '4': 40, '5': 50, '6': 45, '7': 30, '8': 23 }, reviewsByPlanet: { sun: 80, earth: 60, mars: 55 } },
+    { username: 'aurora_reviewer', points: 12840, reviewsCompleted: 310, approvedTotal: 142, contributionsByPlanet: { sun: 35, earth: 40, jupiter: 22 }, reviewsByPlanet: { sun: 90, earth: 70, mars: 50 } },
+    { username: 'orbit_cartographer', points: 9820, reviewsCompleted: 245, approvedTotal: 118, contributionsByPlanet: { earth: 45, venus: 30, saturn: 20 }, reviewsByPlanet: { earth: 80, venus: 55 } },
+    { username: 'solar_factcheck', points: 7640, reviewsCompleted: 198, approvedTotal: 95, contributionsByPlanet: { jupiter: 40, mercury: 25 }, reviewsByPlanet: { jupiter: 100, mercury: 45 } },
+    { username: 'bio_dome_archivist', points: 5820, reviewsCompleted: 156, approvedTotal: 72, contributionsByPlanet: { earth: 50, venus: 22 }, reviewsByPlanet: { earth: 70, venus: 40 } },
+    { username: 'mars_systems', points: 4210, reviewsCompleted: 112, approvedTotal: 58, contributionsByPlanet: { mars: 45, mercury: 13 }, reviewsByPlanet: { mars: 80 } },
+    { username: 'neptune_waterlab', points: 3180, reviewsCompleted: 88, approvedTotal: 42, contributionsByPlanet: { neptune: 35, saturn: 7 }, reviewsByPlanet: { neptune: 60 } },
+    { username: 'quantum_scribe', points: 2640, reviewsCompleted: 72, approvedTotal: 35, contributionsByPlanet: { sun: 20, jupiter: 15 }, reviewsByPlanet: { sun: 40 } },
+    { username: 'venus_grower', points: 1980, reviewsCompleted: 54, approvedTotal: 28, contributionsByPlanet: { venus: 28 }, reviewsByPlanet: { venus: 35 } },
+    { username: 'saturn_ecology', points: 1540, reviewsCompleted: 41, approvedTotal: 22, contributionsByPlanet: { saturn: 22 }, reviewsByPlanet: { saturn: 28 } },
 ]
 
-function rankDemoUsersOnPlanet(profiles, planetId, metric) {
-    const pid = String(planetId || '').toLowerCase()
-    return profiles
-        .map((p) => ({
-            username: p.username,
-            score:
-                metric === 'contributions'
-                    ? p.contributionsByPlanet?.[pid] || 0
-                    : p.reviewsByPlanet?.[pid] || 0,
-        }))
-        .filter((x) => x.score > 0)
-        .sort((a, b) => b.score - a.score || a.username.localeCompare(b.username))
-        .slice(0, 3)
-}
+const PODIUM_ORDER = [
+    { place: 2, rankIndex: 1 },
+    { place: 1, rankIndex: 0 },
+    { place: 3, rankIndex: 2 },
+]
 
-const fadeUp = {
-    hidden: { opacity: 0, y: 18 },
-    show: {
-        opacity: 1,
-        y: 0,
-        transition: { duration: 0.48, ease: [0.22, 1, 0.36, 1] },
-    },
-}
+const PODIUM_TONE = { 1: 'gold-1', 2: 'gold-2', 3: 'gold-3' }
 
-const viewportReveal = { once: true, amount: 0.24, margin: '0px 0px -8% 0px' }
-const rowViewportReveal = { once: true, amount: 0.38, margin: '0px 0px -6% 0px' }
+function PodiumColumn({ contributor, place, isMe, avatarUrl }) {
+    if (!contributor) return <div className="obs-podium__col obs-podium__col--empty" aria-hidden />
 
-/* ─── Signal Constellation Hero ─── */
-
-function SignalConstellationHero({ topPerformer, rankedProfiles, isDark }) {
-    const sectionRef = useRef(null)
-    const { scrollYProgress } = useScroll({
-        target: sectionRef,
-        offset: ['start start', 'end start'],
-    })
-
-    const systemY = useTransform(scrollYProgress, [0, 0.85], [0, 18])
-    const systemScale = useTransform(scrollYProgress, [0, 0.55, 0.85], [0.98, 1.03, 1])
-    const ringRotate = useTransform(scrollYProgress, [0, 1], ['0deg', '84deg'])
-    const nudgeOpacity = useTransform(scrollYProgress, [0, 0.1], [0.38, 0])
-    const topNodes = (rankedProfiles || []).slice(0, 6)
-    const threadColor = isDark ? 'rgba(255,255,255,0.94)' : 'rgba(2,6,23,0.86)'
-    const threadWidth = isDark ? 1.65 : 1.8
-    const threadStyle = {
-        opacity: isDark ? 0.92 : 0.82,
-        filter: isDark
-            ? 'drop-shadow(0 0 18px rgba(255,255,255,0.62)) drop-shadow(0 0 30px rgba(255,255,255,0.28))'
-            : 'drop-shadow(0 0 10px rgba(15,23,42,0.16))',
-    }
-    const threadPathStyle = {
-        stroke: threadColor,
-        strokeWidth: threadWidth,
-    }
+    const tone = PODIUM_TONE[place]
 
     return (
-        <div ref={sectionRef} className="lb-signal-section">
-            <div className="lb-signal-sticky">
-                <div className="lb-signal-dust" aria-hidden="true">
-                    {[...Array(18)].map((_, i) => (
-                        <span
-                            key={i}
-                            style={{
-                                left: `${6 + i * 5.2}%`,
-                                top: `${12 + ((i * 17) % 70)}%`,
-                                animationDelay: `${-i * 0.35}s`,
-                                animationDuration: `${5 + (i % 5) * 0.8}s`,
-                            }}
-                        />
-                    ))}
+        <motion.div
+            className={`obs-podium__col obs-podium__col--${place}`}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: place === 1 ? 0.1 : place === 2 ? 0 : 0.2 }}
+        >
+            <div className={`obs-podium__player obs-podium__player--${tone}`}>
+                <span className={`obs-podium__tag obs-podium__tag--${tone}`}>
+                    {place === 1 ? '1st' : place === 2 ? '2nd' : '3rd'}
+                </span>
+                <div className={`obs-podium__avatar obs-podium__avatar--${tone}`}>
+                    <AvatarCircle username={contributor.username} avatarUrl={avatarUrl} size={place === 1 ? 72 : 58} />
                 </div>
-
-                <motion.div className="lb-hero-content">
-                    <h1 className="lb-title">
-                        The <span className="lb-title--accent">Leaderboard</span>
-                    </h1>
-                    <div className="lb-signal-stage" aria-label="Top leaderboard members">
-                        <motion.div className="lb-signal-system" style={{ y: systemY, scale: systemScale }}>
-                            <motion.div className="lb-signal-ring lb-signal-ring--outer" style={{ rotate: ringRotate }} />
-                            <motion.div className="lb-signal-ring lb-signal-ring--mid" style={{ rotate: ringRotate }} />
-                            <motion.div className="lb-signal-ring lb-signal-ring--inner" style={{ rotate: ringRotate }} />
-
-                            <motion.svg
-                                className="lb-signal-lines"
-                                viewBox="0 0 520 260"
-                                preserveAspectRatio="none"
-                                style={threadStyle}
-                                aria-hidden="true"
-                            >
-                                <path style={threadPathStyle} d="M260 130 L260 18 M260 130 L260 242 M260 130 L86 58 L72 196 L260 130 L436 56 L448 198 L260 130" />
-                                <path style={threadPathStyle} d="M86 58 L436 56 M72 196 L448 198" />
-                            </motion.svg>
-
-                            <div className="lb-signal-core">
-                                <Trophy size={30} />
-                                <span>Top Members</span>
-                            </div>
-
-                            {topNodes.map((entry, i) => (
-                                <motion.div
-                                    key={entry.username}
-                                    className={`lb-signal-node lb-signal-node--${i + 1}`}
-                                    initial={{ opacity: 0, scale: 0.88 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: 0.08 + i * 0.05, duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-                                >
-                                    <span>#{i + 1}</span>
-                                    <strong>{entry.fullName || entry.name || entry.displayName || entry.username}</strong>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    </div>
-                    <p className="lb-subtitle">
-                        Points from approved submissions and peer grades - per-hub experts and fact-checkers ranked.
-                    </p>
-                    {topPerformer && (
-                        <div className="lb-champion-badge">
-                            <Trophy size={13} color={isDark ? '#c4a45a' : '#b45309'} />
-                            <span className="lb-champion-label">Orbit Leader</span>
-                            <span className="lb-champion-name">@{topPerformer.username}</span>
-                            <span className="lb-champion-pts">{topPerformer.points.toLocaleString()} pts</span>
-                        </div>
-                    )}
-                </motion.div>
-
-                <motion.div className="lb-scroll-nudge" style={{ opacity: nudgeOpacity }}>
-                    <span>Scroll to rank</span>
-                    <ChevronDown size={14} color={isDark ? '#4b5563' : '#0369a1'} />
-                </motion.div>
+                <div className="obs-podium__identity">
+                    <p className="obs-podium__name">{contributor.username}</p>
+                    {isMe ? <span className="obs-podium__you">you</span> : null}
+                </div>
+                <p className="obs-podium__points">{contributor.points.toLocaleString()}</p>
             </div>
-        </div>
+            <div className={`obs-podium__pedestal obs-podium__pedestal--${tone}`}>
+                <span className={`obs-podium__badge obs-podium__badge--${tone}`}>{place}</span>
+            </div>
+        </motion.div>
     )
 }
 
-function RankBadge({ rank }) {
-    const icon = RANK_ICONS[rank]
-    if (icon) {
-        return <div className={`leaderboard-rank leaderboard-rank--top leaderboard-rank--${rank}`}>{icon}</div>
-    }
-    return <div className="leaderboard-rank">{rank}</div>
-}
+function LeaderboardTable({ rows, myUsername, resolveAvatar }) {
+    if (rows.length === 0) return null
 
-function EmptyLine({ children }) {
-    return <li className="leaderboard-empty-line">{children}</li>
+    return (
+        <div className="obs-lb-table-wrap">
+            <div className="obs-lb-table__head" aria-hidden>
+                <span className="obs-lb-th obs-lb-th--rank">#</span>
+                <span className="obs-lb-th obs-lb-th--player">Player</span>
+                <span className="obs-lb-th obs-lb-th--points">Points</span>
+                <span className="obs-lb-th obs-lb-th--entries">Entries</span>
+            </div>
+            <ol className="obs-lb-table" aria-label="Rankings">
+                {rows.map((c) => {
+                    const isMe = myUsername && c.username === myUsername
+                    return (
+                        <li key={`${c.userId || c.username}-${c.rank}`} className={`obs-lb-row${isMe ? ' obs-lb-row--me' : ''}`}>
+                            <span className="obs-lb-row__rank">{c.rank}</span>
+                            <div className="obs-lb-row__player">
+                                <AvatarCircle username={c.username} avatarUrl={resolveAvatar(c)} size={36} />
+                                <div className="obs-lb-row__identity">
+                                    <span className="obs-lb-row__name">{c.username}</span>
+                                    {isMe ? <span className="obs-lb-row__you">you</span> : null}
+                                </div>
+                            </div>
+                            <span className="obs-lb-row__points">{c.points.toLocaleString()}</span>
+                            <span className="obs-lb-row__entries">{c.approvedTotal || 0}</span>
+                        </li>
+                    )
+                })}
+            </ol>
+        </div>
+    )
 }
 
 export default function Leaderboard() {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
-    const { isLoggedIn, username, points, profile, canAccessReviewerQueue } = useAuth()
-    const [tick, setTick]             = useState(0)
-    const [honorPlanetId, setHonorPlanetId] = useState(() => researchData.planets[0]?.id || 'sun')
+    const { username: myUsername, avatarUrl: myAvatarUrl } = useAuth()
+    const [sceneReveal, setSceneReveal] = useState(0)
+    const [supaProfiles, setSupaProfiles] = useState([])
+    const [refreshing, setRefreshing] = useState(false)
+    const [tick, setTick] = useState(0)
 
-    // Fix: always start at top when this page mounts
     useEffect(() => { window.scrollTo(0, 0) }, [])
+
+    useEffect(() => {
+        let frame
+        const start = performance.now()
+        const duration = 900
+        const tickReveal = (now) => {
+            const p = Math.min(1, (now - start) / duration)
+            setSceneReveal(1 - Math.pow(1 - p, 3))
+            if (p < 1) frame = requestAnimationFrame(tickReveal)
+        }
+        frame = requestAnimationFrame(tickReveal)
+        return () => cancelAnimationFrame(frame)
+    }, [])
 
     useEffect(() => {
         const bump = () => setTick((t) => t + 1)
@@ -232,340 +133,123 @@ export default function Leaderboard() {
         }
     }, [])
 
-    // Real Supabase data: profiles ranked by points, plus per-planet contribution
-    // and passing-review counts aggregated client-side (dataset is small).
-    const [supaProfiles, setSupaProfiles] = useState([])
-    const [supaApprovedCount, setSupaApprovedCount] = useState(0)
+    const loadLeaderboard = async () => {
+        const { data: rows } = await supabase
+            .from('leaderboard_view')
+            .select('*')
+            .order('rank')
+            .limit(100)
+
+        const userIds = [...new Set((rows || []).map((r) => r.user_id).filter(Boolean))]
+        const avatarByUserId = {}
+
+        if (userIds.length > 0) {
+            const { data: profiles } = await supabase
+                .from('users_profile')
+                .select('id, avatar_url')
+                .in('id', userIds)
+
+            for (const profile of profiles || []) {
+                avatarByUserId[profile.id] = profile.avatar_url || null
+            }
+        }
+
+        const built = (rows || []).map((r) => ({
+            userId: r.user_id,
+            username: r.username,
+            avatarUrl: avatarByUserId[r.user_id] || r.avatar_url || null,
+            points: r.points || 0,
+            reviewsCompleted: r.reviews_completed || 0,
+            approvedTotal: r.approved_total || 0,
+            contributionsByPlanet: r.approved_by_planet || {},
+            approvedByLayer: r.approved_by_layer || {},
+            reviewsByPlanet: r.reviews_by_planet || {},
+        }))
+        setSupaProfiles(built)
+    }
+
     useEffect(() => {
         let active = true
-        async function load() {
-            const [{ data: profiles }, { data: entries }, { data: reviews }] = await Promise.all([
-                supabase.from('users_profile').select('id, username, points'),
-                supabase.from('archive_entries').select('id, planet_id, status, submitted_by, updates_entry_id'),
-                supabase.from('reviews').select('reviewer_id, entry_id, fact_check_pass'),
-            ])
-            if (!active) return
-            const entryById = Object.fromEntries((entries || []).map((e) => [e.id, e]))
-            const approvedTopics = (entries || []).filter((e) => e.status === 'approved' && !e.updates_entry_id)
-            setSupaApprovedCount(approvedTopics.length)
-
-            const contributionsByUser = {}
-            approvedTopics.forEach((e) => {
-                if (!e.submitted_by) return
-                const pid = String(e.planet_id || '').toLowerCase()
-                contributionsByUser[e.submitted_by] = contributionsByUser[e.submitted_by] || {}
-                contributionsByUser[e.submitted_by][pid] = (contributionsByUser[e.submitted_by][pid] || 0) + 1
-            })
-
-            const reviewsByUser = {}
-            const reviewCountByUser = {}
-            ;(reviews || []).forEach((r) => {
-                reviewCountByUser[r.reviewer_id] = (reviewCountByUser[r.reviewer_id] || 0) + 1
-                if (!r.fact_check_pass) return
-                const pid = String(entryById[r.entry_id]?.planet_id || '').toLowerCase()
-                if (!pid) return
-                reviewsByUser[r.reviewer_id] = reviewsByUser[r.reviewer_id] || {}
-                reviewsByUser[r.reviewer_id][pid] = (reviewsByUser[r.reviewer_id][pid] || 0) + 1
-            })
-
-            const built = (profiles || []).map((p) => ({
-                username: p.username,
-                points: p.points || 0,
-                reviewsCompleted: reviewCountByUser[p.id] || 0,
-                contributionsByPlanet: contributionsByUser[p.id] || {},
-                reviewsByPlanet: reviewsByUser[p.id] || {},
-            })).sort((a, b) => b.points - a.points || a.username.localeCompare(b.username))
-
-            setSupaProfiles(built)
-        }
-        load()
+        loadLeaderboard().catch(() => { if (active) setSupaProfiles([]) })
         return () => { active = false }
     }, [tick])
 
-    const rankedProfiles = supaProfiles.length > 0 ? supaProfiles : DEMO_PROFILES
-    const approvedEntryCount = supaProfiles.length > 0
-        ? supaApprovedCount
-        : DEMO_PROFILES.reduce((sum, p) => sum + Object.values(p.contributionsByPlanet || {}).reduce((a, n) => a + n, 0), 0)
+    const handleRefresh = async () => {
+        setRefreshing(true)
+        try {
+            await supabase.rpc('refresh_leaderboard_view')
+            await loadLeaderboard()
+        } finally {
+            setRefreshing(false)
+        }
+    }
 
-    const honorPlanet   = researchData.planets.find((p) => p.id === honorPlanetId) || researchData.planets[0]
-    const expertsTop  = supaProfiles.length > 0 ? rankDemoUsersOnPlanet(supaProfiles, honorPlanet?.id, 'contributions') : rankDemoUsersOnPlanet(DEMO_PROFILES, honorPlanet?.id, 'contributions')
-    const checkersTop = supaProfiles.length > 0 ? rankDemoUsersOnPlanet(supaProfiles, honorPlanet?.id, 'reviews') : rankDemoUsersOnPlanet(DEMO_PROFILES, honorPlanet?.id, 'reviews')
+    const rawProfiles = supaProfiles.length > 0 ? supaProfiles : DEMO_PROFILES
 
-    const totalContributors = rankedProfiles.length
-    const topPerformer      = rankedProfiles[0]
-    const podiumProfiles    = [rankedProfiles[1], rankedProfiles[0], rankedProfiles[2]]
-        .filter(Boolean)
-        .map((entry) => ({
-            entry,
-            rank: rankedProfiles.findIndex((p) => p.username === entry.username) + 1,
-        }))
-    const maxPoints  = Math.max(1, topPerformer?.points || 1)
-    const totalPoints = rankedProfiles.reduce((sum, p) => sum + (p.points || 0), 0)
+    const model = useMemo(
+        () => buildObservatoryModel(rawProfiles, researchData.planets),
+        [rawProfiles],
+    )
 
-    const stats = [
-        { label: 'Approved entries',  value: approvedEntryCount.toLocaleString(),  icon: Award,    tone: 'gold' },
-        { label: 'Profiles tracked',  value: totalContributors.toLocaleString(),   icon: Users,    tone: 'blue' },
-        { label: 'Research hubs',     value: String(researchData.planets.length),  icon: Sparkles, tone: 'violet' },
-        { label: 'Total points',      value: totalPoints.toLocaleString(),         icon: Trophy,   tone: 'green' },
-    ]
+    const topThree = model.contributors.slice(0, 3)
+    const rest = model.contributors.slice(3, 25)
+
+    const resolveAvatar = (contributor) => {
+        if (myUsername && contributor.username === myUsername && myAvatarUrl) {
+            return myAvatarUrl
+        }
+        return contributor.avatarUrl || null
+    }
 
     return (
-        <div className="solar-page leaderboard-page">
-            {/* Background — stars + grid, no colored auroras */}
-            <div className="leaderboard-bg" aria-hidden="true">
-                <div className="leaderboard-bg__grid" />
-                <div className="leaderboard-bg__stars" />
-                <div className="leaderboard-bg__vignette" />
-            </div>
+        <div className={`solar-page obs-page${isDark ? ' obs-page--dark' : ' obs-page--light'}`}>
+            <VantaFogBackground
+                isDark={isDark}
+                entryReveal={sceneReveal}
+                className="obs-page__vanta"
+            />
+            <div
+                className="obs-page__veil"
+                style={{ opacity: Math.max(0, (isDark ? 0.18 : 0.06) - sceneReveal * (isDark ? 0.14 : 0.05)) }}
+                aria-hidden="true"
+            />
+            <div
+                className="obs-page__vignette"
+                style={{ opacity: isDark ? 0.28 + sceneReveal * 0.05 : 0.08 + sceneReveal * 0.02 }}
+                aria-hidden="true"
+            />
 
-            {/* Signal constellation hero */}
-            <SignalConstellationHero topPerformer={topPerformer} rankedProfiles={rankedProfiles} isDark={isDark} />
-
-            <div className="leaderboard-shell">
-
-                {/* Podium */}
-                {podiumProfiles.length > 0 && (
-                    <motion.div
-                        variants={fadeUp}
-                        initial="hidden"
-                        whileInView="show"
-                        viewport={viewportReveal}
-                        className="leaderboard-podium"
+            <div className="obs-page__inner obs-page__inner--podium" style={{ opacity: sceneReveal }}>
+                <header className="obs-hero obs-hero--compact">
+                    <h1 className="obs-hero__title">Top Contributors</h1>
+                    <button
+                        type="button"
+                        className="obs-refresh-btn"
+                        onClick={handleRefresh}
+                        disabled={refreshing}
                     >
-                        <div className="leaderboard-podium__energy" aria-hidden="true">
-                            <span /><span /><span />
-                        </div>
-                        <div className="leaderboard-podium__header">
-                            <span className="leaderboard-section-label"><Sparkles size={13} /> Orbit Podium</span>
-                            <p>Top contributors currently powering the archive.</p>
-                        </div>
-                        <div className="leaderboard-podium__grid">
-                            {podiumProfiles.map(({ entry, rank }) => (
-                                <motion.div
-                                    key={entry.username}
-                                    className={`leaderboard-podium-card leaderboard-podium-card--rank-${rank}`}
-                                    whileHover={{ y: -8, rotateX: 4, scale: 1.02 }}
-                                    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                                >
-                                    <div className="leaderboard-podium-card__halo" />
-                                    <div className="leaderboard-podium-card__rank">
-                                        {RANK_ICONS[rank] || `#${rank}`}
-                                    </div>
-                                    <div className="leaderboard-podium-card__avatar">
-                                        {String(entry.username || '?')[0].toUpperCase()}
-                                    </div>
-                                    <div className="leaderboard-podium-card__name">@{entry.username}</div>
-                                    <div className="leaderboard-podium-card__points">{entry.points.toLocaleString()} pts</div>
-                                    <div className="leaderboard-podium-card__beam" />
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
+                        <RefreshCw size={14} className={refreshing ? 'obs-spin' : ''} />
+                        {refreshing ? 'Refreshing…' : 'Refresh'}
+                    </button>
+                </header>
 
-                {/* Stats */}
-                <motion.div
-                    variants={fadeUp}
-                    initial="hidden"
-                    whileInView="show"
-                    viewport={viewportReveal}
-                    className="leaderboard-stats"
-                >
-                    {stats.map((stat, i) => {
-                        const Icon = stat.icon
-                        return (
-                            <motion.div
-                                key={i}
-                                className={`leaderboard-stat leaderboard-stat--${stat.tone}`}
-                                whileHover={{ y: -4, scale: 1.01 }}
-                                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-                            >
-                                <div className="leaderboard-stat__icon"><Icon size={18} /></div>
-                                <div className="leaderboard-stat__value">{stat.value}</div>
-                                <div className="leaderboard-stat__label">{stat.label}</div>
-                            </motion.div>
-                        )
-                    })}
-                </motion.div>
+                <section className="obs-podium" aria-label="Top three contributors">
+                    {PODIUM_ORDER.map(({ place, rankIndex }) => (
+                        <PodiumColumn
+                            key={place}
+                            place={place}
+                            contributor={topThree[rankIndex]}
+                            isMe={myUsername && topThree[rankIndex]?.username === myUsername}
+                            avatarUrl={topThree[rankIndex] ? resolveAvatar(topThree[rankIndex]) : null}
+                        />
+                    ))}
+                </section>
 
-                {/* Logged-in user card */}
-                {isLoggedIn && profile && (
-                    <motion.div
-                        variants={fadeUp}
-                        initial="hidden"
-                        whileInView="show"
-                        viewport={viewportReveal}
-                        className="leaderboard-user-card"
-                    >
-                        <div className="leaderboard-user-card__glow" />
-                        <div className="leaderboard-user-card__identity">
-                            <div className="leaderboard-user-card__avatar">
-                                {String(username || '?')[0].toUpperCase()}
-                            </div>
-                            <div>
-                                <div className="leaderboard-user-card__name">
-                                    <FieldHonorTokens username={username} planetId={honorPlanet?.id} planetLabel={honorPlanet?.planet} />
-                                    <span>@{username}</span>
-                                </div>
-                                <div className="leaderboard-user-card__meta">
-                                    {points.toLocaleString()} pts · {(profile.reviewsCompleted || 0).toLocaleString()} grades filed ·{' '}
-                                    {POINTS_PER_REVIEW_COMPLETED} pts per grade
-                                </div>
-                            </div>
-                        </div>
-                        <div className="leaderboard-user-card__status">
-                            {canAccessReviewerQueue ? (
-                                <span className="leaderboard-pill leaderboard-pill--success">
-                                    <ClipboardCheck size={14} /> Review queue unlocked
-                                </span>
-                            ) : (
-                                <span className="leaderboard-pill">
-                                    {Math.max(0, MIN_POINTS_REVIEWER_ACCESS - points).toLocaleString()} pts until reviewer access ({MIN_POINTS_REVIEWER_ACCESS.toLocaleString()} required)
-                                </span>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
+                <p className="obs-podium-cta">
+                    Ranked by knowledge points from approved archive contributions.
+                </p>
 
-                {/* Hub honors */}
-                <motion.div
-                    variants={fadeUp}
-                    initial="hidden"
-                    whileInView="show"
-                    viewport={viewportReveal}
-                    className="leaderboard-panel leaderboard-honors"
-                >
-                    <div className="leaderboard-section-head">
-                        <div>
-                            <span className="leaderboard-section-label"><ShieldCheck size={13} /> Hub Honors</span>
-                            <h2 className="leaderboard-section-title">Field honors</h2>
-                            <p className="leaderboard-section-copy">
-                                Top three <strong>contributors</strong> (approved entries) and <strong>fact-checkers</strong> (hub fact-check passes) — medals appear beside names in the review queue.
-                            </p>
-                        </div>
-                        <select
-                            value={honorPlanetId}
-                            onChange={(e) => setHonorPlanetId(e.target.value)}
-                            className="leaderboard-select"
-                        >
-                            {researchData.planets.map((p) => (
-                                <option key={p.id} value={p.id}>{p.planet}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="leaderboard-honor-grid">
-                        <div className="leaderboard-honor-card">
-                            <p className="leaderboard-honor-card__title" style={{ color: honorPlanet?.color || '#c4a45a' }}>
-                                Experts · contributors
-                            </p>
-                            <ul className="leaderboard-honor-list">
-                                {expertsTop.length === 0 && (
-                                    <EmptyLine>No approved hub entries recorded yet for this browser.</EmptyLine>
-                                )}
-                                {expertsTop.map((row, i) => (
-                                    <li key={row.username} className="leaderboard-honor-row">
-                                        <span className="leaderboard-honor-row__podium">{PODIUM[i]}</span>
-                                        <span className="leaderboard-honor-row__name">{row.username}</span>
-                                        <span className="leaderboard-honor-row__score">{row.score} approved</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div className="leaderboard-honor-card">
-                            <p className="leaderboard-honor-card__title" style={{ color: '#9ca3af' }}>
-                                Fact-checkers · passing grades
-                            </p>
-                            <ul className="leaderboard-honor-list">
-                                {checkersTop.length === 0 && (
-                                    <EmptyLine>No grades on this hub yet.</EmptyLine>
-                                )}
-                                {checkersTop.map((row, i) => (
-                                    <li key={row.username} className="leaderboard-honor-row">
-                                        <span className="leaderboard-honor-row__podium">{PODIUM[i]}</span>
-                                        <span className="leaderboard-honor-row__name">{row.username}</span>
-                                        <span className="leaderboard-honor-row__score">{row.score} passes</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Global list header */}
-                <motion.div
-                    variants={fadeUp}
-                    initial="hidden"
-                    whileInView="show"
-                    viewport={viewportReveal}
-                    className="leaderboard-section-head leaderboard-section-head--compact"
-                >
-                    <div>
-                        <span className="leaderboard-section-label"><Trophy size={13} /> Global Points</span>
-                        <h2 className="leaderboard-section-title">Top Contributors</h2>
-                    </div>
-                    <span className="leaderboard-section-micro">{rankedProfiles.length.toLocaleString()} profiles ranked</span>
-                </motion.div>
-
-                {/* Global rankings */}
-                <div className="leaderboard-global-list">
-                    {rankedProfiles.length === 0 ? (
-                        <div className="leaderboard-empty-state">
-                            No profiles yet — join and submit or grade entries to appear here.
-                        </div>
-                    ) : (
-                        rankedProfiles.map((entry, i) => {
-                            const rank      = i + 1
-                            const isTopThree = rank <= 3
-                            const approvals = Object.values(entry.contributionsByPlanet || {}).reduce((a, n) => a + n, 0)
-                            const progress  = Math.max(4, Math.min(100, Math.round((entry.points / maxPoints) * 100)))
-                            return (
-                                <motion.div
-                                    key={entry.username}
-                                    initial={{ opacity: 0, x: -10, y: 12, scale: 0.99 }}
-                                    whileInView={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-                                    viewport={rowViewportReveal}
-                                    transition={{
-                                        delay: Math.min((i % 8) * 0.035, 0.24),
-                                        duration: 0.42,
-                                        ease: [0.22, 1, 0.36, 1],
-                                    }}
-                                    whileHover={{ y: -3, scale: 1.005 }}
-                                    className={`leaderboard-row ${isTopThree ? `leaderboard-row--rank-${rank}` : ''}`}
-                                >
-                                    <RankBadge rank={rank} isDark={isDark} />
-                                    <div className="leaderboard-row__avatar">
-                                        {String(entry.username || '?')[0].toUpperCase()}
-                                    </div>
-                                    <div className="leaderboard-row__body">
-                                        <div className="leaderboard-row__name-line">
-                                            <span className="leaderboard-row__name">{entry.username}</span>
-                                        </div>
-                                        <div className="leaderboard-row__meta">
-                                            {approvals} approved hub entr{approvals === 1 ? 'y' : 'ies'} · {(entry.reviewsCompleted || 0)} grades
-                                        </div>
-                                        <div className="leaderboard-row__meter" aria-hidden="true">
-                                            <span style={{ width: `${progress}%` }} />
-                                        </div>
-                                    </div>
-                                    <div className="leaderboard-row__points">
-                                        <div className="leaderboard-row__points-value">{entry.points.toLocaleString()}</div>
-                                        <div className="leaderboard-row__points-label">pts</div>
-                                    </div>
-                                </motion.div>
-                            )
-                        })
-                    )}
-                </div>
-
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={viewportReveal}
-                    transition={{ duration: 0.45 }}
-                    className="leaderboard-ledger-note"
-                >
-                    Points and honors are live from the shared SOLAR database. Segment text is sorted easiest → hardest after approval.
-                </motion.p>
+                <LeaderboardTable rows={rest} myUsername={myUsername} resolveAvatar={resolveAvatar} />
             </div>
         </div>
     )

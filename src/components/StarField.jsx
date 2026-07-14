@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { memo, useMemo } from 'react'
 import { foundationLogoPath } from './FoundationLogo.jsx'
 
 function randomBetween(min, max) {
@@ -14,7 +14,9 @@ const FOUNDATION_MARKERS = [
     { left: '48%', top: '38%', size: 16 },
 ]
 
-export default function StarField({ theme }) {
+/* memo: AppShell re-renders on every route change (useMatch); the 200-star
+   field only depends on theme, so skip re-rendering its 205 nodes. */
+export default memo(function StarField({ theme }) {
     const stars = useMemo(() => {
         return Array.from({ length: 200 }, (_, i) => ({
             id: i,
@@ -70,4 +72,4 @@ export default function StarField({ theme }) {
             ))}
         </div>
     )
-}
+})

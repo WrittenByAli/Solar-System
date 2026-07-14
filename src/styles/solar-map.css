@@ -1,14 +1,90 @@
-/* ── Premium Solar System Map ── */
+/* ── Solar System Map — Vanta fog backdrop (matches home) ── */
 
 .solar-map {
   position: relative;
   min-height: 100dvh;
   overflow: hidden;
-  background: var(--sa-bg);
   scroll-margin-top: 0;
+  --map-display: var(--sa-font);
+  --map-mono: var(--sa-font);
+  --home-text: #f8fafc;
+  --home-text-secondary: #e2e8f0;
+  --home-kicker-color: #e8edf5;
+  --home-kicker-line: rgba(255, 255, 255, 0.48);
+  --home-muted-color: #c8d4e0;
+  --home-title-shadow: 0 2px 28px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.7);
 }
 
-/* ── Animated background layers ── */
+.solar-map--dark {
+  background: transparent;
+  color: #f8fafc;
+  --map-orbit-stroke: rgba(226, 232, 240, 0.34);
+  --map-guide-stroke: rgba(245, 166, 35, 0.28);
+  --map-compass-stroke: rgba(226, 232, 240, 0.18);
+  --map-label-fill: #f1f5f9;
+  --map-label-stroke: rgba(8, 6, 14, 0.72);
+}
+
+.solar-map--light {
+  --home-text: #0a1628;
+  --home-text-secondary: #1e293b;
+  --home-kicker-color: #1e293b;
+  --home-kicker-line: rgba(15, 23, 42, 0.5);
+  --home-muted-color: #334155;
+  --home-title-shadow: 0 1px 10px rgba(255, 255, 255, 0.7);
+  --map-orbit-stroke: rgba(15, 23, 42, 0.58);
+  --map-guide-stroke: rgba(120, 53, 15, 0.52);
+  --map-compass-stroke: rgba(15, 23, 42, 0.42);
+  --map-label-fill: #0a1628;
+  --map-label-stroke: rgba(255, 255, 255, 0.92);
+  background: transparent;
+  color: #0a1628;
+}
+
+/* Vanta FOG canvas */
+.solar-map__vanta {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: #101828;
+  transition: opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.solar-map--light .solar-map__vanta {
+  background: #f6f1ea;
+}
+
+.solar-map__vanta canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.solar-map__veil {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: var(--sa-home-veil);
+  pointer-events: none;
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.solar-map__vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse 82% 78% at 50% 45%, transparent 38%, rgba(10, 8, 18, 0.32) 100%);
+  transition: opacity 0.8s ease;
+}
+
+.solar-map--light .solar-map__vignette {
+  background: radial-gradient(ellipse 78% 72% at 50% 44%, transparent 34%, rgba(250, 247, 242, 0.32) 100%);
+}
+
+/* Legacy aurora background (unused — kept for reference) */
 
 .solar-map__bg {
   pointer-events: none;
@@ -135,14 +211,14 @@
   to { transform: rotate(360deg); }
 }
 
-.solar-map__vignette {
+.solar-map__vignette--legacy {
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0, 0, 0, 0.45) 100%);
   opacity: 0.55;
 }
 
-.light .solar-map__vignette {
+.light .solar-map__vignette--legacy {
   background: radial-gradient(ellipse at 50% 45%, transparent 40%, rgba(243, 244, 246, 0.75) 100%);
   opacity: 0.7;
 }
@@ -193,51 +269,55 @@
 
 .solar-map__inner {
   position: relative;
-  z-index: 2;
+  z-index: 4;
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 clamp(12px, 2vw, 24px) clamp(24px, 4vh, 48px);
+  transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .solar-map__header {
   text-align: center;
-  margin-bottom: clamp(16px, 2.5vh, 24px);
+  margin-bottom: clamp(28px, 4vh, 40px);
 }
 
 .solar-map__kicker {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
+  font-family: var(--map-mono);
   font-size: 10px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--sa-accent-gold);
+  color: var(--home-kicker-color);
   font-weight: 500;
 }
 
 .solar-map__kicker-line {
   width: 24px;
   height: 1px;
-  background: var(--sa-accent-gold);
+  background: var(--home-kicker-line);
 }
 
 .solar-map__title {
-  font-family: 'Anton', 'Impact', sans-serif;
+  font-family: var(--map-display);
   font-size: var(--solar-page-heading-size) !important;
   line-height: var(--solar-page-heading-line-height);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--sa-text);
-  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  text-transform: none;
+  color: var(--home-text);
+  text-shadow: var(--home-title-shadow);
+  margin-bottom: clamp(12px, 1.8vh, 18px);
 }
 
 .solar-map__subtitle {
   font-size: clamp(0.8125rem, 1.8vw, 0.9375rem);
-  color: var(--sa-text-muted);
+  color: var(--home-muted-color);
   max-width: 36rem;
-  margin: 0 auto;
-  line-height: 1.6;
+  margin: 0 auto clamp(4px, 0.8vh, 8px);
+  line-height: 1.65;
 }
 
 .solar-map__toolbar {
@@ -246,7 +326,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-bottom: clamp(12px, 2vh, 20px);
+  margin-bottom: clamp(24px, 3.5vh, 36px);
 }
 
 .solar-map__hub-selector {
@@ -255,15 +335,15 @@
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  margin: 0 auto clamp(14px, 2.2vh, 22px);
+  margin: 0 auto clamp(28px, 4vh, 44px);
   max-width: 920px;
-  padding: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  border-radius: 22px;
-  background: linear-gradient(135deg, rgba(2, 6, 23, 0.7), rgba(15, 23, 42, 0.46));
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .solar-map__hub-select-btn {
@@ -274,13 +354,15 @@
   min-height: 34px;
   padding: 7px 10px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--hub-color) 36%, var(--sa-border-default));
+  border: 1px solid color-mix(in srgb, var(--hub-color) 36%, rgba(255, 255, 255, 0.12));
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--hub-color) 14%, transparent), rgba(15, 23, 42, 0.48));
-  color: var(--sa-text-secondary);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+    linear-gradient(135deg, color-mix(in srgb, var(--hub-color) 14%, transparent), rgba(20, 16, 31, 0.52));
+  color: var(--home-text-secondary);
+  font-family: var(--map-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   cursor: pointer;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
   backdrop-filter: blur(14px) saturate(1.25);
@@ -292,9 +374,9 @@
 .solar-map__hub-select-btn[data-selected='true'] {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--hub-color) 72%, white);
-  color: var(--sa-text);
+  color: var(--home-text);
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--hub-color) 28%, transparent), rgba(15, 23, 42, 0.72));
+    linear-gradient(135deg, color-mix(in srgb, var(--hub-color) 28%, transparent), rgba(20, 16, 31, 0.72));
 }
 
 .solar-map__hub-select-orb {
@@ -309,20 +391,20 @@
 .light .solar-map__hub-select-btn {
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--hub-color) 14%, white), rgba(255, 255, 255, 0.9));
-  color: #334155;
+  color: #1e293b;
   border-color: color-mix(in srgb, var(--hub-color) 42%, rgba(15, 23, 42, 0.14));
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .light .solar-map__hub-selector {
-  border-color: rgba(15, 23, 42, 0.1);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(241, 245, 249, 0.78));
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .light .solar-map__hub-select-btn:hover,
 .light .solar-map__hub-select-btn[data-selected='true'] {
-  color: #0f172a;
+  color: #0a1628;
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--hub-color) 22%, white), rgba(255, 255, 255, 0.96));
 }
@@ -338,7 +420,7 @@
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--sa-text-muted);
+  color: var(--home-muted-color);
   pointer-events: none;
 }
 
@@ -346,13 +428,13 @@
   width: 100%;
   padding: 12px 16px 12px 40px;
   border-radius: 12px;
-  border: 1px solid var(--sa-border-default);
-  background: var(--sa-bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  color: var(--sa-text);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, rgba(20, 16, 31, 0.55), rgba(24, 18, 42, 0.38));
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  color: var(--home-text);
   font-size: 0.875rem;
-  box-shadow: var(--sa-shadow-sm);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -363,7 +445,20 @@
 }
 
 .solar-map__search::placeholder {
-  color: var(--sa-text-faint);
+  color: var(--home-muted-color);
+}
+
+.light .solar-map__search {
+  border-color: rgba(15, 23, 42, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(250, 247, 242, 0.72));
+  color: #0a1628;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.light .solar-map__stat-pill {
+  border-color: rgba(15, 23, 42, 0.16);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(250, 247, 242, 0.68));
+  color: #334155;
 }
 
 .solar-map__go-btn {
@@ -372,30 +467,34 @@
   gap: 6px;
   padding: 12px 20px;
   border-radius: 12px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: var(--map-mono);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #fff;
-  background: var(--sa-accent);
-  box-shadow: var(--sa-shadow-md);
+  color: #f8fafc;
+  background: linear-gradient(135deg, #c2410c, #ea580c);
+  box-shadow: 0 12px 28px rgba(194, 65, 12, 0.28);
   cursor: pointer;
-  transition: transform 0.2s, background 0.2s;
+  transition: transform 0.2s, background 0.2s, color 0.2s;
 }
 
 .light .solar-map__go-btn {
-  color: #ffffff;
-  background: #075985;
-  box-shadow: 0 12px 26px rgba(7, 89, 133, 0.2);
+  color: #0a1628;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(250, 247, 242, 0.88));
+  border-color: rgba(15, 23, 42, 0.18);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.1);
 }
 
 .light .solar-map__go-btn:hover {
-  background: #0369a1;
+  color: #0a1628;
+  background: linear-gradient(135deg, #ffffff, rgba(255, 252, 248, 0.96));
 }
 
 .solar-map__go-btn:hover {
-  background: var(--sa-accent-hover);
+  color: #ffffff;
+  background: linear-gradient(135deg, #ea580c, #f97316);
 }
 
 .solar-map__toolbar-form {
@@ -408,12 +507,15 @@
   gap: 6px;
   padding: 8px 14px;
   border-radius: 999px;
-  font-size: 11px;
+  font-family: var(--map-mono);
+  font-size: 10px;
   font-weight: 600;
-  color: var(--sa-text-secondary);
-  border: 1px solid var(--sa-border-default);
-  background: var(--sa-bg-card);
-  backdrop-filter: blur(12px);
+  letter-spacing: 0.04em;
+  color: var(--home-text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(20, 16, 31, 0.5), rgba(24, 18, 42, 0.35));
+  backdrop-filter: blur(16px) saturate(1.25);
+  -webkit-backdrop-filter: blur(16px) saturate(1.25);
 }
 
 .solar-map__stat-dot {
@@ -433,6 +535,7 @@
 .solar-map__stage {
   display: block;
   min-height: min(52vh, 500px);
+  margin-top: clamp(8px, 1.5vh, 16px);
 }
 
 @media (max-width: 960px) {
@@ -453,11 +556,11 @@
   padding: clamp(18px, 2.5vw, 24px);
   padding-top: clamp(20px, 2.8vw, 26px);
   border-radius: 16px;
-  border: 1px solid var(--sa-border-default);
-  background: var(--sa-bg-card);
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
-  box-shadow: var(--sa-shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(145deg, rgba(20, 16, 31, 0.62), rgba(24, 18, 42, 0.42));
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   min-height: 180px;
   display: flex;
   flex-direction: column;
@@ -470,8 +573,9 @@
 
 .light .solar-map__detail-card {
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(240, 249, 255, 0.86));
-  border-color: rgba(15, 23, 42, 0.12);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(250, 247, 242, 0.68));
+  border-color: rgba(15, 23, 42, 0.1);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .solar-map__detail-card--filled {
@@ -575,20 +679,23 @@
 }
 
 .solar-map__detail-kicker {
+  font-family: var(--map-mono);
   font-size: 10px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--sa-accent-gold);
+  color: var(--home-kicker-color);
   margin-bottom: 8px;
 }
 
 .solar-map__detail-subject {
-  font-family: 'Anton', 'Impact', sans-serif;
+  font-family: var(--map-display);
   font-size: clamp(1.35rem, 3.2vw, 1.85rem);
-  line-height: 1.05;
+  line-height: 1.1;
+  font-weight: 700;
   margin-bottom: 6px;
-  letter-spacing: 0.01em;
-  color: var(--sa-text);
+  letter-spacing: -0.02em;
+  color: var(--home-text);
+  text-shadow: var(--home-title-shadow);
 }
 
 .solar-map__detail-planet {
@@ -675,69 +782,47 @@
 
 .solar-map__canvas-wrap {
   position: relative;
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0 auto;
-  border-radius: 20px;
-  border: 1px solid var(--sa-border-default);
-  background: linear-gradient(145deg, rgba(6, 10, 22, 0.55) 0%, rgba(2, 6, 18, 0.35) 100%);
-  backdrop-filter: blur(16px) saturate(1.25);
-  -webkit-backdrop-filter: blur(16px) saturate(1.25);
-  box-shadow: var(--sa-shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  overflow: hidden;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
   min-height: min(52vh, 500px);
   width: 100%;
 }
 
-.light .solar-map__canvas-wrap {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.78) 0%, rgba(248, 249, 251, 0.65) 100%);
-}
-
-.solar-map__canvas-shimmer {
-  pointer-events: none;
+.solar-map__canvas-hint {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.04) 48%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.04) 52%,
-    transparent 60%
-  );
-  background-size: 200% 100%;
-  animation: map-shimmer 8s ease-in-out infinite;
-}
-
-@keyframes map-shimmer {
-  0%, 100% { background-position: 120% 0; opacity: 0.4; }
-  50% { background-position: -20% 0; opacity: 0.85; }
-}
-
-.solar-map__canvas-glow {
+  bottom: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-family: var(--map-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--home-text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(20, 16, 31, 0.38);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   pointer-events: none;
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 48%, rgba(255, 107, 53, 0.12) 0%, transparent 42%);
-  mix-blend-mode: screen;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
-.light .solar-map__canvas-glow {
-  mix-blend-mode: multiply;
-  background: radial-gradient(circle at 50% 48%, rgba(3, 105, 161, 0.06) 0%, transparent 42%);
-}
-
-.solar-map__scanline {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(255, 255, 255, 0.012) 2px,
-    rgba(255, 255, 255, 0.012) 4px
-  );
-  opacity: 0.5;
+.light .solar-map__canvas-hint {
+  color: #334155;
+  border-color: rgba(15, 23, 42, 0.18);
+  background: rgba(255, 255, 255, 0.48);
+  text-shadow: 0 1px 6px rgba(255, 255, 255, 0.65);
 }
 
 .solar-map__canvas-inner {
@@ -755,11 +840,37 @@
   display: block;
 }
 
+.solar-map--light .solar-map__orbit {
+  stroke-width: 1.25;
+}
+
+.solar-map--light .solar-map__guide-line {
+  stroke-width: 1.15;
+}
+
+.solar-map--light .solar-map__compass-ring {
+  stroke-width: 1.15;
+}
+
 .solar-map__orbit {
   fill: none;
+  stroke: var(--map-orbit-stroke);
   stroke-width: 1;
   stroke-dasharray: 3 9;
   animation: map-orbit-drift 90s linear infinite;
+}
+
+.solar-map__guide-line {
+  stroke: var(--map-guide-stroke);
+  stroke-width: 1;
+  stroke-dasharray: 2 6;
+}
+
+.solar-map__compass-ring {
+  fill: none;
+  stroke: var(--map-compass-stroke);
+  stroke-width: 1;
+  stroke-dasharray: 1 12;
 }
 
 @keyframes map-orbit-drift {
@@ -773,25 +884,38 @@
 }
 
 .solar-map__hub-label {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--map-mono);
   font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.04em;
   pointer-events: none;
   user-select: none;
+  fill: var(--map-label-fill);
+  paint-order: stroke fill;
+  stroke: var(--map-label-stroke);
+  stroke-width: 3px;
+}
+
+.solar-map__planet-orbit {
+  pointer-events: auto;
 }
 
 .solar-map__planet-spin,
 .solar-map__planet-ring-spin {
   transform-box: fill-box;
   transform-origin: center;
-  animation-name: map-planet-self-spin;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
   pointer-events: none;
 }
 
-.solar-map__planet-ring-spin {
-  animation-duration: 18s;
+/* Desktop: spin driven by rAF in MapView for sync with orbit */
+@media (max-width: 640px) {
+  .solar-map__planet-spin,
+  .solar-map__planet-ring-spin {
+    animation-name: map-planet-self-spin;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-duration: 18s;
+  }
 }
 
 @keyframes map-planet-self-spin {
@@ -813,7 +937,6 @@
   .solar-map__rays,
   .solar-map__ambient,
   .solar-map__grid,
-  .solar-map__canvas-shimmer,
   .solar-map__planet-spin,
   .solar-map__planet-ring-spin {
     animation: none;

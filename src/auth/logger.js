@@ -6,7 +6,6 @@
 export function reportAuthError(scope, err) {
     if (!import.meta.env.DEV) return
     const e = err?.errors?.[0]
-    // eslint-disable-next-line no-console
     console.error(`[auth:${scope}]`, {
         code: e?.code || err?.code || 'unknown',
         message: e?.longMessage || e?.message || err?.message || String(err),

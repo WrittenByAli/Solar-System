@@ -1,0 +1,59 @@
+/* Shared Vanta fog backdrop — member utility pages (submissions, account, etc.) */
+
+.sa-fog-page {
+  position: relative;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background: transparent;
+}
+
+.sa-fog-page__vanta {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: #101828;
+  transition: opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sa-fog-page--light .sa-fog-page__vanta {
+  background: #f6f1ea;
+}
+
+.sa-fog-page__veil {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: var(--sa-home-veil);
+  pointer-events: none;
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sa-fog-page__vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse 82% 78% at 50% 45%, transparent 38%, rgba(10, 8, 18, 0.32) 100%);
+  transition: opacity 0.8s ease;
+}
+
+.sa-fog-page--light .sa-fog-page__vignette {
+  background: radial-gradient(ellipse 78% 72% at 50% 44%, transparent 34%, rgba(250, 247, 242, 0.32) 100%);
+}
+
+.sa-fog-page__inner {
+  position: relative;
+  z-index: 4;
+  transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sa-fog-page--dark .sa-fog-page__inner {
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.78);
+}
+
+.sa-fog-page--light .sa-fog-page__inner {
+  text-shadow: 0 1px 12px rgba(255, 255, 255, 0.92);
+}

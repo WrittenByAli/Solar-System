@@ -53,6 +53,9 @@ export const LAYER_LABELS = {
 
 export const SUBMISSION_PREVIEW_LAYER_IDS = [4, 5, 6, 7, 8]
 
+/** Short layer names shared by the review queue and directory filters/badges. */
+export const LAYER_SHORT_NAMES = { 4: 'Entry', 5: 'Detailed', 6: 'Segmented', 7: 'Deep', 8: 'Narrative' }
+
 /** Parse ?archiveLayer= from submit / report URLs → 4–8 or null */
 export function parseSubmissionArchiveLayer(raw) {
     const n = parseInt(String(raw ?? '').trim(), 10)

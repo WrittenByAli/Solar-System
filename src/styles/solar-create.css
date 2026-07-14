@@ -9,7 +9,7 @@
 }
 
 .sa-create-title {
-  font-family: 'Anton', 'Impact', sans-serif;
+  font-family: var(--sa-font);
   font-size: var(--solar-page-heading-size) !important;
   font-weight: 400;
   letter-spacing: 0.03em;
@@ -47,18 +47,22 @@
 .dark .sa-create-page input,
 .dark .sa-create-page select,
 .dark .sa-create-page textarea {
-  color: #ffffff !important;
-  background-color: rgba(2, 6, 23, 0.74) !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #f8fafc !important;
+  background: var(--sa-glass-input-fill) !important;
+  border-color: var(--sa-glass-input-border) !important;
+  backdrop-filter: blur(14px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.3) !important;
   color-scheme: dark;
 }
 
 .light .sa-create-page input,
 .light .sa-create-page select,
 .light .sa-create-page textarea {
-  color: #000000 !important;
-  background-color: rgba(255, 255, 255, 0.96) !important;
-  border-color: rgba(15, 23, 42, 0.16) !important;
+  color: #0f172a !important;
+  background: var(--sa-glass-input-fill) !important;
+  border-color: var(--sa-glass-input-border) !important;
+  backdrop-filter: blur(16px) saturate(1.75) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.75) !important;
   color-scheme: light;
 }
 
@@ -75,16 +79,6 @@
 .sa-create-page input::placeholder,
 .sa-create-page textarea::placeholder {
   opacity: 0.58;
-}
-
-.dark .sa-create-page .rounded-3xl,
-.dark .sa-create-page .rounded-\[22px\] {
-  border-color: rgba(255, 255, 255, 0.14) !important;
-}
-
-.light .sa-create-page .rounded-3xl,
-.light .sa-create-page .rounded-\[22px\] {
-  border-color: rgba(15, 23, 42, 0.1) !important;
 }
 
 @media (max-width: 768px) {

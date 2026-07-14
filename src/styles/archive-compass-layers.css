@@ -48,10 +48,10 @@
 .cv-hub-name { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; flex-shrink: 0; }
 .cv-discipline { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
 .cv-dark .cv-discipline  { color: #64748b; }
-.cv-light .cv-discipline { color: #94a3b8; }
+.cv-light .cv-discipline { color: #475569; }
 .cv-hint { font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; }
 .cv-dark .cv-hint  { color: #475569; }
-.cv-light .cv-hint { color: #94a3b8; }
+.cv-light .cv-hint { color: #475569; }
 .cv-back-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 10px; border: 1px solid rgba(148,163,184,0.22); background: rgba(148,163,184,0.06); font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; transition: background 0.18s, border-color 0.18s, transform 0.12s; line-height: 1.4; }
 .cv-dark .cv-back-btn  { color: #cbd5e1; }
 .cv-light .cv-back-btn { color: #334155; }
@@ -148,7 +148,7 @@
   max-width: 48px;
   font-size: 8px;
   font-weight: 900; letter-spacing: 0.045em; line-height: 1.08;
-  text-align: center; font-family: Inter, system-ui, sans-serif;
+  text-align: center; font-family: var(--sa-font);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -113,7 +113,7 @@ export default function SegmentHoverSurface({
                                   </div>
                                   <div
                                       style={{
-                                          fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+                                          fontFamily: 'Inter, system-ui, sans-serif',
                                           fontSize: 14,
                                           fontWeight: 700,
                                           color: isDark ? '#f1f5f9' : '#0f172a',
@@ -157,7 +157,7 @@ export default function SegmentHoverSurface({
                                               style={{
                                                   fontSize: 15,
                                                   fontWeight: 700,
-                                                  color: isDark ? '#94a3b8' : '#64748b',
+                                                  color: isDark ? '#94a3b8' : '#475569',
                                               }}
                                           >
                                               /5
@@ -168,7 +168,7 @@ export default function SegmentHoverSurface({
                                           style={{
                                               fontSize: 22,
                                               fontWeight: 800,
-                                              color: isDark ? '#475569' : '#94a3b8',
+                                              color: isDark ? '#475569' : '#475569',
                                               letterSpacing: '0.06em',
                                           }}
                                       >
@@ -180,7 +180,7 @@ export default function SegmentHoverSurface({
                                           fontSize: 9,
                                           marginTop: 8,
                                           fontWeight: 600,
-                                          color: isDark ? '#64748b' : '#94a3b8',
+                                          color: isDark ? '#64748b' : '#475569',
                                           letterSpacing: '0.04em',
                                       }}
                                   >

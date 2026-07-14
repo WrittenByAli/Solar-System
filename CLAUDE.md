@@ -17,7 +17,7 @@ The project uses `"type": "module"` in package.json — any standalone scripts m
 - **Framer Motion** — page transitions and component animations
 - **Tailwind CSS** — utility classes alongside custom CSS
 - **Lucide React** — icons
-- **Three.js** + `@react-three/fiber` + `@react-three/drei` — 3D home page scene
+- **Three.js** + **Vanta** (`vanta/dist/vanta.fog.min`) — animated fog backdrop on the home scene (`VantaFogBackground.jsx`); the old `@react-three/fiber`/`drei` scene is gone and those packages are uninstalled
 - **Clerk** (`@clerk/clerk-react`) — real authentication (see `AUTH_SETUP.md`)
 - **Supabase** (`@supabase/supabase-js`) — profiles + archive entries (see "Backend state" below)
 
@@ -33,11 +33,13 @@ All routes are defined in `src/App.jsx` inside `<AnimatedRoutes>`:
 | `/sso-callback` | `SsoCallback` (OAuth completion, public) |
 | `/email-link-verified` | `EmailLinkVerified` (email verification link landing, public) |
 | `/account` | `AccountSecurity` (MFA enrollment, sessions) |
+| `/profile` | `Profile` (identity page, avatar upload, stats, submission history) |
 | `/archive/:planetId` | `ArchiveGrid` |
 | `/leaderboard` | `Leaderboard` |
 | `/reviews` | `Reviews` |
 | `/review-queue` | `GradeSubmissions` — reviewer/admin only |
-| `/submit` | `SubmitArchive` |
+| `/submit` | `SubmitArchive` — new entry, deepen-existing (`updatesEntryId`), edit-existing (`editEntryId`), draft autosave. Keyed in `App.jsx` by `intent`\|`editEntryId`\|`updatesEntryId` (not the full search string) so switching between these mutually-exclusive modes force-remounts and clears stale form state — React Router does not remount a route element on query-only changes, and other params (`archiveLayer`, `tags`, etc.) must NOT trigger a remount mid-edit |
+| `/my-submissions` | `MySubmissions` — status badges, expand for full content, reviewer feedback, edit/delete |
 | `/create-archive` | `CreateArchive` |
 | `/host-archive` | `HostArchive` |
 | `/directory` | `ArchiveDirectory` |
@@ -45,7 +47,9 @@ All routes are defined in `src/App.jsx` inside `<AnimatedRoutes>`:
 
 All routes except `/join`, `/sso-callback`, and `/email-link-verified` are wrapped in `RequireAuth` (App.jsx) — signed-out users are redirected to `/join`. Auth is real (Clerk); see `AUTH_SETUP.md`.
 
-**Guest mode:** `/join` offers "Continue as guest" — a browse-only localStorage session (`AuthContext.isGuest`; no Clerk account, no Supabase row). Guests pass `RequireAuth` (Home, Map, Archive, Leaderboard, Directory), but contribution routes (`/submit`, `/reviews`, `/account`, `/create-archive`, `/host-archive`) use `RequireMember`, which shows guests an upgrade prompt (`src/components/GuestGate.jsx`). The authorization policy (`src/auth/authorization.js`) has a `GUEST` role holding only `archive:read`. A real sign-in permanently clears the guest flag.
+**Guest mode:** `/join` offers "Continue as guest" — a browse-only localStorage session (`AuthContext.isGuest`; no Clerk account, no Supabase row). Guests pass `RequireAuth` (Home, Map, Archive, Leaderboard, Directory), but contribution routes (`/submit`, `/my-submissions`, `/reviews`, `/account`, `/profile`, `/create-archive`, `/host-archive`) use `RequireMember`, which shows guests an upgrade prompt (`src/components/GuestGate.jsx`). The authorization policy (`src/auth/authorization.js`) has a `GUEST` role holding only `archive:read`. A real sign-in permanently clears the guest flag.
+
+**Submission lifecycle:** `archive_entries` rows move through `pending → approved/rejected` via the `process_review_consensus` trigger (3 reviewer consensus, see Backend state below). `is_draft`/`draft_saved_at` mark an in-progress, not-yet-submitted row (autosaved every 30s from `/submit`, one active draft per user, surfaced as a "continue where you left off" banner). `deleted_at` is a soft-delete marker settable only on `pending`/`rejected` rows (RLS-enforced — see Backend state) — approved entries can never be soft-deleted or mutated via the anon key. Editing a pending/rejected entry (`/submit?editEntryId=<id>` or from `/my-submissions`) soft-deletes the original row and inserts a fresh pending copy rather than mutating in place, so stale reviews never contaminate a new consensus count. Every read of `pending`/`draft` rows (the review queue, `/my-submissions`) must filter `.is('deleted_at', null)`; reads scoped to `status='approved'` are automatically safe since approved rows can never carry a `deleted_at`.
 
 **Role system:** `users_profile.role` (`student` / `reviewer` / `admin`, default `student`) is the sole source of truth for elevated access — `authorization.js`'s `rolesFor()` reads it directly, no points-threshold inference. Promotion is automatic: a Postgres trigger (`auto_promote_reviewer`, fires on every `users_profile` insert/update) flips `student` → `reviewer` the moment `points` crosses the threshold stored in `app_settings.reviewer_points_threshold` (default 2500, DB-configurable, not hardcoded). Admin is manual-only — no promotion path exists in the UI, set `role='admin'` via the Supabase dashboard/service-role. `/review-queue` (`RequireReviewer`) redirects non-reviewers to `/leaderboard`; `/admin` (`RequireAdmin`) redirects non-admins home — both guards live in `App.jsx` alongside `RequireAuth`/`RequireMember`. Admin implies reviewer (`rolesFor` grants both roles to an admin). The Navbar (`Navbar.jsx`) shows "Review queue"/"Admin" links conditionally via `useAuth().canAccessReviewerQueue`/`canAccessAdmin`.
 
@@ -98,6 +102,7 @@ Each page has its own CSS file in `src/styles/`:
 | `solar-map.css` | `/map` |
 | `solar-archive-home.css` | `/` Home |
 | `solar-page-shell.css` | Shared page shell (`.solar-page`, `.solar-page--center`) |
+| `solar-profile.css` | `/profile` — glassmorphism identity dashboard (`.sp-*` classes) |
 | `archive-compass-layers.css` | Compass L2/L3 layers |
 | `archive-l1-atmosphere.css` | L1 atmosphere view |
 | `archive-nav-responsive.css` | Navbar responsive overrides |
@@ -161,21 +166,29 @@ The submit form at `/submit` handles L4–L8. The preview sidebar uses `Submissi
 | `src/App.jsx` | Router, ThemeContext, AppShell |
 | `src/styles/theme-tokens.css` | All CSS design tokens |
 | `src/components/Navbar.jsx` | Global navigation + theme toggle |
-| `src/pages/SubmitArchive.jsx` | Submission form (L4–L8) |
+| `src/components/AvatarCircle.jsx` | Circular account avatar with gradient/ring color support |
+| `src/pages/Profile.jsx` | Identity dashboard: avatar upload, reputation bar, stat rings, heatmap, achievements, timeline (composes `src/components/profile/*`) |
+| `src/utils/profileInsights.js` | Pure derivations for /profile (streaks, heatmap buckets, achievements, timeline) — all from real rows |
+| `src/pages/SubmitArchive.jsx` | Submission form (L4–L8): new entry, deepen (`updatesEntryId`), edit (`editEntryId`), draft autosave |
+| `src/pages/MySubmissions.jsx` | Submission history/management: status badges, expand, reviewer feedback, edit/delete |
 | `src/components/SubmissionLayerGuide.jsx` | Layer preview sidebar |
-| `src/context/AuthContext.jsx` | Mock auth (login/logout, username) |
+| `src/context/AuthContext.jsx` | Clerk session + Supabase profile sync |
 | `src/utils/archiveLayerSpecs.js` | Layer spec definitions |
 | `src/utils/archiveSectionEntries.js` | Archive section entry data |
+| `src/utils/rankProfiles.js` | Leaderboard ranking logic (sorts by points DESC, username ASC) |
+| `src/utils/planetOptions.js` | Live `/submit` planet dropdown (queries `planets` table) + presentational color map |
 
 ## Backend state (Phase 2A)
 
 There is no application server — Clerk is the auth backend and Supabase is the data backend, both called directly from the browser.
 
 - **Auth:** real Clerk accounts (`AuthContext` wraps `useUser`); profiles sync to the Supabase `users_profile` table.
-- **Archive entries:** seeded subjects + user submissions live in the Supabase `archive_entries` table (`supabase_schema.sql`, `supabase_seed.sql`). `ArchiveGrid` reads approved entries per hub; `ArchiveDirectory` lists them; `/submit` inserts pending entries. Also has `is_draft`/`draft_saved_at`/`deleted_at`/`layer_data` columns (Final Phase schema migration) — unused until the draft-autosave/edit/delete features that consume them ship.
+- **Avatar uploads:** Supabase Storage bucket `avatars` (public-read) with permissive Phase 2A write policies (`phase2a_avatars_storage_policy`). `/profile` page handles center-crop resize to 200×200, cache-busting query params, and Supabase profile sync.
+- **Archive entries:** seeded subjects + user submissions live in the Supabase `archive_entries` table (`supabase_schema.sql`, `supabase_seed.sql`). `ArchiveGrid` reads approved entries per hub; `ArchiveDirectory` lists them; `/submit` inserts pending entries (or updates a draft/edit-target row); `/profile` and `/my-submissions` list the current user's submission history. `is_draft`/`draft_saved_at`/`deleted_at`/`layer_data` are live: draft autosave, edit-and-resubmit, and soft-delete all ship as of the submission-management feature — see the Submission lifecycle paragraph under Routing above.
+- **Submission management writes:** draft autosave (`SubmitArchive.jsx`, 30s interval, one active draft per user), edit-and-resubmit (soft-delete original + insert edited copy, preserving `updates_entry_id` lineage), and soft-delete (`/my-submissions`) all go through the `p2a_entries_update_pending_rejected` UPDATE policy — the first UPDATE policy ever added to `archive_entries`, deliberately scoped so only `pending`/`rejected` rows are ever mutable via the anon key.
 - **Roles:** `users_profile.role` (student/reviewer/admin) + `app_settings.reviewer_points_threshold` (DB-configurable auto-promotion threshold) + the `auto_promote_reviewer` trigger — see the Role system paragraph under Routing above.
-- **RLS:** enabled with permissive Phase 2A demo policies (migration `phase2a_demo_policies`) on `users_profile`/`archive_entries`/`reviews`; `notifications`/`rate_limits` are deny-all by design (no policies yet); `planets`/`hubs`/`app_settings` are public-read, service-role-write. `supabase_rls.sql` replaces the permissive policies with strict per-user ones in Phase 2B — read its warning header first.
-- **Review workflow + leaderboard:** real and Supabase-backed — 3-reviewer consensus with merge-on-approval and points applied by a Postgres trigger; `/leaderboard` reads live points.
-- **Reference tables (unused by UI yet):** `planets`/`hubs` seeded 1:1 from the current hardcoded taxonomy (`hubTaxonomyRaw.js`/`foundationTaxonomy.js`) — not wired to `/submit`'s dropdowns until that task ships. `notifications`/`rate_limits` exist with no producer/consumer yet.
-- **Still localStorage/demo:** hosted-archive registry and segment reports (`archiveInstanceStorage.js` + inline page data).
+- **RLS:** enabled with permissive Phase 2A demo policies (migration `phase2a_demo_policies`) on `users_profile`/`archive_entries`/`reviews` + `phase2a_avatars_storage_policy` on `storage.objects` + `phase2a_entries_update_policy` (the pending/rejected-scoped UPDATE policy above); `notifications` has permissive Phase 2A select/update policies (`NotificationBell.jsx` reads them; the consensus trigger writes them); `rate_limits` is deny-all by design (no policies); `planets`/`hubs`/`app_settings` are public-read, service-role-write. `supabase_rls.sql` replaces the permissive policies with strict per-user ones in Phase 2B — read its warning header first.
+- **Review workflow + leaderboard + profile rank:** real and Supabase-backed — 3-reviewer consensus with merge-on-approval and points applied by a Postgres trigger (`process_review_consensus`); `/leaderboard` and `/profile` read live points and rank using the same `rankProfiles()` utility (sorts by points DESC, then username ASC). The review queue (`GradeSubmissions.jsx`) filters `status='pending' AND is_draft=false AND deleted_at IS NULL`.
+- **Reference tables:** `planets` now drives the `/submit` planet dropdown live (`src/utils/planetOptions.js`, falls back to the `researchData.json` snapshot on query failure); `hubs` is seeded 1:1 from the same taxonomy but still unused by the UI (grid dimensions still come from `archiveInstanceStorage.js`/localStorage). `notifications` is live (produced by `process_review_consensus`, consumed by `NotificationBell.jsx`); `rate_limits` still has no producer/consumer.
+- **Hosted archives + segment reports:** now Supabase-backed too — `archiveInstanceStorage.js` writes `archive_registry`/`archive_library`/`archive_instances`, and `segmentReports.js` inserts into `segment_reports` (localStorage remains as cache/fallback).
 - **Feature inventory:** `PHASE_2A_FEATURES.md` lists everything Phase 2A delivered and its verification status.

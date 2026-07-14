@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef, memo } from 'react'
 import { useNavigate, Link, useParams } from 'react-router-dom'
 import {
-  Search, ChevronLeft, ChevronRight, ChevronUp, ChevronDown,
+  ChevronLeft, ChevronRight, ChevronUp, ChevronDown,
   ArrowLeft, BookOpen, Layers, Target, ZoomIn, ZoomOut, Crosshair,
   Shield, Zap, Database, Moon, Sun, Download, PenLine, Hand, TextCursor, Globe, Flag, Plus,
   Move, Navigation, ArrowUpDown,
@@ -45,7 +45,6 @@ import {
   LAYER_LABELS,
   SUBJECT_STRIDE_X,
   SUBJECT_STRIDE_Y,
-  nextNarrativeSegmentSubmitSlot,
   getNarrativeSubmitState,
   L56_NARRATIVE_GATE_MESSAGE,
   L56_NARRATIVE_GATE_SHORT,
@@ -55,7 +54,6 @@ import {
 } from '../utils/archiveLayerSpecs.js'
 import { getStaticLatticeTile, getStaticFocusHint } from '../utils/staticLayerMap.js'
 import ArchiveCompassView from '../components/ArchiveCompassView.jsx'
-import Planet3DCanvas from '../components/Planet3DCanvas.jsx'
 import ArchiveL1Atmosphere from '../components/ArchiveL1Atmosphere.jsx'
 import ArchiveHubGlobe from '../components/ArchiveHubGlobe.jsx'
 import '../styles/archive-l1-atmosphere.css'
@@ -222,6 +220,17 @@ function pad4(n) {
   return sign + String(abs).padStart(4, '0')
 }
 
+/** L8 uses a 16384px canvas with ~16px body copy — needs higher zoom than the old 0.25 cap. */
+const L8_DEFAULT_ZOOM = 0.55
+const L8_MAX_ZOOM = 2.0
+
+/** Zoom that frames roughly one L8 narrative column for readable text. */
+function l8ReadableZoom(vpW) {
+  const tileFrac = 0.032
+  const fit = (vpW * 0.88) / (CELL_PX[8] * tileFrac)
+  return Math.max(L8_DEFAULT_ZOOM, Math.min(L8_MAX_ZOOM, fit))
+}
+
 /** Per-layer zoom limits so text always stays readable on screen. */
 function getZoomLimits(layer) {
   switch (layer) {
@@ -231,7 +240,7 @@ function getZoomLimits(layer) {
     case 5: return { min: 0.2,  max: 3.0  }
     case 6: return { min: 0.15, max: 1.5  }
     case 7: return { min: 0.10, max: 1.5  }
-    case 8: return { min: 0.02, max: 0.25 }
+    case 8: return { min: 0.02, max: L8_MAX_ZOOM }
     default: return { min: 0.1, max: 10.0 }
   }
 }
@@ -249,18 +258,6 @@ function parseCoordinateSearchInput(raw, dims) {
   const gy = halfH - ly
   if (gx < 0 || gy < 0 || gx >= gridW || gy >= gridH) return null
   return { lx, ly, gx, gy }
-}
-
-function placeholderText(len, seed = 0) {
-  const bases = [
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore. ',
-    'Data stream active. Signal strength nominal. Recursive patterns detected in sector 4. ',
-    'The archive stores information on solar activities, planetary shifts, and historical data points. ',
-    'Coordinate systems calibrated. Synchronizing with deep space archives. Storage unit healthy. '
-  ]
-  let out = ''
-  while (out.length < len) out += bases[(out.length + seed) % bases.length]
-  return out.slice(0, len)
 }
 
 /** Every populated coordinate on the planet grid, sorted for catalog lists */
@@ -538,7 +535,7 @@ function MetaPanel({ label, value, icon: Icon, color, isDark }) {
       {Icon && <Icon size={14} style={{ color }} />}
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <span style={{ fontSize: 9, color: isDark ? '#64748b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
-        <span style={{ fontSize: 12, fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{value}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>{value}</span>
       </div>
     </div>
   )
@@ -678,7 +675,6 @@ function SegmentReportLink({
   segmentIndex,
   segmentLabel,
   excerpt,
-  col,
   isDark,
   compact,
 }) {
@@ -773,7 +769,7 @@ const L4Content = memo(function L4Content({ lx, ly, data, col, isDark, compassSe
         ) : null}
       </div>
       <div style={{
-        fontFamily: '"JetBrains Mono", monospace',
+        fontFamily: 'Inter, system-ui, sans-serif',
         fontSize: 6,
         color: isDark ? `${col}99` : `${col}bb`,
         flexShrink: 0,
@@ -793,7 +789,7 @@ const L5Content = memo(function L5Content({ lx, ly, data, col, isDark, planetId 
   const hasSummary = !!(data?.shortSummary && String(data.shortSummary).trim())
   return (
     <div style={{ padding: 12, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: col, marginBottom: 8, fontWeight: 800 }}>{pad4(lx)},{pad4(ly)} · SUMMARY</div>
+      <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 10, color: col, marginBottom: 8, fontWeight: 800 }}>{pad4(lx)},{pad4(ly)} · SUMMARY</div>
       <div style={{
         fontWeight: 800, fontSize: 13, color: isDark ? '#f8fafc' : '#0f172a',
         marginBottom: 6, lineHeight: 1.25, flexShrink: 0,
@@ -848,7 +844,7 @@ function EmptySegmentSlotFrame({ col, isDark, minHeight = 100 }) {
             position: 'absolute',
             fontSize: 12,
             fontWeight: 900,
-            fontFamily: '"JetBrains Mono", monospace',
+            fontFamily: 'Inter, system-ui, sans-serif',
             color: cornerCol,
             lineHeight: 1,
             pointerEvents: 'none',
@@ -908,7 +904,7 @@ const L6Content = memo(function L6Content({ lx, ly, data, col, isDark, planetId 
     <div style={{ width: 1024, height: 1024, display: 'flex', flexDirection: 'column', border: `1px solid ${col}22`, background: isDark ? 'rgba(4,2,12,0.98)' : 'rgba(255,255,255,0.98)' }}>
       <div style={{ display: 'flex', height: 260, borderBottom: `1px solid ${col}22`, flexShrink: 0 }}>
         <div style={{ width: 220, padding: 22, borderRight: `1px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(240,248,255,0.5)' }}>
-          <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: col, marginBottom: 16 }}>STORAGE UNIT INF-6</div>
+          <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 10, color: col, marginBottom: 16 }}>STORAGE UNIT INF-6</div>
           <MetaPanel label="X COORD" value={pad4(lx)} color={col} isDark={isDark} />
           <div style={{ height: 8 }} />
           <MetaPanel label="Y COORD" value={pad4(ly)} color={col} isDark={isDark} />
@@ -947,7 +943,7 @@ const L6Content = memo(function L6Content({ lx, ly, data, col, isDark, planetId 
                 </div>
               </SegmentHoverSurface>
             ) : (
-              <div style={{ padding: '24px 0', color: isDark ? '#334155' : '#94a3b8', fontSize: 11, fontStyle: 'italic' }}>
+              <div style={{ padding: '24px 0', color: isDark ? '#64748b' : '#475569', fontSize: 11, fontStyle: 'italic' }}>
                 No segments submitted yet.
                 {data?.title && (
                   <div>
@@ -1025,7 +1021,7 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
           <ul style={{ margin: 0, paddingLeft: 16, fontSize: 10, lineHeight: 1.5, color: isDark ? '#94a3b8' : '#475569' }}>
             {catalog.map((row) => (
               <li key={row.key} style={{ marginBottom: 10 }}>
-                <span style={{ fontFamily: '"JetBrains Mono", monospace', color: col, fontWeight: 700 }}>
+                <span style={{ fontFamily: 'Inter, system-ui, sans-serif', color: col, fontWeight: 700 }}>
                   {pad4(row.lx)},{pad4(row.ly)}
                 </span>
                 {' · '}
@@ -1120,7 +1116,7 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
                   </div>
                   <EmptySegmentSlotFrame col={col} isDark={isDark} minHeight={140} />
                   {showL56Gate && (
-                    <div style={{ fontSize: 10, lineHeight: 1.5, color: isDark ? '#64748b' : '#94a3b8', fontWeight: 600 }}>
+                    <div style={{ fontSize: 10, lineHeight: 1.5, color: isDark ? '#64748b' : '#475569', fontWeight: 600 }}>
                       Add L5 (summary) and L6 (detail) content at this coordinate before authoring narrative tiles.
                       Easiest segments (difficulty 1) fill L7 first; harder segments automatically advance to L8 once L7 is complete.
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1249,7 +1245,7 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
                           />
                         </div>
                       </div>
-                      <div style={{ fontSize: 10, fontFamily: '"JetBrains Mono", monospace', color: col, opacity: 0.95, marginTop: 6 }}>{slot.coordLabel}</div>
+                      <div style={{ fontSize: 10, fontFamily: 'Inter, system-ui, sans-serif', color: col, opacity: 0.95, marginTop: 6 }}>{slot.coordLabel}</div>
                       <div style={{ fontSize: 11, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', marginTop: 4, lineHeight: 1.25 }}>{slot.title}</div>
                       <p style={{
                         margin: '8px 0 0',
@@ -1275,7 +1271,7 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
                           {slot.sourceLabel || href}
                         </a>
                       ) : (
-                        <span style={{ fontSize: 10, color: isDark ? '#64748b' : '#94a3b8' }}>{slot.sourceLabel || '--'}</span>
+                        <span style={{ fontSize: 10, color: isDark ? '#64748b' : '#475569' }}>{slot.sourceLabel || '--'}</span>
                       )}
                     </div>
                   )
@@ -1306,7 +1302,6 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactS
     [data?.segments, entryDiff],
   )
   const narrativeSegCount = orderedNarrativeSegs.length
-  const coordLabel = `${pad4(lx)},${pad4(ly)}`
 
   // Row windowing constants for the narrative grid
   const APPROX_HEADER_H = 1800  // padding + meta panels + intro text (px above the grid)
@@ -1325,28 +1320,28 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactS
           <Database size={56} style={{ color: col }} />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: 36, color: isDark ? '#64748b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>PRIMARY SCALE</span>
-            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>16,384 PX</span>
+            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>16,384 PX</span>
           </div>
         </div>
         <div style={{ padding: 48, border: `4px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
           <Shield size={56} style={{ color: col }} />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: 36, color: isDark ? '#64748b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>DATA INTEGRITY</span>
-            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>FULL DEPTH</span>
+            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>FULL DEPTH</span>
           </div>
         </div>
         <div style={{ padding: 48, border: `4px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
           <Zap size={56} style={{ color: col }} />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: 36, color: isDark ? '#64748b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>COMPUTATION</span>
-            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>QUANTUM EXT.</span>
+            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>QUANTUM EXT.</span>
           </div>
         </div>
         <div style={{ padding: 48, border: `4px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
           <Target size={56} style={{ color: col }} />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: 36, color: isDark ? '#64748b' : '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>X,Y ORIGIN</span>
-            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{pad4(lx)},{pad4(ly)}</span>
+            <span style={{ fontSize: 48, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>{pad4(lx)},{pad4(ly)}</span>
           </div>
         </div>
       </div>
@@ -1479,7 +1474,7 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactS
             <Database size={52} style={{ color: col, flexShrink: 0 }} />
             <div>
               <div style={{ fontSize: 44, fontWeight: 900, color: col, letterSpacing: '0.05em', lineHeight: 1 }}>CITED FACTS & SOURCES</div>
-              <div style={{ fontSize: 28, color: isDark ? '#64748b' : '#94a3b8', marginTop: 12 }}>{L8_FACT_SOURCE_SLOTS} citation slots · primary references for this coordinate</div>
+              <div style={{ fontSize: 28, color: isDark ? '#64748b' : '#475569', marginTop: 12 }}>{L8_FACT_SOURCE_SLOTS} citation slots · primary references for this coordinate</div>
             </div>
           </div>
         </div>
@@ -1512,13 +1507,13 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactS
                     <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} segmentIndex={`cited-${citedIdx + 1}`} segmentLabel={`L8 cited fact ${citedIdx + 1}`} excerpt={[slot.title, slot.fact].filter(Boolean).join(' -- ')} col={col} isDark={isDark} compact />
                   </div>
                 </div>
-                <div style={{ fontSize: 13, fontFamily: '"JetBrains Mono", monospace', color: col, opacity: 0.95 }}>{slot.coordLabel}</div>
+                <div style={{ fontSize: 13, fontFamily: 'Inter, system-ui, sans-serif', color: col, opacity: 0.95 }}>{slot.coordLabel}</div>
                 <div style={{ fontSize: 15, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', lineHeight: 1.25 }}>{slot.title}</div>
                 <p style={{ margin: 0, fontSize: 13, color: isDark ? '#94a3b8' : '#475569', lineHeight: 1.65, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 8, overflow: 'hidden' }}>{slot.fact}</p>
                 <div style={{ fontSize: 12, fontWeight: 900, color: col, letterSpacing: '0.08em', marginTop: 'auto' }}>SOURCE</div>
                 {hasLink
                   ? <a href={href} onClick={(e) => e.stopPropagation()} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})} style={{ fontSize: 12, fontWeight: 600, color: accent, wordBreak: 'break-word' }}>{slot.sourceLabel || href}</a>
-                  : <span style={{ fontSize: 12, color: isDark ? '#64748b' : '#94a3b8' }}>{slot.sourceLabel || '--'}</span>}
+                  : <span style={{ fontSize: 12, color: isDark ? '#64748b' : '#475569' }}>{slot.sourceLabel || '--'}</span>}
               </L8Tile>
             )
           })}
@@ -1528,63 +1523,6 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactS
   )
 })
 
-/* ══════════════════════════════════════════════
-   ADJACENCY ERROR TOAST
-   Rendered at fixed position in the main component; triggered via callback.
-══════════════════════════════════════════════ */
-function AdjacencyErrorMessage({ isDark, onClose }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4200)
-    return () => clearTimeout(t)
-  }, [onClose])
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 140,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 99999,
-        maxWidth: 380,
-        width: '90vw',
-        padding: '16px 20px',
-        borderRadius: 18,
-        background: isDark
-          ? 'linear-gradient(135deg, rgba(120,20,20,0.97), rgba(160,50,10,0.97))'
-          : 'linear-gradient(135deg, rgba(255,235,235,0.99), rgba(255,245,220,0.99))',
-        border: `2px solid ${isDark ? 'rgba(248,113,113,0.6)' : 'rgba(220,38,38,0.45)'}`,
-        color: isDark ? '#fca5a5' : '#7f1d1d',
-        boxShadow: `0 20px 48px rgba(0,0,0,0.35), 0 0 0 1px ${isDark ? 'rgba(248,113,113,0.15)' : 'rgba(220,38,38,0.08)'}`,
-        backdropFilter: 'blur(18px)',
-        animation: 'adjErrorSlideUp 0.32s cubic-bezier(0.22, 1, 0.36, 1)',
-      }}
-      onClick={onClose}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 13 }}>
-        <div style={{ fontSize: 22, flexShrink: 0, lineHeight: 1, marginTop: 1 }}>⚠</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 5, letterSpacing: '0.02em' }}>
-            Non-Adjacent Cell
-          </div>
-          <div style={{ fontSize: 12, lineHeight: 1.6, opacity: 0.92 }}>
-            You can only submit to cells <strong>directly adjacent</strong> (up, down, left, or right) to an existing filled grid entry. Move to a cell next to filled content first.
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{
-            marginLeft: 4, flexShrink: 0, color: 'currentColor', opacity: 0.55,
-            fontSize: 16, lineHeight: 1, padding: '2px 4px',
-            background: 'none', border: 'none', cursor: 'pointer', borderRadius: 6,
-          }}
-        >✕</button>
-      </div>
-    </div>
-  )
-}
-
-/* ── Small floating + button for empty L5/L6 cells ── */
 /* ── Unified + button for adjacent empty cells L4–L8 ── */
 function EmptyAddButton({ col, isDark, layer }) {
   // Size and font scale with layer cell size
@@ -1650,7 +1588,7 @@ function EmptyAddButton({ col, isDark, layer }) {
 const GridCell = memo(function GridCell({
   gx, gy, lx, ly, cpx, cpy, cp, layer, data, col, isDark, navigate, planetId,
   gridFactsCatalog, deepFactSources, compassSelected, isAdjacentToFilled,
-  onAdjacencyError, visYMin, visYMax, onDrillFilled,
+  visYMin, visYMax, onDrillFilled,
 }) {
   const isEmpty = !data
 
@@ -1705,7 +1643,7 @@ const GridCell = memo(function GridCell({
 ══════════════════════════════════════════════ */
 function InteractiveGrid({
   layer, viewX, viewY, vpW, vpH, planet, isDark, navigate, sectionEntries, zoom, gridDims, hubId,
-  compassDomainId, compassSubfieldId, onAdjacencyError, onDrillFilled,
+  compassDomainId, compassSubfieldId, onDrillFilled,
 }) {
   const cp = CELL_PX[layer]
   const col = planet.color
@@ -1805,7 +1743,6 @@ function InteractiveGrid({
               deepFactSources={deepFactSources}
               compassSelected={compassSelected}
               isAdjacentToFilled={adjacentToFilledSet ? adjacentToFilledSet.has(`${gx},${gy}`) && !filledCellSet.has(`${gx},${gy}`) : true}
-              onAdjacencyError={onAdjacencyError}
               visYMin={visYMin}
               visYMax={visYMax}
               onDrillFilled={onDrillFilled}
@@ -1916,12 +1853,12 @@ function PlanetIntro({ planet, isDark, onEnter, gridDims, archiveCfg }) {
         </div>
 
         <nav className="planet-intro__nav" aria-label="Archive navigation">
-          <Link to="/" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Home</Link>
+          <Link to="/" style={{ color: isDark ? '#475569' : '#64748b' }}>Home</Link>
           <Link to="/map" style={{ color: isDark ? '#67e8f9' : '#0284c7' }}>Other domains (map)</Link>
           <Link to="/create-archive" style={{ color: isDark ? '#fbbf24' : '#b45309' }}>Configure grid image</Link>
         </nav>
 
-        <p className="planet-intro__federation" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
+        <p className="planet-intro__federation" style={{ color: isDark ? '#64748b' : '#475569' }}>
           Public discovery at{' '}
           <a href={ARCHIVE_SOLAR_PUBLIC_URL} target="_blank" rel="noopener noreferrer" style={{ color: col, fontWeight: 700 }}>
             archive.solar
@@ -2008,7 +1945,7 @@ function SubjectLatticeOverlay({
       <div style={{ fontSize: 9, fontWeight: 900, color: col, letterSpacing: '0.08em', marginBottom: 6 }}>
         SUBJECT LATTICE · L{layer} ({subdiv}×{subdiv})
       </div>
-      <p style={{ margin: '0 0 8px', fontSize: 10, lineHeight: 1.45, color: isDark ? '#94a3b8' : '#64748b' }}>
+      <p style={{ margin: '0 0 8px', fontSize: 10, lineHeight: 1.45, color: isDark ? '#475569' : '#64748b' }}>
         Each tile is a viewport fraction at this zoom. Click to center it and drill to L{layer + 1}. Entry titles appear when a cell overlaps seeded coordinates.
         Optional: set <code style={{ fontSize: 9 }}>window.SOLAR_STATIC_LAYER_MAP</code> (see <code style={{ fontSize: 9 }}>src/utils/staticLayerMap.js</code>) to supply titles and precise focus coordinates without rebuilding.
       </p>
@@ -2074,7 +2011,7 @@ function SubjectLatticeOverlay({
                 textAlign: 'left',
               }}
             >
-              <span style={{ fontSize: 8, fontWeight: 900, fontFamily: '"JetBrains Mono", monospace' }}>{i + 1},{j + 1}</span>
+              <span style={{ fontSize: 8, fontWeight: 900, fontFamily: 'Inter, system-ui, sans-serif' }}>{i + 1},{j + 1}</span>
               <span
                 style={{
                   fontSize: 8,
@@ -2100,17 +2037,12 @@ function SubjectLatticeOverlay({
 /* ══════════════════════════════════════════════
    STATIC BACKGROUND (L1-L3) + INTERACTIVE PLANET
 ══════════════════════════════════════════════ */
-function StaticBg({ layer, viewX, viewY, isDark, color, zoom, planet, vpSize, gridDims }) {
+function StaticBg({ layer, viewX, viewY, isDark, color, zoom, planet, gridDims }) {
   const planetId = planet?.id?.toLowerCase()
   const cp = CELL_PX[layer] * zoom
   const trX = -viewX * cp
   const trY = -viewY * cp
   const customImg = window.SOLAR_LAYER_CONFIG?.[planetId]?.[layer] || planet?.layerImages?.[layer]
-
-  const hasImage  = ['earth', 'mars', 'venus', 'jupiter', 'saturn', 'uranus'].includes(planetId)
-  const baseRadius = layer === 1 ? Math.min(vpSize.w, vpSize.h) * 0.35 : 300
-  const planetPx   = baseRadius * cp
-  const planetCenterPx = { x: gridDims.halfW * cp, y: gridDims.halfH * cp }
 
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', background: layer === 1 ? (isDark ? '#000' : '#ffffff') : 'transparent' }}>
@@ -2129,32 +2061,6 @@ function StaticBg({ layer, viewX, viewY, isDark, color, zoom, planet, vpSize, gr
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', border: `${cp * 0.5}px solid ${color}2a`, boxSizing: 'border-box', boxShadow: `inset 0 0 60px ${color}14` }} />
         )}
         {/* planet sphere removed from L1 — no orb in the grid view */}
-        {false && (
-          <div style={{
-            position: 'absolute',
-            left: planetCenterPx.x - planetPx,
-            top:  planetCenterPx.y - planetPx,
-            width: planetPx * 2,
-            height: planetPx * 2,
-            borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: hasImage
-              ? `0 0 ${120 * zoom}px ${color}44`
-              : `0 0 ${120 * zoom}px ${color}88, inset 0 0 ${80 * zoom}px rgba(0,0,0,0.5)`,
-            background: hasImage ? 'transparent' : `radial-gradient(circle at 30% 30%, ${color}, #000)`,
-            opacity: layer === 1 ? 1 : 0,
-            pointerEvents: 'none',
-          }}>
-            {hasImage && (
-              <img
-                src={`${import.meta.env.BASE_URL}planets/${planetId}.png`}
-                style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }}
-                alt={planetId}
-              />
-            )}
-            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', boxShadow: `inset 0 0 ${40 * zoom}px ${color}aa`, pointerEvents: 'none' }} />
-          </div>
-        )}
       </div>
     </div>
   )
@@ -2232,7 +2138,7 @@ function SearchBar({
     const cp = CELL_PX[targetLayer]
     let fitZoom = Math.max(0.15, Math.min(1.0, (vpSize.w * 0.9) / cp))
     if (targetLayer === 7) fitZoom = 0.60
-    if (targetLayer === 8) fitZoom = 0.08
+    if (targetLayer === 8) fitZoom = l8ReadableZoom(vpSize.w)
 
     setLayer(targetLayer)
     setZoom(fitZoom)
@@ -2248,19 +2154,20 @@ function SearchBar({
   }
 
   return (
-    <div className="archive-search-hud">
-      <Search size={14} className="archive-search-hud__icon" style={{ color: isDark ? '#94a3b8' : '#475569' }} aria-hidden />
+    <div
+      className={`archive-search-hud${isDark ? '' : ' archive-search-hud--light'}`}
+      style={{ '--search-accent': col }}
+    >
       <input
         className="archive-search-hud__input"
         value={term}
         onChange={(e) => { setTerm(e.target.value); setIsOpen(true) }}
         onFocus={() => setIsOpen(true)}
         onBlur={() => setTimeout(() => setIsOpen(false), 200)}
-        placeholder="Title, tags, or X,Y…"
+        placeholder="Search title, tags, coords…"
         title="Display coordinates lx,ly (e.g. 0,0 or 100,130). On L5-L8, search jumps at your current layer."
         style={{
-          background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.5)',
-          border: `1px solid ${col}44`,
+          background: isDark ? 'rgba(15,23,42,0.55)' : 'rgba(255,255,255,0.92)',
           color: isDark ? '#f8fafc' : '#0f172a',
         }}
       />
@@ -2286,12 +2193,12 @@ function SearchBar({
               onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
             >
-              <div style={{ fontSize: 10, fontFamily: '"JetBrains Mono", monospace', color: col, fontWeight: 800, marginBottom: 2 }}>
+              <div style={{ fontSize: 10, fontFamily: 'Inter, system-ui, sans-serif', color: col, fontWeight: 800, marginBottom: 2 }}>
                 {pad4(r.lx)},{pad4(r.ly)}
               </div>
               <div style={{ fontSize: 11, color: isDark ? '#f8fafc' : '#0f172a', lineHeight: 1.4 }}>{r.title}</div>
               {r.subtitle && (
-                <div style={{ fontSize: 9, color: isDark ? '#64748b' : '#94a3b8', marginTop: 4 }}>{r.subtitle}</div>
+                <div style={{ fontSize: 9, color: isDark ? '#64748b' : '#475569', marginTop: 4 }}>{r.subtitle}</div>
               )}
             </button>
           ))}
@@ -2555,14 +2462,6 @@ export default function ArchiveGrid() {
   /** 4:4:4 compass -- active domain (L3) and subfield highlight */
   const [compassDomainId, setCompassDomainId] = useState(null)
   const [compassSubfieldId, setCompassSubfieldId] = useState(null)
-  const [adjacencyErrorVisible, setAdjacencyErrorVisible] = useState(false)
-  const adjacencyErrorTimerRef = useRef(null)
-  const showAdjacencyError = useCallback(() => {
-    setAdjacencyErrorVisible(true)
-    if (adjacencyErrorTimerRef.current) clearTimeout(adjacencyErrorTimerRef.current)
-    adjacencyErrorTimerRef.current = window.setTimeout(() => setAdjacencyErrorVisible(false), 4200)
-  }, [])
-
   const panAnimRef = useRef(null)
   const [layerTrans, setLayerTrans] = useState(null) // { from, to }
 
@@ -2635,7 +2534,6 @@ export default function ArchiveGrid() {
     startDist: 0, startZoom: 1,
     lastVX: 0, lastVY: 0, lastZoom: 1,
   })
-  const lastClick = useRef(0)
   /** Keeps latest view for drag/wheel without stale closures; updated every render */
   const viewXYRef = useRef({ x: 0, y: 0 })
   viewXYRef.current = { x: viewX, y: viewY }
@@ -2718,6 +2616,9 @@ export default function ArchiveGrid() {
   // Supabase entries (dbEntries) are merged on top of the static data.
   const sectionEntries = useMemo(
     () => ({ ...buildMergedSectionEntries(planet, halfW, halfH), ...dbEntries }),
+    // submissionMergeTick is not read inside — it deliberately invalidates the
+    // memo after a localStorage submission merge, which the inputs can't see.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [planet, submissionMergeTick, halfW, halfH, dbEntries],
   )
 
@@ -2961,11 +2862,9 @@ export default function ArchiveGrid() {
       }, 380)
       return
     }
-    /* 'view' scheme: arrows move the viewport, so the content shifts the opposite way */
-    if (panSchemeRef.current === 'view') { dx = -dx; dy = -dy }
+    /* D-pad moves content in the arrow direction (+Y up, +X right on screen). */
     /* at L1 — move the planet globe instead of the invisible grid */
     if (layer === 1 && planetMoverRef.current) {
-      /* Negate both so +X moves right, +Y moves up (screen coords are inverted) */
       const STEP = 14
       planetMoverRef.current(-dx * STEP, -dy * STEP)
       moveInterval.current = window.setTimeout(() => {
@@ -2995,6 +2894,11 @@ export default function ArchiveGrid() {
   const handlePadPointerEnd = useCallback(() => {
     stopMoving()
   }, [stopMoving])
+
+  // If the page unmounts mid-hold (e.g. keyboard navigation away while a
+  // D-pad button is pressed) the hold-repeat interval would outlive the
+  // component — stop it with everything else.
+  useEffect(() => stopMoving, [stopMoving])
 
   // Measure the real viewport box so pan limits match what you see (full drag range on screen).
   useLayoutEffect(() => {
@@ -3032,7 +2936,7 @@ export default function ArchiveGrid() {
 
     let defaultZoom = 1.0
     if (nl === 7) defaultZoom = 0.60
-    if (nl === 8) defaultZoom = 0.08
+    if (nl === 8) defaultZoom = L8_DEFAULT_ZOOM
     // Arriving on L4 with a subfield picked: zoom in so the 2×2 topic block
     // is prominent in its quadrant instead of a 128px speck.
     if (nl === 4 && compassSubfieldId && hasCompassTaxonomy) defaultZoom = 1.8
@@ -3092,7 +2996,7 @@ export default function ArchiveGrid() {
     setViewX(targetX)
     setViewY(targetY)
     setLayerTrans({ from: fromLayer, to: nl })
-  }, [clamp, focusedCell, vpSize, viewX, viewY, layer, zoom, compassDomainId, compassSubfieldId, sectionEntries, compassAnchorViewXY])
+  }, [clamp, focusedCell, vpSize, viewX, viewY, layer, zoom, compassDomainId, compassSubfieldId, hasCompassTaxonomy, sectionEntries, compassAnchorViewXY])
 
   /** Center viewport on absolute grid cell (gx, gy) at layer nl -- used by L2/L3 static map and drill. */
   const focusSubjectCell = useCallback(
@@ -3101,7 +3005,7 @@ export default function ArchiveGrid() {
       let nl2 = Math.max(1, Math.min(TOTAL_LAYERS, nl))
       let defaultZoom = 1.0
       if (nl2 === 7) defaultZoom = 0.60
-      if (nl2 === 8) defaultZoom = 0.08
+      if (nl2 === 8) defaultZoom = L8_DEFAULT_ZOOM
       setFocusedCell(null)
       setLayer(nl2)
       setZoom(defaultZoom)
@@ -3185,7 +3089,7 @@ export default function ArchiveGrid() {
       const nl = Math.min(TOTAL_LAYERS, layer + 1)
       let defaultZoom = 1.0
       if (nl === 7) defaultZoom = 0.60
-      if (nl === 8) defaultZoom = 0.08
+      if (nl === 8) defaultZoom = L8_DEFAULT_ZOOM
       setFocusedCell(null)
       setLayer(nl)
       setZoom(defaultZoom)
@@ -3275,7 +3179,7 @@ export default function ArchiveGrid() {
       setViewX(x)
       setViewY(y)
     }
-    const onUp = (e) => {
+    const onUp = () => {
       drag.current.active = false;
       if (el) el.style.cursor = 'grab';
     }
@@ -3488,7 +3392,7 @@ export default function ArchiveGrid() {
   const dispX = Math.floor(viewX) - halfW
   const dispY = halfH - Math.floor(viewY)
 
-  const isLarge = vpSize.w >= 768
+  const isLarge = vpSize.w >= 1024
   const segNavMode = layer === 7 || layer === 8
   const segNavTotal = layer === 7 ? L7_SEGMENT_NAV_TOTAL : L8_SEGMENT_COUNT
 
@@ -3519,11 +3423,6 @@ export default function ArchiveGrid() {
     return getNarrativeSubmitState(layer, sectionEntries[key])
   }, [segNavMode, layer, hudCenterCell.gx, hudCenterCell.gy, sectionEntries])
 
-  const nextSegmentSubmitInfo = useMemo(() => {
-    if (narrativeSubmitState.kind !== 'ready') return null
-    return { slot: narrativeSubmitState.slot, total: narrativeSubmitState.total }
-  }, [narrativeSubmitState])
-
   const hudDispX = segNavMode ? hudCenterCell.lx : dispX
   const hudDispY = segNavMode ? hudCenterCell.ly : dispY
 
@@ -3538,7 +3437,7 @@ export default function ArchiveGrid() {
 
   const hudChipStyle = {
     background: isDark ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)',
-    border: `1px solid ${col}44`,
+    boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.28)' : '0 2px 12px rgba(15,23,42,0.1)',
   }
   const controlButtonStyle = {
     width: 56,
@@ -3548,7 +3447,7 @@ export default function ArchiveGrid() {
     background: isDark
       ? `linear-gradient(145deg, rgba(15,23,42,0.92), ${col}22)`
       : `linear-gradient(145deg, rgba(255,255,255,0.96), ${col}20)`,
-    border: `2px solid ${col}66`,
+    border: 'none',
     color: isDark ? '#f8fafc' : '#0f172a',
     textShadow: isDark ? '0 1px 10px rgba(0,0,0,0.45)' : '0 1px 0 rgba(255,255,255,0.85)',
     boxShadow: isDark
@@ -3629,7 +3528,6 @@ export default function ArchiveGrid() {
                 onClick={toggleDragScheme}
                 style={{
                   ...hudChipStyle,
-                  border: dragScheme === 'inverted' ? `2px solid ${col}` : hudChipStyle.border,
                   background: dragScheme === 'inverted' ? (isDark ? `${col}26` : `${col}18`) : hudChipStyle.background,
                   color: col,
                 }}
@@ -3664,7 +3562,6 @@ export default function ArchiveGrid() {
                 onClick={() => setViewportInteractMode((m) => (m === 'pan' ? 'select' : 'pan'))}
                 style={{
                   ...hudChipStyle,
-                  border: viewportInteractMode === 'select' ? `2px solid ${col}` : hudChipStyle.border,
                   background: viewportInteractMode === 'select' ? (isDark ? `${col}26` : `${col}18`) : hudChipStyle.background,
                   color: col,
                 }}
@@ -3717,7 +3614,7 @@ export default function ArchiveGrid() {
                         fontSize: 9,
                         fontWeight: 900,
                         cursor: 'pointer',
-                        fontFamily: '"JetBrains Mono", monospace',
+                        fontFamily: 'Inter, system-ui, sans-serif',
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -3748,7 +3645,6 @@ export default function ArchiveGrid() {
         <header
           className="archive-header"
           style={{
-            borderBottom: `1px solid ${col}22`,
             background: isDark ? 'rgba(2,4,8,0.4)' : 'rgba(255,255,255,0.4)',
           }}
         >
@@ -3763,7 +3659,7 @@ export default function ArchiveGrid() {
               title="One shared coordinate grid. Each lens loads a different research corpus at the same cell addresses."
               style={{ '--lens-color': col }}
             >
-              <span className="archive-lens-picker__label" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
+              <span className="archive-lens-picker__label" style={{ color: isDark ? '#64748b' : '#475569' }}>
                 <span className="archive-lens-picker__label-long">RESEARCH LENS</span>
                 <span className="archive-lens-picker__label-short">LENS</span>
               </span>
@@ -3776,7 +3672,6 @@ export default function ArchiveGrid() {
                   onChange={(e) => navigate(`/archive/${e.target.value}`)}
                   style={{
                     '--lens-color': col,
-                    border: `1px solid ${col}66`,
                     background: isDark
                       ? `linear-gradient(135deg, rgba(15,23,42,0.96), ${col}18)`
                       : `linear-gradient(135deg, rgba(255,255,255,0.98), ${col}16)`,
@@ -3806,8 +3701,7 @@ export default function ArchiveGrid() {
                     title={LAYER_LABELS[l]}
                     style={{
                       background: layer === l ? `${col}15` : 'transparent',
-                      color: layer === l ? (isDark ? '#4fc3f7' : '#0284c7') : (isDark ? '#475569' : '#94a3b8'),
-                      borderColor: layer === l ? `${col}33` : 'transparent',
+                      color: layer === l ? (isDark ? '#4fc3f7' : '#0284c7') : (isDark ? '#475569' : '#475569'),
                     }}
                   >
                     L{l}
@@ -3817,7 +3711,7 @@ export default function ArchiveGrid() {
             </div>
           </div>
 
-          <div className="archive-nav-status" title={statusLine} style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+          <div className="archive-nav-status" title={statusLine} style={{ color: isDark ? '#475569' : '#64748b' }}>
             {statusLine}
           </div>
         </header>
@@ -3845,7 +3739,7 @@ export default function ArchiveGrid() {
                   pointerEvents: 'none',
                 }}
               >
-                <StaticBg layer={layer} viewX={viewX} viewY={viewY} isDark={isDark} color={col} zoom={zoom} planet={planet} vpSize={vpSize} gridDims={gridDims} />
+                <StaticBg layer={layer} viewX={viewX} viewY={viewY} isDark={isDark} color={col} zoom={zoom} planet={planet} gridDims={gridDims} />
               </div>
               {showGrid && layer === 1 && (
                 <div className="archive-l1-stage" aria-hidden={false}>
@@ -3853,8 +3747,6 @@ export default function ArchiveGrid() {
                   <ArchiveHubGlobe
                     hubId={hubId}
                     planet={planet}
-                    taxonomy={hubTaxonomy}
-                    isDark={isDark}
                     accentColor={col}
                     vpSize={vpSize}
                     zoom={zoom}
@@ -3917,7 +3809,6 @@ export default function ArchiveGrid() {
               planet={planet} isDark={isDark} navigate={navigate} sectionEntries={sectionEntries}
               zoom={zoom} gridDims={gridDims} hubId={hubId}
               compassDomainId={compassDomainId} compassSubfieldId={compassSubfieldId}
-              onAdjacencyError={showAdjacencyError}
               onDrillFilled={focusSubjectCell}
             />
           )}
@@ -3933,7 +3824,9 @@ export default function ArchiveGrid() {
 
         {/* MOBILE OVERHAUL: Navigation "+" shape and search below */}
         <div className="archive-controls-overlay" style={{ 
-          position: 'absolute', bottom: 30, left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute',
+          bottom: layer === 1 ? 'max(6px, env(safe-area-inset-bottom))' : 'max(18px, env(safe-area-inset-bottom))',
+          left: '50%', transform: 'translateX(-50%)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, zIndex: 1000
         }}>
           
@@ -3972,7 +3865,7 @@ export default function ArchiveGrid() {
                 className="archive-pan-btn" 
                 style={controlButtonStyle} 
                 type="button"
-                title={segNavMode ? 'Previous segment row' : (panScheme === 'view' ? 'Move view up (+Y)' : 'Pan +Y (planet toward top)')}
+                title={segNavMode ? 'Previous segment row' : 'Pan +Y (planet toward top)'}
                 onPointerDown={(e) => handlePadPointerDown(e, 0, 1)}
                 onPointerUp={handlePadPointerEnd}
                 onPointerCancel={handlePadPointerEnd}
@@ -3988,7 +3881,7 @@ export default function ArchiveGrid() {
                 className="archive-pan-btn" 
                 style={controlButtonStyle} 
                 type="button"
-                title={segNavMode ? 'Previous segment column' : (panScheme === 'view' ? 'Move view left (−X)' : 'Pan −X (planet toward left)')}
+                title={segNavMode ? 'Previous segment column' : 'Pan −X (planet toward left)'}
                 onPointerDown={(e) => handlePadPointerDown(e, 1, 0)}
                 onPointerUp={handlePadPointerEnd}
                 onPointerCancel={handlePadPointerEnd}
@@ -4005,7 +3898,7 @@ export default function ArchiveGrid() {
                 className="archive-pan-btn" 
                 style={controlButtonStyle} 
                 type="button"
-                title={segNavMode ? 'Next segment column' : (panScheme === 'view' ? 'Move view right (+X)' : 'Pan +X (planet toward right)')}
+                title={segNavMode ? 'Next segment column' : 'Pan +X (planet toward right)'}
                 onPointerDown={(e) => handlePadPointerDown(e, -1, 0)}
                 onPointerUp={handlePadPointerEnd}
                 onPointerCancel={handlePadPointerEnd}
@@ -4021,7 +3914,7 @@ export default function ArchiveGrid() {
                 className="archive-pan-btn" 
                 style={controlButtonStyle} 
                 type="button"
-                title={segNavMode ? 'Next segment row' : (panScheme === 'view' ? 'Move view down (−Y)' : 'Pan −Y (planet toward bottom)')}
+                title={segNavMode ? 'Next segment row' : 'Pan −Y (planet toward bottom)'}
                 onPointerDown={(e) => handlePadPointerDown(e, 0, -1)}
                 onPointerUp={handlePadPointerEnd}
                 onPointerCancel={handlePadPointerEnd}
@@ -4098,7 +3991,7 @@ export default function ArchiveGrid() {
           </div>
 
           {/* Search Bar & Reset Row */}
-          <div className="archive-controls-overlay__utility-row" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div className="archive-controls-overlay__utility-row">
             {!isLarge && (
               <SearchBar 
                 col={col} isDark={isDark}
@@ -4117,7 +4010,7 @@ export default function ArchiveGrid() {
                 height: 46, padding: '0 24px', borderRadius: 23,
                 display: 'flex', alignItems: 'center', gap: 8,
                 background: isDark ? 'rgba(30,41,59,0.9)' : 'rgba(255,255,255,0.9)',
-                border: `1px solid ${col}44`, color: col, backdropFilter: 'blur(10px)',
+                border: 'none', color: col, backdropFilter: 'blur(10px)',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.2)', cursor: 'pointer'
               }}
               onClick={() => {
@@ -4143,10 +4036,6 @@ export default function ArchiveGrid() {
         @keyframes pulseOrb {
           0%, 100% { box-shadow: 0 0 40px ${col}, 0 0 80px ${col}55, inset 0 0 24px rgba(0,0,0,0.4); }
           50% { box-shadow: 0 0 60px ${col}, 0 0 120px ${col}44, inset 0 0 24px rgba(0,0,0,0.4); }
-        }
-        @keyframes adjErrorSlideUp {
-          from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
         @keyframes ltOverlayAnim {
           0%   { opacity: 1; }
@@ -4207,11 +4096,6 @@ export default function ArchiveGrid() {
           to   { width: 100%; }
         }
       `}</style>
-
-      {/* Adjacency error toast — rendered at root level to escape scaled containers */}
-      {adjacencyErrorVisible && (
-        <AdjacencyErrorMessage isDark={isDark} onClose={() => setAdjacencyErrorVisible(false)} />
-      )}
 
       {/* Layer transition cinematic overlay */}
       {layerTrans && (

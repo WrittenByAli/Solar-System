@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import {
     Sun,
     Home,
@@ -20,11 +20,15 @@ import {
     Award,
     ShieldCheck,
     Shield,
+    FileText,
 } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import FoundationLogo from './FoundationLogo.jsx'
 import { SolarWordCore } from './SolarBrandA.jsx'
+import VantaFogBackground from './solar-archive/VantaFogBackground.jsx'
+import AvatarCircle from './AvatarCircle.jsx'
+import NotificationBell from './NotificationBell.jsx'
 
 const baseNavLinks = [
     { label: 'Home', path: '/', icon: Home },
@@ -41,33 +45,30 @@ const baseNavLinks = [
 const GUEST_PATHS = new Set(['/', '/map', '/leaderboard', '/directory'])
 const guestNavLinks = baseNavLinks.filter((l) => GUEST_PATHS.has(l.path))
 
-/** Circular account avatar; falls back to the username initial. */
-function AvatarCircle({ avatarUrl, username, size = 34 }) {
-    const initial = (username || '?').charAt(0).toUpperCase()
-    return (
-        <span className="snav-avatar" style={{ width: size, height: size }}>
-            {avatarUrl ? (
-                <img
-                    src={avatarUrl}
-                    alt={username ? `@${username}` : 'Account'}
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                />
-            ) : (
-                <span className="text-white font-semibold" style={{ fontSize: size * 0.4 }}>
-                    {initial}
-                </span>
-            )}
-        </span>
-    )
+const SHEET_EASE = [0.22, 1, 0.36, 1]
+
+const sheetVariants = {
+  closed: { opacity: 0, y: -18, scaleY: 0.94 },
+  open: { opacity: 1, y: 0, scaleY: 1 },
+}
+
+const sheetItemVariants = {
+  closed: { opacity: 0, x: -16 },
+  open: { opacity: 1, x: 0 },
+}
+
+const sheetListVariants = {
+  closed: {},
+  open: { transition: { staggerChildren: 0.04, delayChildren: 0.07 } },
 }
 
 export default function Navbar() {
     const location = useLocation()
     const { theme, toggleTheme } = useTheme()
-    const { isLoggedIn, isGuest, username, email, avatarUrl, points, canAccessReviewerQueue, canAccessAdmin, logout } = useAuth()
+    const { isLoggedIn, isGuest, username, email, avatarUrl, points, profile, canAccessReviewerQueue, canAccessAdmin, logout } = useAuth()
     const [mobileOpen, setMobileOpen] = useState(false)
     const [accountOpen, setAccountOpen] = useState(false)
+    const reduceMotion = useReducedMotion()
 
     const navLinks = useMemo(() => {
         let next = baseNavLinks
@@ -88,6 +89,11 @@ export default function Navbar() {
 
     const isArchive = location.pathname.startsWith('/archive/')
     if (isArchive) return null
+
+    const isHome = location.pathname === '/'
+    const isReviewQueue = location.pathname === '/review-queue'
+    const isDark = theme === 'dark'
+    const brandInk = isDark ? '#f8fafc' : '#0a1628'
 
     const isNavActive = (path) => {
         if (path === '/') return location.pathname === '/'
@@ -131,6 +137,16 @@ export default function Navbar() {
                             {points} contribution point{points === 1 ? '' : 's'}
                         </div>
 
+                        <Link to="/profile" role="menuitem" onClick={() => setAccountOpen(false)} className="snav-menu__item">
+                            <Trophy size={15} aria-hidden />
+                            View profile
+                        </Link>
+
+                        <Link to="/my-submissions" role="menuitem" onClick={() => setAccountOpen(false)} className="snav-menu__item">
+                            <FileText size={15} aria-hidden />
+                            My submissions
+                        </Link>
+
                         <Link to="/account" role="menuitem" onClick={() => setAccountOpen(false)} className="snav-menu__item">
                             <ShieldCheck size={15} aria-hidden />
                             Account &amp; security
@@ -148,8 +164,16 @@ export default function Navbar() {
 
     return (
         <nav
-            className="solar-navbar fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:px-5 md:px-7"
+            className={`solar-navbar fixed top-0 left-0 right-0 z-50${isHome ? ' solar-navbar--home' : ''}${isReviewQueue ? ' solar-navbar--review-queue' : ''}`}
         >
+            <div className="solar-navbar__bg" aria-hidden="true">
+                <div className="solar-navbar__aurora solar-navbar__aurora--a" />
+                <div className="solar-navbar__aurora solar-navbar__aurora--b" />
+                <div className="solar-navbar__shimmer" />
+            </div>
+            <div className="solar-navbar__glass" aria-hidden="true" />
+
+            <div className="solar-navbar__inner flex items-center justify-between gap-2 px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:px-5 md:px-7">
             {/* Logo */}
             <Link
                 to={isLoggedIn || isGuest ? '/' : '/join'}
@@ -169,7 +193,13 @@ export default function Navbar() {
                 </motion.div>
                 <span className="solar-navbar__brand">
                     <span className="solar-navbar__brand-the">THE</span>
-                    <SolarWordCore className="solar-navbar__brand-solar" />
+                    <SolarWordCore
+                        className="solar-navbar__brand-solar"
+                        gradientStops={[
+                            { offset: '0%', color: brandInk },
+                            { offset: '100%', color: brandInk },
+                        ]}
+                    />
                     <span className="solar-navbar__brand-archive">ARCHIVE</span>
                 </span>
             </Link>
@@ -180,16 +210,27 @@ export default function Navbar() {
                     {visibleLinks.map(({ label, path, icon: Icon }) => {
                         const isActive = isNavActive(path)
                         return (
-                            <Link key={path} to={path} className="snav-link" data-active={isActive}>
+                            <Link
+                                key={path}
+                                to={path}
+                                className={`snav-link${path === '/review-queue' ? ' snav-link--queue' : ''}`}
+                                data-active={isActive}
+                            >
                                 <Icon size={13.5} className="shrink-0" aria-hidden />
                                 <span>{label}</span>
-                                {isActive && (
+                                {isActive && path === '/review-queue' ? (
+                                    <motion.span
+                                        layoutId="snav-underline"
+                                        className="snav-link__pill"
+                                        transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
+                                    />
+                                ) : isActive ? (
                                     <motion.span
                                         layoutId="snav-underline"
                                         className="snav-link__underline"
                                         transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
                                     />
-                                )}
+                                ) : null}
                             </Link>
                         )
                     })}
@@ -206,6 +247,8 @@ export default function Navbar() {
                 >
                     {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
                 </button>
+
+                {isLoggedIn && <NotificationBell userId={profile?.id} iconSize={15} className="snav-icon-btn ml-1" />}
 
                 {isLoggedIn ? (
                     <div className="relative ml-2 shrink-0">
@@ -258,7 +301,7 @@ export default function Navbar() {
                 {visibleLinks.map(({ label, path, icon: Icon }) => {
                     const isActive = isNavActive(path)
                     return (
-                        <Link key={path} to={path} title={label} className="snav-icon-strip shrink-0" data-active={isActive}>
+                        <Link key={path} to={path} title={label} className={`snav-icon-strip shrink-0${path === '/review-queue' ? ' snav-icon-strip--queue' : ''}`} data-active={isActive}>
                             <Icon size={16} aria-hidden />
                         </Link>
                     )
@@ -271,6 +314,7 @@ export default function Navbar() {
                 >
                     {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                 </button>
+                {isLoggedIn && <NotificationBell userId={profile?.id} iconSize={16} className="snav-icon-btn shrink-0" />}
                 {isLoggedIn ? (
                     <div className="relative shrink-0">
                         <button
@@ -312,14 +356,45 @@ export default function Navbar() {
                 >
                     {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
                 </button>
+                {isLoggedIn && (
+                    <NotificationBell
+                        userId={profile?.id}
+                        iconSize={17}
+                        className="snav-icon-btn min-w-[40px] min-h-[40px]"
+                    />
+                )}
                 <button
                     type="button"
                     onClick={() => setMobileOpen((o) => !o)}
-                    className="snav-icon-btn min-w-[40px] min-h-[40px] rounded-lg"
+                    className="snav-icon-btn snav-icon-btn--menu min-w-[40px] min-h-[40px] rounded-lg"
                     aria-expanded={mobileOpen}
                     aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
                 >
-                    {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+                    <AnimatePresence mode="wait" initial={false}>
+                        {mobileOpen ? (
+                            <motion.span
+                                key="close"
+                                className="snav-menu-icon"
+                                initial={reduceMotion ? false : { rotate: -90, opacity: 0, scale: 0.82 }}
+                                animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                                exit={reduceMotion ? undefined : { rotate: 90, opacity: 0, scale: 0.82 }}
+                                transition={{ duration: reduceMotion ? 0 : 0.22, ease: SHEET_EASE }}
+                            >
+                                <X size={20} />
+                            </motion.span>
+                        ) : (
+                            <motion.span
+                                key="menu"
+                                className="snav-menu-icon"
+                                initial={reduceMotion ? false : { rotate: 90, opacity: 0, scale: 0.82 }}
+                                animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                                exit={reduceMotion ? undefined : { rotate: -90, opacity: 0, scale: 0.82 }}
+                                transition={{ duration: reduceMotion ? 0 : 0.22, ease: SHEET_EASE }}
+                            >
+                                <Menu size={20} />
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
                 </button>
             </div>
 
@@ -327,26 +402,45 @@ export default function Navbar() {
             <AnimatePresence>
                 {mobileOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.18 }}
-                        className="snav-sheet absolute top-full left-0 right-0 md:hidden py-3 px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] flex flex-col gap-0.5 max-h-[min(75dvh,32rem)] overflow-y-auto overscroll-contain"
+                        initial={reduceMotion ? false : 'closed'}
+                        animate="open"
+                        exit={reduceMotion ? undefined : 'closed'}
+                        variants={sheetVariants}
+                        transition={{ duration: reduceMotion ? 0 : 0.34, ease: SHEET_EASE }}
+                        style={{ transformOrigin: 'top center' }}
+                        className={`snav-sheet absolute top-full left-0 right-0 md:hidden max-h-[min(75dvh,32rem)] overflow-hidden overscroll-contain${isDark ? '' : ' snav-sheet--light'}`}
                     >
+                        <div className="snav-sheet__fx" aria-hidden="true">
+                            <VantaFogBackground
+                                isDark={isDark}
+                                entryReveal={1}
+                                className="snav-sheet__vanta"
+                            />
+                            <div className="snav-sheet__veil" />
+                            <div className="snav-sheet__vignette" />
+                        </div>
+
+                        <motion.div
+                            variants={sheetListVariants}
+                            initial={reduceMotion ? false : 'closed'}
+                            animate="open"
+                            exit={reduceMotion ? undefined : 'closed'}
+                            className="snav-sheet__content flex flex-col gap-0.5 py-3 px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] max-h-[min(75dvh,32rem)] overflow-y-auto overscroll-contain"
+                        >
                         {/* Profile row — signed in */}
                         {isLoggedIn && (
-                            <div className="snav-sheet__profile flex items-center gap-3 px-4 py-3 mb-1 rounded-xl">
+                            <motion.div variants={sheetItemVariants} className="snav-sheet__profile sa-glass-surface flex items-center gap-3 px-4 py-3 mb-1 rounded-xl">
                                 <AvatarCircle avatarUrl={avatarUrl} username={username} size={38} />
                                 <div className="min-w-0">
                                     <p className="snav-menu__name truncate">@{username || 'user'}</p>
                                     <p className="snav-menu__email">{points} contribution point{points === 1 ? '' : 's'}</p>
                                 </div>
-                            </div>
+                            </motion.div>
                         )}
 
                         {/* Profile row — guest session */}
                         {isGuest && (
-                            <div className="snav-sheet__profile flex items-center gap-3 px-4 py-3 mb-1 rounded-xl">
+                            <motion.div variants={sheetItemVariants} className="snav-sheet__profile sa-glass-surface flex items-center gap-3 px-4 py-3 mb-1 rounded-xl">
                                 <AvatarCircle avatarUrl={null} username="Guest" size={38} />
                                 <div className="min-w-0 flex-1">
                                     <p className="snav-menu__name truncate">Browsing as guest</p>
@@ -356,26 +450,54 @@ export default function Navbar() {
                                     <Eye size={11} aria-hidden />
                                     Guest
                                 </span>
-                            </div>
+                            </motion.div>
                         )}
 
                         {visibleLinks.map(({ label, path, icon: Icon }) => {
                             const isActive = isNavActive(path)
                             return (
+                                <motion.div key={path} variants={sheetItemVariants}>
                                 <Link
-                                    key={path}
                                     to={path}
                                     onClick={() => setMobileOpen(false)}
-                                    className="snav-sheet__link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium min-h-[48px]"
+                                    className={`snav-sheet__link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium min-h-[48px]${path === '/review-queue' ? ' snav-sheet__link--queue' : ''}`}
                                     data-active={isActive}
                                 >
                                     <Icon size={18} className="shrink-0" aria-hidden />
                                     {label}
                                 </Link>
+                                </motion.div>
                             )
                         })}
 
                         {isLoggedIn && (
+                            <motion.div variants={sheetItemVariants}>
+                            <Link
+                                to="/my-submissions"
+                                onClick={() => setMobileOpen(false)}
+                                className="snav-sheet__link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium min-h-[48px]"
+                            >
+                                <FileText size={18} className="shrink-0" aria-hidden />
+                                My submissions
+                            </Link>
+                            </motion.div>
+                        )}
+
+                        {isLoggedIn && (
+                            <motion.div variants={sheetItemVariants}>
+                            <Link
+                                to="/profile"
+                                onClick={() => setMobileOpen(false)}
+                                className="snav-sheet__link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium min-h-[48px]"
+                            >
+                                <Trophy size={18} className="shrink-0" aria-hidden />
+                                View profile
+                            </Link>
+                            </motion.div>
+                        )}
+
+                        {isLoggedIn && (
+                            <motion.div variants={sheetItemVariants}>
                             <Link
                                 to="/account"
                                 onClick={() => setMobileOpen(false)}
@@ -384,9 +506,11 @@ export default function Navbar() {
                                 <ShieldCheck size={18} className="shrink-0" aria-hidden />
                                 Account &amp; security
                             </Link>
+                            </motion.div>
                         )}
 
                         {isLoggedIn ? (
+                            <motion.div variants={sheetItemVariants}>
                             <button
                                 type="button"
                                 onClick={handleLogout}
@@ -395,8 +519,10 @@ export default function Navbar() {
                                 <LogOut size={18} aria-hidden />
                                 Log out
                             </button>
+                            </motion.div>
                         ) : isGuest ? (
                             <>
+                                <motion.div variants={sheetItemVariants}>
                                 <Link
                                     to="/join?mode=signup"
                                     onClick={() => setMobileOpen(false)}
@@ -407,6 +533,8 @@ export default function Navbar() {
                                         Create free account
                                     </span>
                                 </Link>
+                                </motion.div>
+                                <motion.div variants={sheetItemVariants}>
                                 <button
                                     type="button"
                                     onClick={handleLogout}
@@ -415,8 +543,10 @@ export default function Navbar() {
                                     <LogOut size={18} aria-hidden />
                                     Exit guest mode
                                 </button>
+                                </motion.div>
                             </>
                         ) : (
+                            <motion.div variants={sheetItemVariants}>
                             <Link
                                 to="/join"
                                 onClick={() => setMobileOpen(false)}
@@ -427,10 +557,13 @@ export default function Navbar() {
                                     Sign In
                                 </span>
                             </Link>
+                            </motion.div>
                         )}
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
+            </div>
         </nav>
     )
 }

@@ -5,7 +5,6 @@ import {
     ImagePlus,
     CheckCircle,
     AlertCircle,
-    ExternalLink,
     Grid3x3,
     Loader2,
     ArrowRight,
@@ -16,7 +15,6 @@ import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import '../styles/solar-create.css'
 import {
-    ARCHIVE_INSTANCE_LS,
     ARCHIVE_HUB_LOCATIONS,
     REGISTRY_CATEGORIES,
     addArchiveToLibrary,
@@ -35,7 +33,8 @@ import {
 export default function CreateArchive() {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
-    const { isLoggedIn, username } = useAuth()
+    const { isLoggedIn, username, profile } = useAuth()
+    const userId = profile?.id || null
 
     useLayoutEffect(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
@@ -71,20 +70,20 @@ export default function CreateArchive() {
         setListPublicly(!!cfg.listedOnRegistry)
     }, [hubPlanetId])
 
-    const [savedLibrary, setSavedLibrary] = useState(() => loadArchiveLibrary())
+    const [savedLibrary, setSavedLibrary] = useState(() => loadArchiveLibrary(userId))
 
     useEffect(() => {
         const bump = () => {
             setLibraryTick((t) => t + 1)
-            setSavedLibrary(loadArchiveLibrary())
+            setSavedLibrary(loadArchiveLibrary(userId))
         }
         window.addEventListener('solar-archive-library-updated', bump)
         return () => window.removeEventListener('solar-archive-library-updated', bump)
-    }, [])
+    }, [userId])
 
     useEffect(() => {
-        setSavedLibrary(loadArchiveLibrary())
-    }, [libraryTick])
+        setSavedLibrary(loadArchiveLibrary(userId))
+    }, [libraryTick, userId])
 
     const applyImageFile = useCallback(async (file) => {
         setErr('')
@@ -166,7 +165,7 @@ export default function CreateArchive() {
 
             const hid = normalizeHubId(hubPlanetId)
 
-            saveHubArchiveConfig(hid, {
+            await saveHubArchiveConfig(hid, {
                 gridWidth: effectiveW,
                 gridHeight: effectiveH,
                 coverImageDataUrl: coverStored,
@@ -177,7 +176,7 @@ export default function CreateArchive() {
                 listedOnRegistry: listPublicly,
             })
 
-            addArchiveToLibrary({
+            await addArchiveToLibrary({
                 slug: sl,
                 title: title.trim() || 'My archive',
                 category,
@@ -188,11 +187,11 @@ export default function CreateArchive() {
                 owner: username || 'guest',
                 listedOnRegistry: listPublicly,
                 hubPlanetId: hid,
-            })
+            }, userId)
 
             if (listPublicly) {
                 try {
-                    upsertArchiveRegistryEntry({
+                    await upsertArchiveRegistryEntry({
                         slug: sl,
                         title: title.trim() || 'Untitled archive',
                         category,
@@ -201,7 +200,7 @@ export default function CreateArchive() {
                         owner: username || 'anonymous',
                         coverThumb: thumbSm,
                         hubPlanetId: hid,
-                        demoNote: 'Listed from this browser — future home: archive.solar',
+                        demoNote: 'Listed on the SOLAR directory',
                     })
                 } catch {
                     /* registry optional */
@@ -248,7 +247,7 @@ export default function CreateArchive() {
                         Grid <strong style={{ color: ink }}>{effectiveW} × {effectiveH}</strong> is live for{' '}
                         <strong style={{ color: ink }}>{hubMeta?.label || hubPlanetId}</strong> — open it below or return to the Solar map to pick another hub. Layer 1 is the front page; zoom deeper for detail.
                     </p>
-                    <p className="text-xs mb-10" style={{ color: isDark ? '#475569' : '#94a3b8' }}>
+                    <p className="text-xs mb-10" style={{ color: isDark ? '#64748b' : '#475569' }}>
                         Saved to this browser and appended to your archive library when you return.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
@@ -319,21 +318,11 @@ export default function CreateArchive() {
                         className="sa-create-title mb-4"
                         style={{ color: ink }}
                     >
-                        Create a Solar Archive
+                        Create Archive
                     </h1>
                     <p className="text-sm md:text-base max-w-xl mx-auto leading-relaxed mb-4" style={{ color: muted }}>
-                        Drop any image: its <strong style={{ color: ink }}>width × height in pixels</strong> becomes your coordinate grid — one cell per pixel.
-                        We cap each side at <strong style={{ color: ink }}>{GRID_SIDE_MAX}px</strong> so the map stays smooth until you wire up a server.
+                        Upload an image to generate a coordinate grid, capped at <strong style={{ color: ink }}>{GRID_SIDE_MAX}px</strong> per side.
                     </p>
-                    <a
-                        href="https://archive.solar"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold opacity-90 hover:opacity-100 transition-opacity"
-                        style={{ color: ink }}
-                    >
-                        Federation vision: archive.solar <ExternalLink size={12} />
-                    </a>
                 </motion.div>
 
                 {!isLoggedIn && (
@@ -508,7 +497,7 @@ export default function CreateArchive() {
                     }}
                 >
                     <div className="flex items-center gap-2 mb-2">
-                        <Layers size={18} style={{ color: isDark ? '#94a3b8' : '#64748b' }} />
+                        <Layers size={18} style={{ color: isDark ? '#94a3b8' : '#475569' }} />
                         <h2 className="text-sm font-black uppercase tracking-[0.15em]" style={{ color: muted }}>
                             Archive details
                         </h2>
@@ -603,8 +592,7 @@ export default function CreateArchive() {
                     <label className="flex items-start gap-3 text-sm cursor-pointer rounded-xl p-3 -mx-1 transition-colors hover:bg-black/5 dark:hover:bg-white/5">
                         <input type="checkbox" checked={listPublicly} onChange={(e) => setListPublicly(e.target.checked)} className="mt-1 rounded border-gray-400" />
                         <span style={{ color: muted }}>
-                            Also publish to the <strong style={{ color: ink }}>shared directory</strong> prototype (same browser). Future: sync to{' '}
-                            <a href="https://archive.solar" target="_blank" rel="noopener noreferrer" className="font-semibold underline" style={{ color: ink }}>archive.solar</a>.
+                            Publish to the <strong style={{ color: ink }}>local directory</strong>.
                         </span>
                     </label>
 
@@ -635,8 +623,7 @@ export default function CreateArchive() {
                         style={{ color: muted }}
                         onClick={() => {
                             const blank = defaultArchiveInstance()
-                            saveHubArchiveConfig(normalizeHubId(hubPlanetId), blank)
-                            localStorage.removeItem(ARCHIVE_INSTANCE_LS)
+                            saveHubArchiveConfig(normalizeHubId(hubPlanetId), blank).catch(() => {})
                             window.dispatchEvent(new Event('solar-archive-instance-updated'))
                             if (previewUrl && previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
                             lastFileRef.current = null

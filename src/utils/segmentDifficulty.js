@@ -36,7 +36,7 @@ export function estimateSegmentDifficulty(text) {
 
     const longWordRatio = words.filter((w) => lettersOnly(w).length >= 9).length / n
 
-    const punctDensity = (t.match(/[,;:()\[\]{}"""'\-/]/g) || []).length / Math.max(20, t.length)
+    const punctDensity = (t.match(/[,;:()[\]{}"""'\-/]/g) || []).length / Math.max(20, t.length)
 
     let score = 0
     score += Math.min(1, Math.max(0, (avgLetters - 4.5) / 8)) * 0.38

@@ -2,13 +2,36 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+      /* Stamp the saved theme before first paint so light-mode users never
+         see a dark flash. App.jsx reads the same key on mount. */
+      try {
+        if (localStorage.getItem('sa-theme') === 'light') {
+          document.documentElement.classList.replace('dark', 'light')
+        }
+      } catch (e) {}
+    </script>
     <meta name="description" content="The SOLAR Archive — Sustainable Off-grid Living-labs for Autonomy and Research. An interactive coordinate-based research archive." />
     <title>The SOLAR Archive</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+    <!-- Warm the API origins the app talks to on boot (profile sync, auth
+         client) so the first real request skips DNS + TLS setup. -->
+    <link rel="preconnect" href="https://itobgwbxapbvpwmgcrda.supabase.co" crossorigin />
+    <link rel="preconnect" href="https://simple-bug-30.clerk.accounts.dev" crossorigin />
+    <!-- Load the font stylesheet without blocking first paint: it applies as
+         soon as it arrives (display=swap already governs the glyph swap). -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>

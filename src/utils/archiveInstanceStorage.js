@@ -1,12 +1,25 @@
-/** Saved layout + branding for a hostable archive instance (local demo — swap for API later). */
+/**
+ * Saved layout + branding for a hostable archive instance.
+ *
+ * Backend: Supabase (`archive_instances`, `archive_registry`, `archive_library`).
+ * The read functions (`loadHubArchiveConfig`, `readGridDimensionsFromStorage`,
+ * `loadArchiveRegistry`, `loadArchiveLibrary`) stay SYNCHRONOUS — they return
+ * from an in-memory cache and kick off a background Supabase hydration on a
+ * cache miss, then dispatch the same `solar-archive-*-updated` window events
+ * the call sites already listen to, so the UI re-reads once real data lands.
+ * The write functions are async (upsert/insert to Supabase, optimistic cache
+ * update, event dispatch). This keeps the hot render paths in ArchiveGrid /
+ * MapView unchanged while moving the source of truth off localStorage.
+ */
 import { getHubDisciplineCopy } from '../constants/hubDisciplineCopy.js'
+import { supabase } from './supabaseClient.js'
 
+// Legacy localStorage keys — retained as exports because ArchiveGrid still
+// references them in a `storage` event listener and CreateArchive clears one.
+// Nothing writes to them anymore.
 export const ARCHIVE_INSTANCE_LS = 'solarArchiveInstanceConfig'
-/** Per map hub (`/archive/:planetId`) instance configs — overrides legacy single-config when present. */
 export const ARCHIVE_BY_HUB_LS = 'solarArchiveByHub'
-/** Community directory rows (local demo — federation target: https://archive.solar ) */
 export const ARCHIVE_REGISTRY_LS = 'solarArchivePublishedRegistry'
-/** Saved archives list for this browser (Start archive → Add) */
 export const ARCHIVE_LIBRARY_LS = 'solarArchiveLibrary'
 
 /** Map hubs — ids must match `/archive/:planetId` routes and MapView targets. */
@@ -34,20 +47,6 @@ export function normalizeHubId(raw) {
     if (id === 'beacon') id = 'star'
     const known = ARCHIVE_HUB_LOCATIONS.some((h) => h.id === id)
     return known ? id : 'earth'
-}
-
-function loadArchiveByHubMap() {
-    try {
-        const raw = localStorage.getItem(ARCHIVE_BY_HUB_LS)
-        const obj = JSON.parse(raw || '{}')
-        return obj && typeof obj === 'object' && !Array.isArray(obj) ? obj : {}
-    } catch {
-        return {}
-    }
-}
-
-function persistArchiveByHubMap(map) {
-    localStorage.setItem(ARCHIVE_BY_HUB_LS, JSON.stringify(map))
 }
 
 export const GRID_SIDE_MIN = 8
@@ -83,60 +82,59 @@ export function defaultArchiveInstance() {
     }
 }
 
-export function loadArchiveInstanceConfig() {
-    try {
-        const raw = localStorage.getItem(ARCHIVE_INSTANCE_LS)
-        if (!raw) return defaultArchiveInstance()
-        return { ...defaultArchiveInstance(), ...JSON.parse(raw) }
-    } catch {
-        return defaultArchiveInstance()
+// ── Hub instance config (archive_instances) ─────────────────────────────────
+
+function rowToInstanceConfig(row) {
+    const base = defaultArchiveInstance()
+    if (!row) return base
+    return {
+        ...base,
+        gridWidth: row.grid_width ?? base.gridWidth,
+        gridHeight: row.grid_height ?? base.gridHeight,
+        coverImageDataUrl: row.cover_image_data_url ?? '',
+        instanceTitle: row.instance_title ?? '',
+        slug: row.slug ?? '',
+        category: row.category ?? 'general',
+        contactUrl: row.contact_url ?? '',
+        listedOnRegistry: row.listed_on_registry ?? false,
+        updatedAt: row.updated_at ?? '',
     }
 }
 
-export function saveArchiveInstanceConfig(patch) {
-    const prev = loadArchiveInstanceConfig()
-    const next = {
-        ...prev,
-        ...patch,
-        gridWidth: clampGridSide(patch.gridWidth ?? prev.gridWidth, prev.gridWidth),
-        gridHeight: clampGridSide(patch.gridHeight ?? prev.gridHeight, prev.gridHeight),
-        updatedAt: new Date().toISOString(),
-    }
-    try {
-        localStorage.setItem(ARCHIVE_INSTANCE_LS, JSON.stringify(next))
-    } catch (e) {
-        const err = new Error(
-            'Could not save — browser storage is full. Try a smaller image or clear site data.',
-        )
-        err.cause = e
-        throw err
-    }
-    window.dispatchEvent(new Event('solar-archive-instance-updated'))
-    return next
+const hubConfigCache = new Map() // normalized hub id -> config object
+const hubHydrating = new Set()
+
+function hydrateHub(id) {
+    if (hubHydrating.has(id)) return
+    hubHydrating.add(id)
+    supabase
+        .from('archive_instances')
+        .select('*')
+        .eq('hub_id', id)
+        .maybeSingle()
+        .then(({ data }) => {
+            hubConfigCache.set(id, data ? rowToInstanceConfig(data) : defaultArchiveInstance())
+            if (data) window.dispatchEvent(new Event('solar-archive-instance-updated'))
+        })
+        .catch(() => { if (!hubConfigCache.has(id)) hubConfigCache.set(id, defaultArchiveInstance()) })
+        .finally(() => { hubHydrating.delete(id) })
 }
 
 /**
- * Config for one map hub. Falls back to legacy `solarArchiveInstanceConfig` if this hub has no entry yet.
+ * Config for one map hub. Synchronous: returns the cached config (default on
+ * a cold miss) and hydrates from Supabase in the background.
  */
 export function loadHubArchiveConfig(hubId) {
     const id = normalizeHubId(hubId)
-    const map = loadArchiveByHubMap()
-    const base = defaultArchiveInstance()
-    let stored = map[id] && typeof map[id] === 'object' ? map[id] : null
-    if (!stored && id === 'star' && map.beacon && typeof map.beacon === 'object') {
-        stored = map.beacon
-    }
-    if (stored) return { ...base, ...stored }
-    const legacy = loadArchiveInstanceConfig()
-    return { ...base, ...legacy }
+    if (hubConfigCache.has(id)) return { ...hubConfigCache.get(id) }
+    hydrateHub(id)
+    return defaultArchiveInstance()
 }
 
-/**
- * Save grid + metadata for a specific hub (planet / Star foundation).
- */
-export function saveHubArchiveConfig(hubId, patch) {
+/** Save grid + metadata for a specific hub (planet / Star foundation). Async. */
+export async function saveHubArchiveConfig(hubId, patch) {
     const id = normalizeHubId(hubId)
-    const prev = loadHubArchiveConfig(id)
+    const prev = hubConfigCache.get(id) || defaultArchiveInstance()
     const next = {
         ...prev,
         ...patch,
@@ -144,53 +142,31 @@ export function saveHubArchiveConfig(hubId, patch) {
         gridHeight: clampGridSide(patch.gridHeight ?? prev.gridHeight, prev.gridHeight),
         updatedAt: new Date().toISOString(),
     }
-    const map = loadArchiveByHubMap()
-    map[id] = next
-    try {
-        persistArchiveByHubMap(map)
-    } catch (e) {
-        const err = new Error(
-            'Could not save — browser storage is full. Try a smaller image or clear site data.',
-        )
-        err.cause = e
+    hubConfigCache.set(id, next) // optimistic
+    window.dispatchEvent(new Event('solar-archive-instance-updated'))
+    const { error } = await supabase
+        .from('archive_instances')
+        .upsert({
+            hub_id: id,
+            grid_width: next.gridWidth,
+            grid_height: next.gridHeight,
+            cover_image_data_url: next.coverImageDataUrl || '',
+            instance_title: next.instanceTitle || '',
+            slug: next.slug || '',
+            category: next.category || 'general',
+            contact_url: next.contactUrl || '',
+            listed_on_registry: !!next.listedOnRegistry,
+            updated_at: next.updatedAt,
+        }, { onConflict: 'hub_id' })
+    if (error) {
+        const err = new Error('Could not save archive settings to the server. Please try again.')
+        err.cause = error
         throw err
     }
-    window.dispatchEvent(new Event('solar-archive-instance-updated'))
     return next
 }
 
-export function loadArchiveLibrary() {
-    try {
-        const raw = localStorage.getItem(ARCHIVE_LIBRARY_LS)
-        const arr = JSON.parse(raw || '[]')
-        return Array.isArray(arr) ? arr : []
-    } catch {
-        return []
-    }
-}
-
-/** Append one archive record (each successful “Add archive” save). */
-export function addArchiveToLibrary(entry) {
-    const list = loadArchiveLibrary().filter((x) => x.id !== entry.id)
-    const row = {
-        ...entry,
-        id: entry.id || `arc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        savedAt: entry.savedAt || new Date().toISOString(),
-    }
-    list.unshift(row)
-    try {
-        localStorage.setItem(ARCHIVE_LIBRARY_LS, JSON.stringify(list.slice(0, 80)))
-    } catch {
-        const trimmed = list.slice(0, 15).map((r, i) =>
-            i === 0 ? { ...r, thumb: '', coverNote: 'thumbnail omitted (storage full)' } : r,
-        )
-        localStorage.setItem(ARCHIVE_LIBRARY_LS, JSON.stringify(trimmed))
-    }
-    window.dispatchEvent(new Event('solar-archive-library-updated'))
-    return row
-}
-
-/** `{ gridW, gridH, halfW, halfH }` for ArchiveGrid for the active hub route */
+/** `{ gridW, gridH, halfW, halfH }` for ArchiveGrid for the active hub route. Synchronous. */
 export function readGridDimensionsFromStorage(planetId = 'earth') {
     const c = loadHubArchiveConfig(planetId)
     const gridW = clampGridSide(c.gridWidth, 3840)
@@ -207,25 +183,152 @@ export function slugifyArchiveSlug(raw) {
         .slice(0, 48)
 }
 
-export function loadArchiveRegistry() {
-    try {
-        const raw = localStorage.getItem(ARCHIVE_REGISTRY_LS)
-        const arr = JSON.parse(raw || '[]')
-        return Array.isArray(arr) ? arr : []
-    } catch {
-        return []
+// ── Community directory registry (archive_registry) ─────────────────────────
+
+function rowToRegistry(row) {
+    return {
+        slug: row.slug,
+        title: row.title || '',
+        hubPlanetId: row.hub_planet_id || '',
+        category: row.category || 'general',
+        gridWidth: row.grid_width ?? 3840,
+        gridHeight: row.grid_height ?? 2160,
+        coverThumb: row.cover_thumb || '',
+        owner: row.owner || '',
+        demoNote: row.demo_note || '',
+        publishedAt: row.published_at || '',
     }
 }
 
-export function upsertArchiveRegistryEntry(entry) {
-    const list = loadArchiveRegistry().filter((x) => x.slug !== entry.slug)
-    list.unshift({
-        ...entry,
-        publishedAt: entry.publishedAt || new Date().toISOString(),
-    })
-    localStorage.setItem(ARCHIVE_REGISTRY_LS, JSON.stringify(list.slice(0, 200)))
-    window.dispatchEvent(new Event('solar-archive-registry-updated'))
+let registryCache = null // null = not yet hydrated
+let registryHydrating = false
+
+function hydrateRegistry() {
+    if (registryHydrating) return
+    registryHydrating = true
+    supabase
+        .from('archive_registry')
+        .select('*')
+        .order('published_at', { ascending: false })
+        .limit(200)
+        .then(({ data }) => {
+            registryCache = (data || []).map(rowToRegistry)
+            window.dispatchEvent(new Event('solar-archive-registry-updated'))
+        })
+        .catch(() => { registryCache = registryCache || [] })
+        .finally(() => { registryHydrating = false })
 }
+
+/** Community directory rows. Synchronous — hydrates from Supabase on cold miss. */
+export function loadArchiveRegistry() {
+    if (registryCache === null) {
+        hydrateRegistry()
+        return []
+    }
+    return registryCache
+}
+
+export async function upsertArchiveRegistryEntry(entry) {
+    const publishedAt = entry.publishedAt || new Date().toISOString()
+    const payload = {
+        slug: entry.slug,
+        title: entry.title || '',
+        hub_planet_id: entry.hubPlanetId || '',
+        category: entry.category || 'general',
+        grid_width: entry.gridWidth ?? 3840,
+        grid_height: entry.gridHeight ?? 2160,
+        cover_thumb: entry.coverThumb || '',
+        owner: entry.owner || '',
+        demo_note: entry.demoNote || '',
+        published_at: publishedAt,
+    }
+    const mapped = rowToRegistry(payload)
+    registryCache = [mapped, ...(registryCache || []).filter((x) => x.slug !== entry.slug)].slice(0, 200)
+    window.dispatchEvent(new Event('solar-archive-registry-updated'))
+    const { error } = await supabase.from('archive_registry').upsert(payload, { onConflict: 'slug' })
+    if (error) {
+        const err = new Error('Could not publish this archive to the directory.')
+        err.cause = error
+        throw err
+    }
+    return mapped
+}
+
+// ── Per-user saved archives library (archive_library) ───────────────────────
+
+function rowToLibrary(row) {
+    return {
+        id: row.id,
+        slug: row.slug || '',
+        title: row.title || '',
+        hubPlanetId: row.hub_planet_id || '',
+        gridWidth: row.grid_width ?? 3840,
+        gridHeight: row.grid_height ?? 2160,
+        thumb: row.thumb || '',
+        category: row.category || 'general',
+        contactUrl: row.contact_url || '',
+        listedOnRegistry: row.listed_on_registry ?? false,
+        savedAt: row.saved_at || '',
+    }
+}
+
+const libraryCache = new Map() // userId ('_anon' when signed-out) -> array
+const libraryHydrating = new Set()
+
+function hydrateLibrary(userId) {
+    const key = userId || '_anon'
+    if (libraryHydrating.has(key)) return
+    libraryHydrating.add(key)
+    let q = supabase.from('archive_library').select('*').order('saved_at', { ascending: false }).limit(80)
+    q = userId ? q.eq('user_id', userId) : q.is('user_id', null)
+    q
+        .then(({ data }) => {
+            libraryCache.set(key, (data || []).map(rowToLibrary))
+            window.dispatchEvent(new Event('solar-archive-library-updated'))
+        })
+        .catch(() => { if (!libraryCache.has(key)) libraryCache.set(key, []) })
+        .finally(() => { libraryHydrating.delete(key) })
+}
+
+/** Saved archives for a user. Synchronous — hydrates from Supabase on cold miss. */
+export function loadArchiveLibrary(userId) {
+    const key = userId || '_anon'
+    if (libraryCache.has(key)) return libraryCache.get(key)
+    hydrateLibrary(userId)
+    return []
+}
+
+/** Append one archive record (each successful "Add archive" save). Async. */
+export async function addArchiveToLibrary(entry, userId) {
+    const key = userId || '_anon'
+    const savedAt = entry.savedAt || new Date().toISOString()
+    const payload = {
+        user_id: userId || null,
+        slug: entry.slug || '',
+        title: entry.title || '',
+        hub_planet_id: entry.hubPlanetId || '',
+        grid_width: entry.gridWidth ?? 3840,
+        grid_height: entry.gridHeight ?? 2160,
+        thumb: entry.thumb || '',
+        category: entry.category || 'general',
+        contact_url: entry.contactUrl || '',
+        listed_on_registry: !!entry.listedOnRegistry,
+        saved_at: savedAt,
+    }
+    const { data, error } = await supabase.from('archive_library').insert(payload).select().maybeSingle()
+    if (error) {
+        const err = new Error('Could not save this archive to your library.')
+        err.cause = error
+        throw err
+    }
+    const mapped = data ? rowToLibrary(data) : rowToLibrary({ ...payload, id: `arc-${Date.now()}` })
+    const prev = libraryCache.get(key) || []
+    libraryCache.set(key, [mapped, ...prev.filter((x) => x.id !== mapped.id)].slice(0, 80))
+    window.dispatchEvent(new Event('solar-archive-library-updated'))
+    return mapped
+}
+
+// ── Image helpers (pure — no storage) ───────────────────────────────────────
 
 /**
  * Downscale image for storage + preview; returns data URL (JPEG).
@@ -258,6 +361,39 @@ export function imageFileToCoverDataUrl(file, maxSide = 1600, quality = 0.82) {
             } catch {
                 reject(new Error('Could not encode image'))
             }
+        }
+        img.onerror = () => {
+            URL.revokeObjectURL(url)
+            reject(new Error('Could not load image'))
+        }
+        img.src = url
+    })
+}
+
+export function imageFileToSquareBlob(file, size = 200, quality = 0.85) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file)
+        const img = new Image()
+        img.onload = () => {
+            URL.revokeObjectURL(url)
+            const { naturalWidth: w, naturalHeight: h } = img
+            if (!w || !h) {
+                reject(new Error('Invalid image'))
+                return
+            }
+            const side = Math.min(w, h)
+            const sx = Math.round((w - side) / 2)
+            const sy = Math.round((h - side) / 2)
+            const canvas = document.createElement('canvas')
+            canvas.width = size
+            canvas.height = size
+            const ctx = canvas.getContext('2d')
+            if (!ctx) {
+                reject(new Error('Canvas unsupported'))
+                return
+            }
+            ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size)
+            canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Could not encode image'))), 'image/jpeg', quality)
         }
         img.onerror = () => {
             URL.revokeObjectURL(url)

@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Layers, BookOpen, Database, Image as ImageIcon, LayoutGrid, Info, X } from 'lucide-react'
+import { Layers, BookOpen, Database, Image as ImageIcon, LayoutGrid, Info, X, Star } from 'lucide-react'
 import SegmentHoverSurface from './SegmentHoverSurface.jsx'
 import {
     buildSortedSegments,
@@ -164,7 +164,7 @@ function PreviewAttachmentsRow({ list, col, isDark }) {
                     style={{ borderColor: `${col}55`, maxWidth: 120 }}
                 >
                     <img src={a.url || a.href} alt="" className="block w-full h-14 object-cover" />
-                    <div className="text-[9px] px-1 py-0.5 truncate" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                    <div className="text-[9px] px-1 py-0.5 truncate" style={{ color: isDark ? '#94a3b8' : '#475569' }}>
                         {a.label || `File ${i + 1}`}
                     </div>
                 </div>
@@ -227,7 +227,7 @@ function PreviewL4({ lx, ly, data, col, isDark, hasSelectedCoord }) {
                                 </motion.div>
                             ))}
                         </div>
-                        <p className="mt-3 text-[10px] leading-relaxed" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                        <p className="mt-3 text-[10px] leading-relaxed" style={{ color: isDark ? '#64748b' : '#475569' }}>
                             Select a valid adjacent grid slot. The preview will focus into that one cell and remove the surrounding grid.
                         </p>
                     </motion.div>
@@ -411,7 +411,7 @@ function PreviewL7NarrativeGrid({ sortedSegments, col, isDark, highlightSlot }) 
                 <span className="text-[9px] font-black" style={{ color: col }}>
                     NARRATIVE GRID · {L7_SEGMENT_NAV_COLS} cols × 4 rows (30) + cited / grid refs
                 </span>
-                <span className="text-[9px] font-mono opacity-80" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                <span className="text-[9px] font-mono opacity-80" style={{ color: isDark ? '#94a3b8' : '#475569' }}>
                     {filledCount}/{L7_NARRATIVE_SEGMENT_COUNT} filled
                 </span>
             </div>
@@ -452,7 +452,7 @@ function PreviewL7NarrativeGrid({ sortedSegments, col, isDark, highlightSlot }) 
                                     {(seg && segmentText(seg).length > 42) ? '…' : ''}
                                 </span>
                             ) : (
-                                <span className="text-[7px] opacity-45" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
+                                <span className="text-[7px] opacity-45" style={{ color: isDark ? '#64748b' : '#475569' }}>
                                     ·
                                 </span>
                             )}
@@ -518,7 +518,7 @@ function PreviewL8Grid({ sortedSegments, col, isDark, highlightSlot, attachments
                         style={{ background: `linear-gradient(90deg, ${col}88, ${col})` }}
                     />
                 </div>
-                <div className="flex justify-between mt-1.5 text-[8px]" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                <div className="flex justify-between mt-1.5 text-[8px]" style={{ color: isDark ? '#64748b' : '#475569' }}>
                     <span>{fillPct}% narrative filled</span>
                     <span>{L8_FACT_SOURCE_SLOTS} cited · 1 final</span>
                 </div>
@@ -530,7 +530,7 @@ function PreviewL8Grid({ sortedSegments, col, isDark, highlightSlot, attachments
                     <span className="text-[9px] font-black uppercase tracking-[0.16em]" style={{ color: col }}>
                         Narrative band
                     </span>
-                    <span className="text-[9px] font-mono" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                    <span className="text-[9px] font-mono" style={{ color: isDark ? '#64748b' : '#475569' }}>
                         showing {wStart + 1}–{Math.min(wStart + windowSize, L8_NARRATIVE_TILE_TOTAL)} of {L8_NARRATIVE_TILE_TOTAL}
                     </span>
                 </div>
@@ -589,13 +589,13 @@ function PreviewL8Grid({ sortedSegments, col, isDark, highlightSlot, attachments
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-lg"
                     style={{ background: `${col}20`, border: `1px solid ${col}44` }}
                 >
-                    <span className="text-[10px] font-black" style={{ color: col }}>★</span>
+                    <Star size={10} fill="currentColor" style={{ color: col }} aria-hidden />
                 </div>
                 <div className="min-w-0">
                     <div className="text-[9px] font-black uppercase tracking-[0.14em]" style={{ color: col }}>
                         Slot {L8_FINAL_SEGMENT_INDEX + 1} · Final
                     </div>
-                    <div className="text-[9px] mt-0.5" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                    <div className="text-[9px] mt-0.5" style={{ color: isDark ? '#64748b' : '#475569' }}>
                         Full stitched depth block — auto-composed on archive
                     </div>
                 </div>
@@ -607,7 +607,7 @@ function PreviewL8Grid({ sortedSegments, col, isDark, highlightSlot, attachments
                     <span className="text-[9px] font-black uppercase tracking-[0.16em]" style={{ color: col }}>
                         Cited fact tier
                     </span>
-                    <span className="text-[9px] font-mono" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                    <span className="text-[9px] font-mono" style={{ color: isDark ? '#64748b' : '#475569' }}>
                         {citedDemoFilled} / {L8_FACT_SOURCE_SLOTS} filled
                     </span>
                 </div>
@@ -792,6 +792,29 @@ function PreviewL8Full({ lx, ly, data, col, isDark, segments, highlightSlot }) {
 }
 
 export function LayerGuidelinesOverlay({ open, onClose, guide, layerOption, previewLayer, accent, isDark }) {
+    useEffect(() => {
+        if (!open) return undefined
+        const onKeyDown = (e) => {
+            if (e.key === 'Escape') onClose()
+        }
+        window.addEventListener('keydown', onKeyDown)
+        // Lock page scroll while the overlay is open (restored on close/unmount).
+        // The viewport scroller is documentElement here, so lock both it and body.
+        const prevHtmlOverflow = document.documentElement.style.overflow
+        const prevBodyOverflow = document.body.style.overflow
+        const prevPaddingRight = document.body.style.paddingRight
+        const scrollbarGap = window.innerWidth - document.documentElement.clientWidth
+        document.documentElement.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden'
+        if (scrollbarGap > 0) document.body.style.paddingRight = `${scrollbarGap}px`
+        return () => {
+            window.removeEventListener('keydown', onKeyDown)
+            document.documentElement.style.overflow = prevHtmlOverflow
+            document.body.style.overflow = prevBodyOverflow
+            document.body.style.paddingRight = prevPaddingRight
+        }
+    }, [open, onClose])
+
     return (
         <AnimatePresence>
             {open && (
@@ -805,8 +828,11 @@ export function LayerGuidelinesOverlay({ open, onClose, guide, layerOption, prev
                         bottom: 'auto',
                         height: 'calc(100dvh - var(--solar-nav-offset))',
                         overflowY: 'hidden',
-                        background: isDark ? 'rgba(2,6,23,0.88)' : 'rgba(15,23,42,0.42)',
-                        backdropFilter: 'blur(22px)',
+                        background: isDark
+                            ? 'linear-gradient(180deg, rgba(5,6,8,0.82), rgba(5,6,8,0.92))'
+                            : 'rgba(15,23,42,0.38)',
+                        backdropFilter: 'blur(20px) saturate(1.1)',
+                        WebkitBackdropFilter: 'blur(20px) saturate(1.1)',
                     }}
                     onClick={onClose}
                 >
@@ -814,59 +840,71 @@ export function LayerGuidelinesOverlay({ open, onClose, guide, layerOption, prev
                         role="dialog"
                         aria-modal="true"
                         aria-label={`Layer ${previewLayer} guidelines`}
-                        initial={{ opacity: 0, y: 48, scale: 0.97 }}
+                        initial={{ opacity: 0, y: 40, scale: 0.965 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 32, scale: 0.98 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-                        className="relative min-h-0 w-full sm:max-w-3xl flex flex-col rounded-t-[2.5rem] sm:rounded-[2rem] overflow-hidden"
+                        exit={{ opacity: 0, y: 24, scale: 0.98 }}
+                        transition={{ type: 'spring', stiffness: 340, damping: 30, mass: 0.9 }}
+                        className="relative min-h-0 w-full sm:max-w-3xl flex flex-col rounded-t-[2rem] sm:rounded-[1.5rem] overflow-hidden"
                         style={{
                             maxHeight: 'calc(100dvh - var(--solar-nav-offset) - 1rem)',
-                            border: `1.5px solid ${accent}44`,
+                            border: `1px solid ${isDark ? 'rgba(255,255,255,0.09)' : 'rgba(15,23,42,0.1)'}`,
                             background: isDark
-                                ? 'linear-gradient(160deg, rgba(5,12,28,0.99), rgba(13,20,40,0.97))'
-                                : 'linear-gradient(160deg, rgba(255,255,255,0.99), rgba(241,245,249,0.97))',
+                                ? 'linear-gradient(170deg, #121419 0%, #0b0d11 60%, #0a0c10 100%)'
+                                : 'linear-gradient(170deg, #ffffff, #f6f8fb)',
                             boxShadow: isDark
-                                ? `0 0 120px ${accent}18, 0 -20px 80px rgba(0,0,0,0.7)`
-                                : `0 -16px 60px rgba(15,23,42,0.18), 0 0 80px ${accent}10`,
+                                ? `0 1px 0 rgba(255,255,255,0.05) inset, 0 32px 90px rgba(0,0,0,0.65), 0 0 90px ${accent}0d`
+                                : `0 1px 0 rgba(255,255,255,0.9) inset, 0 28px 70px rgba(15,23,42,0.16), 0 0 70px ${accent}0a`,
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Decorative glows */}
-                        <div className="pointer-events-none absolute -right-28 -top-28 h-72 w-72 rounded-full blur-3xl" style={{ background: `${accent}22` }} aria-hidden />
-                        <div className="pointer-events-none absolute -left-20 top-40 h-48 w-48 rounded-full blur-3xl" style={{ background: `${accent}10` }} aria-hidden />
-                        <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${accent}88, transparent)` }} aria-hidden />
+                        <div className="pointer-events-none absolute -right-28 -top-28 h-72 w-72 rounded-full blur-3xl" style={{ background: `${accent}14` }} aria-hidden />
+                        <div className="pointer-events-none absolute -left-20 top-40 h-48 w-48 rounded-full blur-3xl" style={{ background: `${accent}08` }} aria-hidden />
+                        <div className="pointer-events-none absolute inset-x-6 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${accent}66, transparent)` }} aria-hidden />
 
                         {/* ── Sticky header ── */}
                         <div
                             className="relative shrink-0 px-5 sm:px-7 pt-5 pb-4 border-b"
-                            style={{ borderColor: `${accent}1e`, background: isDark ? 'rgba(5,12,28,0.85)' : 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)' }}
+                            style={{ borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.07)', background: isDark ? 'rgba(13,15,20,0.88)' : 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
                         >
                             {/* drag handle (mobile) */}
-                            <div className="mx-auto mb-4 h-1 w-10 rounded-full sm:hidden" style={{ background: isDark ? 'rgba(148,163,184,0.35)' : 'rgba(100,116,139,0.25)' }} />
+                            <div className="mx-auto mb-4 h-1 w-10 rounded-full sm:hidden" style={{ background: isDark ? 'rgba(148,163,184,0.3)' : 'rgba(100,116,139,0.25)' }} />
 
                             <div className="flex items-start gap-3 sm:gap-4">
-                                <div
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.8, rotate: -6 }}
+                                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                    transition={{ type: 'spring', stiffness: 320, damping: 22, delay: 0.08 }}
                                     className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border"
-                                    style={{ color: accent, borderColor: `${accent}55`, background: `${accent}18`, boxShadow: `0 0 22px ${accent}28` }}
+                                    style={{ color: accent, borderColor: `${accent}3d`, background: `${accent}12`, boxShadow: `0 1px 0 rgba(255,255,255,0.08) inset, 0 0 26px ${accent}1a` }}
                                 >
                                     <Info size={20} />
-                                </div>
+                                </motion.div>
                                 <div className="min-w-0 flex-1">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.22em]" style={{ color: accent }}>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                                        className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: accent }}
+                                    >
                                         Layer {previewLayer} · {layerOption.title}
-                                    </div>
-                                    <h2 className="mt-0.5 text-xl sm:text-2xl font-black leading-tight" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
+                                    </motion.div>
+                                    <motion.h2
+                                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                                        className="mt-0.5 text-xl sm:text-2xl font-semibold leading-tight tracking-tight" style={{ color: isDark ? '#f5f5f7' : '#0f172a' }}
+                                    >
                                         {guide.headline}
-                                    </h2>
-                                    <p className="mt-1 text-[11px] font-mono leading-relaxed" style={{ color: isDark ? '#475569' : '#94a3b8' }}>
+                                    </motion.h2>
+                                    <motion.p
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.4 }}
+                                        className="mt-1 text-[11px] font-mono leading-relaxed" style={{ color: isDark ? 'rgba(255,255,255,0.42)' : '#475569' }}
+                                    >
                                         {layerOption.desc}
-                                    </p>
+                                    </motion.p>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="shrink-0 rounded-full p-2 transition-all hover:scale-110 hover:rotate-90"
-                                    style={{ color: isDark ? '#94a3b8' : '#64748b', background: isDark ? 'rgba(15,23,42,0.8)' : 'rgba(241,245,249,0.95)', border: `1px solid ${isDark ? 'rgba(79,195,247,0.16)' : 'rgba(15,23,42,0.1)'}` }}
+                                    className="shrink-0 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+                                    style={{ color: isDark ? 'rgba(255,255,255,0.55)' : '#475569', background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(15,23,42,0.05)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)'}` }}
                                     aria-label="Close guidelines"
                                 >
                                     <X size={17} />
@@ -878,10 +916,13 @@ export function LayerGuidelinesOverlay({ open, onClose, guide, layerOption, prev
                         <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-7 py-6 space-y-7">
 
                             {/* Quick tips */}
-                            <section>
+                            <motion.section
+                                initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.12, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                            >
                                 <div className="flex items-center gap-3 mb-4">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.22em]" style={{ color: accent }}>Quick tips</span>
-                                    <span className="h-px flex-1 rounded-full" style={{ background: `linear-gradient(90deg, ${accent}66, transparent)` }} />
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: accent }}>Quick tips</span>
+                                    <span className="h-px flex-1 rounded-full" style={{ background: `linear-gradient(90deg, ${accent}40, transparent)` }} />
                                 </div>
                                 <div className="grid gap-3 sm:grid-cols-3">
                                     {guide.tips.map((tip, i) => (
@@ -889,89 +930,112 @@ export function LayerGuidelinesOverlay({ open, onClose, guide, layerOption, prev
                                             key={tip}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: 0.06 + i * 0.05 }}
-                                            className="rounded-2xl border p-4"
+                                            transition={{ delay: 0.16 + i * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                                            whileHover={{ y: -3 }}
+                                            className="rounded-2xl border p-4 transition-shadow duration-200"
                                             style={{
-                                                borderColor: `${accent}28`,
-                                                background: isDark
-                                                    ? `linear-gradient(135deg, rgba(15,23,42,0.72), ${accent}0d)`
-                                                    : `linear-gradient(135deg, rgba(255,255,255,0.85), ${accent}09)`,
+                                                borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.08)',
+                                                background: isDark ? 'rgba(255,255,255,0.028)' : 'rgba(255,255,255,0.85)',
+                                                boxShadow: isDark ? '0 1px 0 rgba(255,255,255,0.03) inset' : '0 1px 0 rgba(255,255,255,0.8) inset',
                                             }}
                                         >
                                             <div className="flex items-center gap-2 mb-2.5">
                                                 <span
-                                                    className="grid h-5 w-5 place-items-center rounded-md text-[10px] font-black"
-                                                    style={{ background: `${accent}22`, color: accent }}
+                                                    className="grid h-5 w-5 place-items-center rounded-md text-[10px] font-semibold"
+                                                    style={{ background: `${accent}1a`, color: accent, border: `1px solid ${accent}30` }}
                                                 >
                                                     {i + 1}
                                                 </span>
-                                                <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: `${accent}99` }}>tip</span>
+                                                <span className="text-[9px] font-semibold uppercase tracking-widest" style={{ color: `${accent}90` }}>tip</span>
                                             </div>
-                                            <p className="text-xs leading-relaxed" style={{ color: isDark ? '#cbd5e1' : '#334155' }}>{tip}</p>
+                                            <p className="text-xs leading-relaxed" style={{ color: isDark ? 'rgba(255,255,255,0.68)' : 'rgba(15,23,42,0.7)' }}>{tip}</p>
                                         </motion.div>
                                     ))}
                                 </div>
-                            </section>
+                            </motion.section>
 
                             {/* Writing guidelines */}
-                            <section>
+                            <motion.section
+                                initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.22, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                            >
                                 <div className="flex items-center gap-3 mb-4">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.22em]" style={{ color: accent }}>Writing guidelines</span>
-                                    <span className="h-px flex-1 rounded-full" style={{ background: `linear-gradient(90deg, ${accent}66, transparent)` }} />
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: accent }}>Writing guidelines</span>
+                                    <span className="h-px flex-1 rounded-full" style={{ background: `linear-gradient(90deg, ${accent}40, transparent)` }} />
                                 </div>
                                 <div
-                                    className="rounded-3xl border p-5 space-y-4"
-                                    style={{ borderColor: `${accent}28`, background: isDark ? 'rgba(2,6,23,0.55)' : 'rgba(248,250,252,0.9)' }}
+                                    className="rounded-2xl border p-5 space-y-4"
+                                    style={{
+                                        borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.08)',
+                                        background: isDark ? 'rgba(255,255,255,0.022)' : 'rgba(248,250,252,0.9)',
+                                    }}
                                 >
                                     {(guide.writingBody || []).map((para, i) => (
-                                        <div key={i} className="flex gap-3">
-                                            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: accent }} />
-                                            <p className="text-sm leading-relaxed" style={{ color: isDark ? '#cbd5e1' : '#334155' }}>
+                                        <motion.div
+                                            key={i} className="flex gap-3"
+                                            initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.26 + i * 0.05, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                                        >
+                                            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: accent, boxShadow: `0 0 8px ${accent}66` }} />
+                                            <p className="text-sm leading-relaxed" style={{ color: isDark ? 'rgba(255,255,255,0.72)' : 'rgba(15,23,42,0.72)' }}>
                                                 {renderBoldSegments(para)}
                                             </p>
-                                        </div>
+                                        </motion.div>
                                     ))}
                                 </div>
-                            </section>
+                            </motion.section>
 
                             {/* Figures & attachments */}
-                            <section>
+                            <motion.section
+                                initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                            >
                                 <div className="flex items-center gap-3 mb-4">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.22em]" style={{ color: accent }}>Figures &amp; attachments</span>
-                                    <span className="h-px flex-1 rounded-full" style={{ background: `linear-gradient(90deg, ${accent}66, transparent)` }} />
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: accent }}>Figures &amp; attachments</span>
+                                    <span className="h-px flex-1 rounded-full" style={{ background: `linear-gradient(90deg, ${accent}40, transparent)` }} />
                                 </div>
                                 <div
-                                    className="rounded-3xl border p-5 space-y-4"
-                                    style={{ borderColor: `${accent}28`, background: isDark ? 'rgba(2,6,23,0.55)' : 'rgba(248,250,252,0.9)' }}
+                                    className="rounded-2xl border p-5 space-y-4"
+                                    style={{
+                                        borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.08)',
+                                        background: isDark ? 'rgba(255,255,255,0.022)' : 'rgba(248,250,252,0.9)',
+                                    }}
                                 >
                                     {(guide.figuresBody || []).map((item, i) => (
-                                        <div key={i} className="flex gap-3">
-                                            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: accent }} />
-                                            <p className="text-sm leading-relaxed" style={{ color: isDark ? '#cbd5e1' : '#334155' }}>
+                                        <motion.div
+                                            key={i} className="flex gap-3"
+                                            initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.34 + i * 0.05, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                                        >
+                                            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: accent, boxShadow: `0 0 8px ${accent}66` }} />
+                                            <p className="text-sm leading-relaxed" style={{ color: isDark ? 'rgba(255,255,255,0.72)' : 'rgba(15,23,42,0.72)' }}>
                                                 {renderBoldSegments(item)}
                                             </p>
-                                        </div>
+                                        </motion.div>
                                     ))}
                                 </div>
-                            </section>
+                            </motion.section>
                         </div>
 
                         {/* ── Footer ── */}
                         <div
                             className="shrink-0 px-5 sm:px-7 py-4 border-t"
-                            style={{ borderColor: `${accent}1e`, background: isDark ? 'rgba(5,12,28,0.8)' : 'rgba(255,255,255,0.88)', backdropFilter: 'blur(12px)' }}
+                            style={{ borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.07)', background: isDark ? 'rgba(13,15,20,0.85)' : 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
                         >
-                            <button
+                            <motion.button
                                 type="button"
                                 onClick={onClose}
-                                className="w-full py-3 rounded-2xl font-bold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                                whileHover={{ y: -1 }}
+                                whileTap={{ scale: 0.985 }}
+                                className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
                                 style={{
-                                    background: `linear-gradient(135deg, #7c3aed, ${accent})`,
-                                    boxShadow: `0 0 28px ${accent}44`,
+                                    background: `linear-gradient(135deg, ${accent}, ${accent}cc)`,
+                                    boxShadow: `0 1px 0 rgba(255,255,255,0.2) inset, 0 8px 24px ${accent}30`,
+                                    letterSpacing: '-0.01em',
                                 }}
                             >
                                 Got it
-                            </button>
+                            </motion.button>
                         </div>
                     </motion.div>
                 </motion.div>
@@ -1029,23 +1093,17 @@ export default function SubmissionLayerGuide({
 
     return (
         <aside
-            className="sa-preview-card rounded-[2rem] border flex flex-col gap-4 p-4 lg:sticky lg:top-24 self-start"
-            style={{
-                borderColor: isDark ? 'rgba(125,211,252,0.22)' : 'rgba(15,23,42,0.12)',
-                background: isDark
-                    ? 'linear-gradient(160deg, rgba(7,20,40,0.9), rgba(15,23,42,0.72))'
-                    : 'linear-gradient(160deg, rgba(255,255,255,0.96), rgba(241,245,249,0.9))',
-                boxShadow: isDark ? `0 0 56px ${accent}12, 0 24px 80px rgba(0,0,0,0.32)` : '0 20px 60px rgba(15,23,42,0.1)',
-                backdropFilter: 'blur(18px)',
-            }}
+            className="sa-preview-card rounded-[20px] border flex flex-col gap-4 p-4 lg:sticky lg:top-24 self-start"
         >
-            <div className="flex items-center gap-2">
-                <Layers size={18} style={{ color: accent }} />
+            <div className="flex items-center gap-2.5">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border" style={{ color: accent, borderColor: `${accent}30`, background: `${accent}0e` }}>
+                    <Layers size={15} />
+                </span>
                 <div>
-                    <h2 className="text-sm font-black" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
+                    <h2 className="text-sm font-semibold tracking-tight" style={{ color: isDark ? '#f5f5f7' : '#0f172a' }}>
                         Layer &amp; segment preview
                     </h2>
-                    <p className="text-[11px] mt-0.5" style={{ color: isDark ? '#64748b' : '#64748b' }}>
+                    <p className="text-[11px] mt-0.5" style={{ color: isDark ? 'rgba(255,255,255,0.45)' : '#475569' }}>
                         Choose L4–L8 to match the archive zoom. Query <span className="font-mono">archiveLayer</span> stays in the URL for deep links.
                     </p>
                 </div>
@@ -1053,30 +1111,39 @@ export default function SubmissionLayerGuide({
 
             <div className="flex flex-col gap-2">
                 <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: accent }}>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: isDark ? 'rgba(255,255,255,0.45)' : '#475569' }}>
                         Layer picker
                     </span>
                 </div>
-                <div className="grid grid-cols-5 gap-1.5">
-                    {SUBMISSION_LAYER_OPTIONS.map((o) => (
-                        <button
-                            key={o.layer}
-                            type="button"
-                            onClick={() => onLayerChange(o.layer)}
-                            className="rounded-xl px-2 py-2 text-left transition-all border"
-                            style={{
-                                background: previewLayer === o.layer ? `${accent}18` : isDark ? 'rgba(15,23,42,0.5)' : 'rgba(241,245,249,0.95)',
-                                borderColor: previewLayer === o.layer ? `${accent}66` : isDark ? 'rgba(79,195,247,0.12)' : 'rgba(15,23,42,0.1)',
-                            }}
-                        >
-                            <div className="text-[12px] font-black" style={{ color: previewLayer === o.layer ? accent : isDark ? '#94a3b8' : '#64748b' }}>
-                                {o.short}
-                            </div>
-                            <div className="text-[9px] mt-0.5 leading-snug line-clamp-2" style={{ color: isDark ? '#64748b' : '#64748b' }}>
-                                {o.title}
-                            </div>
-                        </button>
-                    ))}
+                <div className="grid grid-cols-5 gap-1 rounded-xl border p-1"
+                    style={{ borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.09)', background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(15,23,42,0.03)' }}>
+                    {SUBMISSION_LAYER_OPTIONS.map((o) => {
+                        const active = previewLayer === o.layer
+                        return (
+                            <button
+                                key={o.layer}
+                                type="button"
+                                onClick={() => onLayerChange(o.layer)}
+                                className="relative rounded-lg px-1.5 py-2 text-left transition-colors duration-200"
+                            >
+                                {active && (
+                                    <motion.span
+                                        layoutId="sa-preview-layer-pill"
+                                        transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                                        className="absolute inset-0 rounded-lg"
+                                        style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
+                                        aria-hidden
+                                    />
+                                )}
+                                <div className="relative z-10 text-[12px] font-semibold" style={{ color: active ? accent : isDark ? 'rgba(255,255,255,0.5)' : '#475569' }}>
+                                    {o.short}
+                                </div>
+                                <div className="relative z-10 text-[9px] mt-0.5 leading-snug line-clamp-2" style={{ color: isDark ? 'rgba(255,255,255,0.4)' : '#475569' }}>
+                                    {o.title}
+                                </div>
+                            </button>
+                        )
+                    })}
                 </div>
             </div>
 
@@ -1103,23 +1170,23 @@ export default function SubmissionLayerGuide({
             </label>
 
             <div
-                className="rounded-2xl border px-4 py-3"
-                style={{ borderColor: `${accent}24`, background: isDark ? 'rgba(2,6,23,0.38)' : 'rgba(255,255,255,0.72)' }}
+                className="rounded-xl border px-4 py-3"
+                style={{ borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.07)', background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.75)' }}
             >
-                <div className="text-[10px] font-bold uppercase tracking-wide mb-1 flex items-center gap-1" style={{ color: accent }}>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.12em] mb-1 flex items-center gap-1.5" style={{ color: accent }}>
                     <BookOpen size={12} />
                     L{previewLayer} · {layerOption.title}
                 </div>
-                <p className="text-[12px] font-semibold leading-snug" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
+                <p className="text-[12px] font-semibold leading-snug" style={{ color: isDark ? '#f5f5f7' : '#0f172a' }}>
                     {guide.headline}
                 </p>
-                <p className="text-[11px] mt-1 leading-snug" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                <p className="text-[11px] mt-1 leading-snug" style={{ color: isDark ? 'rgba(255,255,255,0.45)' : '#475569' }}>
                     Open the info panel for writing rules, figures, and layer-specific constraints.
                 </p>
             </div>
 
             <div>
-                <div className="text-[10px] font-bold uppercase tracking-wide mb-2 flex items-center gap-1" style={{ color: accent }}>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.12em] mb-2 flex items-center gap-1.5" style={{ color: isDark ? 'rgba(255,255,255,0.45)' : '#475569' }}>
                     <Database size={12} />
                     Live layout mock-up (coords {pad4(lx)},{pad4(ly)})
                 </div>
@@ -1160,9 +1227,6 @@ export default function SubmissionLayerGuide({
                 )}
             </div>
 
-            <p className="text-[10px] leading-relaxed border-t pt-3" style={{ borderColor: isDark ? 'rgba(79,195,247,0.15)' : 'rgba(15,23,42,0.08)', color: isDark ? '#64748b' : '#64748b' }}>
-                One submission still powers every layer: summary → detail → segments → deep citations. This panel tracks <span className="font-mono">archiveLayer</span> in the URL so archive HUD “Submit” deep-links stay aligned with what you are editing.
-            </p>
         </aside>
     )
 }

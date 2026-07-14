@@ -10,7 +10,6 @@ import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import FoundationLogo from '../components/FoundationLogo.jsx'
 import OtpInput from '../components/auth/OtpInput.jsx'
-import JoinAmbient from '../components/auth/JoinAmbient.jsx'
 import { supabase } from '../utils/supabaseClient.js'
 import {
     validateSignUp, validateSignIn, validateEmail, validatePassword,
@@ -104,7 +103,7 @@ const EMPTY_FORM = {
 export default function Join() {
     const navigate = useNavigate()
     const location = useLocation()
-    const { isLoggedIn, authLoaded, startGuestSession } = useAuth()
+    const { isLoggedIn, authLoaded, authUnavailable, startGuestSession } = useAuth()
     const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn()
     const { signUp, setActive: setSignUpActive, isLoaded: signUpLoaded } = useSignUp()
     const { theme } = useTheme()
@@ -778,20 +777,16 @@ export default function Join() {
 
     const hero = (
         <div className="sj-hero">
-            <JoinAmbient />
-
             <motion.p className="sj-hero__label" {...heroRise(0)}>
-                The Solar Archive — Research Network
+                SOLAR Research Network
             </motion.p>
 
             <motion.h1 className="sj-hero__title" {...heroRise(0.06)}>
-                A <em>galaxy</em> of human knowledge.
+                Research Archive
             </motion.h1>
 
             <motion.p className="sj-hero__sub" {...heroRise(0.12)}>
-                Nine research hubs. Sixty-four disciplines. One coordinate system for
-                everything we know. Create your account to explore the archive, submit
-                research, and climb the leaderboard.
+                Access research hubs, submit evidence, and participate in peer review.
             </motion.p>
 
             <div className="sj-stats">
@@ -844,6 +839,43 @@ export default function Join() {
                 <h2 className="sj-card__title">{copy[0]}</h2>
                 <p className="sj-card__sub" style={{ marginBottom: 10 }}>{copy[1]}</p>
                 <p style={{ fontSize: 11, color: 'var(--sj-ink-3)' }}>Taking you home…</p>
+            </motion.div>,
+        )
+    }
+
+    /* ── Clerk unreachable (script blocked/timed out) → don't strand the
+          user on a skeleton: offer guest browsing and a retry. ─────────── */
+    if (!clerkReady && authUnavailable) {
+        return shell(
+            <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="sj-card" role="alert">
+                <div className="sj-card__head">
+                    <h1 className="sj-card__title">Sign-in service unreachable</h1>
+                    <p className="sj-card__sub">
+                        We couldn't load the authentication service. This is usually a
+                        network issue — a VPN, firewall, or connection blocking
+                        <code style={{ margin: '0 4px' }}>clerk.accounts.dev</code>.
+                        You can still browse the archive as a guest.
+                    </p>
+                </div>
+                <div className="sj-social" style={{ marginTop: 14 }}>
+                    <button
+                        type="button"
+                        className="sj-social__btn sj-social__btn--guest"
+                        onClick={enterAsGuest}
+                    >
+                        <Compass size={16} aria-hidden />
+                        Continue as guest
+                        <span className="sj-guest-hint">browse only · no email needed</span>
+                    </button>
+                    <button
+                        type="button"
+                        className="sj-social__btn"
+                        onClick={() => window.location.reload()}
+                    >
+                        <ArrowRight size={16} aria-hidden />
+                        Retry sign-in
+                    </button>
+                </div>
             </motion.div>,
         )
     }

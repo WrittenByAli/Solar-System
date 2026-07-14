@@ -101,13 +101,13 @@ export function downloadArchivePackFile(pack, filenameBase = 'solar-archive') {
 }
 
 /**
- * Applies pack to localStorage for one hub + appends to archive library.
+ * Applies pack to Supabase for one hub + appends to the archive library. Async.
  * @param {ReturnType<typeof buildArchivePack>} pack
  */
-export function applyArchivePackToBrowser(pack, { username = 'guest' } = {}) {
+export async function applyArchivePackToBrowser(pack, { username = 'guest', userId = null } = {}) {
   const hid = normalizeHubId(pack.hubPlanetId)
   const prev = loadHubArchiveConfig(hid)
-  saveHubArchiveConfig(hid, {
+  await saveHubArchiveConfig(hid, {
     gridWidth: pack.gridWidth,
     gridHeight: pack.gridHeight,
     coverImageDataUrl: pack.coverImageDataUrl || prev.coverImageDataUrl || '',
@@ -118,7 +118,7 @@ export function applyArchivePackToBrowser(pack, { username = 'guest' } = {}) {
     listedOnRegistry: false,
   })
   const thumb = pack.thumbDataUrl || ''
-  addArchiveToLibrary({
+  await addArchiveToLibrary({
     slug: slugifyArchiveSlug(pack.slug),
     title: pack.instanceTitle,
     category: pack.category || 'general',
@@ -129,6 +129,6 @@ export function applyArchivePackToBrowser(pack, { username = 'guest' } = {}) {
     owner: username || 'guest',
     listedOnRegistry: false,
     hubPlanetId: hid,
-  })
+  }, userId)
   return { hubPlanetId: hid }
 }

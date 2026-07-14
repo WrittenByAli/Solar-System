@@ -1,0 +1,437 @@
+/* ═══════════════════════════════════════════════════════════════
+   Unified glassmorphism — Premium Light / Dark Aurora
+   Loaded last; wins over global border stripping in index.css
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Surface target list (cards & panels only — not inner chips) ── */
+
+:root {
+  --sa-glass-radius: 18px;
+  --sa-glass-radius-lg: 22px;
+}
+
+/* Ad-hoc surfaces (e.g. My Submissions list cards) */
+.dark .sa-glass-surface,
+.light .sa-glass-surface {
+  border-radius: var(--sa-glass-radius-lg);
+}
+
+.dark .sa-glass-surface {
+  background: var(--sa-glass-fill) !important;
+  background-image: var(--sa-glass-aurora) !important;
+  backdrop-filter: var(--sa-glass-blur) !important;
+  -webkit-backdrop-filter: var(--sa-glass-blur) !important;
+  border: 1px solid var(--sa-glass-border) !important;
+  box-shadow: var(--sa-glass-shadow), var(--sa-glass-highlight) !important;
+}
+
+.light .sa-glass-surface {
+  background: var(--sa-glass-fill) !important;
+  background-image: var(--sa-glass-aurora) !important;
+  backdrop-filter: var(--sa-glass-blur) !important;
+  -webkit-backdrop-filter: var(--sa-glass-blur) !important;
+  border: 1px solid var(--sa-glass-border) !important;
+  box-shadow: var(--sa-glass-shadow) !important;
+}
+
+.dark .sa-glass-inset,
+.light .sa-glass-inset {
+  background: var(--sa-glass-input-fill) !important;
+  backdrop-filter: blur(14px) saturate(1.45);
+  -webkit-backdrop-filter: blur(14px) saturate(1.45);
+  border: 1px solid var(--sa-glass-input-border) !important;
+}
+
+.dark .sa-glass-inset--current {
+  border-color: rgba(52, 211, 153, 0.35) !important;
+}
+
+.light .sa-glass-inset--current {
+  border-color: rgba(5, 150, 105, 0.35) !important;
+}
+
+:is(
+  .host-step,
+  .host-panel:not(.host-builder),
+  .host-stat,
+  .host-dock,
+  .host-hub,
+  .host-cover,
+  .host-telem,
+  .host-checklist,
+  .host-action-card,
+  .host-import__status,
+  .host-fleet__card,
+  .host-fleet__thumb,
+  .sa-panel,
+  .sa-readiness-panel,
+  .sa-preview-card,
+  .sa-dir-card,
+  .sa-dir-empty,
+  .sa-dir-entry,
+  .rv-bento__lead,
+  .rv-bento__card,
+  .rv-feed-card,
+  .rv-score-strip,
+  .rq-workbench,
+  .rq-empty,
+  .rq-segment,
+  .rq-console,
+  .obs-lb-row,
+  .sp-glass,
+  .sa-create-page .rounded-3xl,
+  .sa-create-page .rounded-\[22px\]
+) {
+  border-radius: var(--sa-glass-radius-lg);
+  transition:
+    background 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Dark Aurora Glassmorphism ─────────────────────────────────── */
+
+.dark :is(
+  .host-step,
+  .host-panel:not(.host-builder),
+  .host-stat,
+  .host-dock,
+  .host-hub,
+  .host-cover,
+  .host-telem,
+  .host-checklist,
+  .host-action-card,
+  .host-import__status,
+  .host-fleet__card,
+  .host-fleet__thumb,
+  .sa-panel,
+  .sa-readiness-panel,
+  .sa-preview-card,
+  .sa-dir-card,
+  .sa-dir-empty,
+  .sa-dir-entry,
+  .rv-bento__lead,
+  .rv-bento__card,
+  .rv-feed-card,
+  .rv-score-strip,
+  .rq-workbench,
+  .rq-empty,
+  .rq-segment,
+  .rq-console,
+  .obs-lb-row,
+  .sp-glass,
+  .sa-create-page .rounded-3xl,
+  .sa-create-page .rounded-\[22px\]
+) {
+  background: var(--sa-glass-fill) !important;
+  background-image: var(--sa-glass-aurora) !important;
+  backdrop-filter: var(--sa-glass-blur) !important;
+  -webkit-backdrop-filter: var(--sa-glass-blur) !important;
+  border: 1px solid var(--sa-glass-border) !important;
+  box-shadow: var(--sa-glass-shadow), var(--sa-glass-highlight) !important;
+}
+
+.dark :is(
+  .host-step,
+  .host-panel:not(.host-builder),
+  .host-stat,
+  .host-dock,
+  .host-hub,
+  .host-cover,
+  .host-telem,
+  .host-checklist,
+  .host-action-card,
+  .host-import__status,
+  .host-fleet__card,
+  .host-fleet__thumb,
+  .sa-panel,
+  .sa-readiness-panel,
+  .sa-preview-card,
+  .sa-dir-card,
+  .sa-dir-empty,
+  .sa-dir-entry,
+  .rv-bento__card,
+  .rv-feed-card,
+  .rq-workbench,
+  .sp-glass
+):hover {
+  border-color: rgba(125, 211, 252, 0.22) !important;
+  box-shadow: var(--sa-glass-shadow-hover), var(--sa-glass-highlight) !important;
+}
+
+/* ── Premium Light Glassmorphism ─────────────────────────────── */
+
+.light :is(
+  .host-step,
+  .host-panel:not(.host-builder),
+  .host-stat,
+  .host-dock,
+  .host-hub,
+  .host-cover,
+  .host-telem,
+  .host-checklist,
+  .host-action-card,
+  .host-import__status,
+  .host-fleet__card,
+  .host-fleet__thumb,
+  .sa-panel,
+  .sa-readiness-panel,
+  .sa-preview-card,
+  .sa-dir-card,
+  .sa-dir-empty,
+  .sa-dir-entry,
+  .rv-bento__lead,
+  .rv-bento__card,
+  .rv-feed-card,
+  .rv-score-strip,
+  .rq-workbench,
+  .rq-empty,
+  .rq-segment,
+  .rq-console,
+  .obs-lb-row,
+  .sp-glass,
+  .sa-create-page .rounded-3xl,
+  .sa-create-page .rounded-\[22px\]
+) {
+  background: var(--sa-glass-fill) !important;
+  background-image: var(--sa-glass-aurora) !important;
+  backdrop-filter: var(--sa-glass-blur) !important;
+  -webkit-backdrop-filter: var(--sa-glass-blur) !important;
+  border: 1px solid var(--sa-glass-border) !important;
+  box-shadow: var(--sa-glass-shadow) !important;
+}
+
+.light :is(
+  .host-step,
+  .host-panel:not(.host-builder),
+  .host-stat,
+  .host-dock,
+  .host-hub,
+  .host-cover,
+  .host-telem,
+  .host-checklist,
+  .host-action-card,
+  .host-import__status,
+  .host-fleet__card,
+  .host-fleet__thumb,
+  .sa-panel,
+  .sa-readiness-panel,
+  .sa-preview-card,
+  .sa-dir-card,
+  .sa-dir-empty,
+  .sa-dir-entry,
+  .rv-bento__card,
+  .rv-feed-card,
+  .rq-workbench,
+  .sp-glass
+):hover {
+  border-color: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: var(--sa-glass-shadow-hover) !important;
+}
+
+.host-panel.host-builder {
+  background: transparent !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ── Inner chips / pills — stay flat inside glass panels ─────── */
+
+:is(
+  .sa-dir-thumb,
+  .sa-dir-meta-chip,
+  .sa-dir-count,
+  .rv-hub-pill,
+  .rv-layer-chip,
+  .rv-filter-pill,
+  .rv-status,
+  .sa-panel__num,
+  .sa-coord-status,
+  .sa-readiness__score,
+  .sa-readiness__dot,
+  .rq-desk-stat,
+  .rq-pill,
+  .rq-pill__select,
+  .rq-kbd,
+  .rq-chip:not(.rq-chip--stale),
+  .rq-prior-chip,
+  .rq-mission,
+  .rq-mission__layer,
+  .rq-filters__help,
+  .rq-empty__icon
+) {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:is(
+  .host-dock:hover,
+  .host-dock--active,
+  .host-hub:hover,
+  .host-hub--sel,
+  .host-action-card--deploy,
+  .host-fleet__card:hover,
+  .rv-filter-pill--active,
+  .rv-filter-pill--gold.rv-filter-pill--active
+) {
+  background: color-mix(in srgb, var(--sa-accent) 8%, transparent) !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ── Glass form controls on fog pages ────────────────────────── */
+
+.dark :is(.sa-submit-page, .sa-dir-page, .sa-host-page, .rv-page, .rq-page, .sa-create-page) :is(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  textarea,
+  select,
+  .host-field__input,
+  .sa-dir-entries__search,
+  .sa-dir-entries__select
+) {
+  background: var(--sa-glass-input-fill) !important;
+  background-image: none !important;
+  backdrop-filter: blur(14px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.3) !important;
+  border: 1px solid var(--sa-glass-input-border) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.light :is(.sa-submit-page, .sa-dir-page, .sa-host-page, .rv-page, .rq-page, .sa-create-page) :is(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  textarea,
+  select,
+  .host-field__input,
+  .sa-dir-entries__search,
+  .sa-dir-entries__select
+) {
+  background: var(--sa-glass-input-fill) !important;
+  background-image: none !important;
+  /* saturate(1.75) amplifies whatever's behind the frosted glass — over the
+     animated fog backdrop (VantaFogBackground) that periodically blows
+     bright wisps out into a washed-out whitish patch. Kept mild. */
+  backdrop-filter: blur(16px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.15) !important;
+  border: 1px solid var(--sa-glass-input-border) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+.sa-dir-page .sa-dir-entries__search input {
+  border: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.dark .rq-page :is(.rq-fact-chip, .rq-star, .rq-notes),
+.light .rq-page :is(.rq-fact-chip, .rq-star, .rq-notes) {
+  background: var(--sa-glass-input-fill) !important;
+  backdrop-filter: blur(12px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.4) !important;
+  border: 1px solid var(--sa-glass-input-border) !important;
+  box-shadow: none !important;
+}
+
+/* ── Page-level glass token aliases ──────────────────────────── */
+
+.dark {
+  --host-glass: var(--sa-glass-fill);
+  --host-glass-elevated: var(--sa-glass-fill-elevated);
+  --dir-glass: var(--sa-glass-fill);
+  --dir-glass-elevated: var(--sa-glass-fill-elevated);
+  --dir-glass-border: var(--sa-glass-border);
+  --rv-glass: var(--sa-glass-fill);
+  --rv-glass-elevated: var(--sa-glass-fill-elevated);
+  --rv-glass-border: var(--sa-glass-border);
+  --rq-glass: var(--sa-glass-fill);
+  --rq-glass-elevated: var(--sa-glass-fill-elevated);
+  --rq-glass-border: var(--sa-glass-border);
+  --obs-glass: var(--sa-glass-fill);
+  --obs-glass-border: var(--sa-glass-border);
+  --obs-glass-highlight: rgba(255, 255, 255, 0.08);
+}
+
+.light {
+  --host-glass: var(--sa-glass-fill);
+  --host-glass-elevated: var(--sa-glass-fill-elevated);
+  --dir-glass: var(--sa-glass-fill);
+  --dir-glass-elevated: var(--sa-glass-fill-elevated);
+  --dir-glass-border: var(--sa-glass-border);
+  --rv-glass: var(--sa-glass-fill);
+  --rv-glass-elevated: var(--sa-glass-fill-elevated);
+  --rv-glass-border: var(--sa-glass-border);
+  --rq-glass: var(--sa-glass-fill);
+  --rq-glass-elevated: var(--sa-glass-fill-elevated);
+  --rq-glass-border: var(--sa-glass-border);
+  --obs-glass: var(--sa-glass-fill);
+  --obs-glass-border: var(--sa-glass-border);
+  --obs-glass-highlight: rgba(255, 255, 255, 0.92);
+}
+
+/* ── Submit panel decorative pseudo-elements off ─────────────── */
+
+.sa-submit-page .sa-panel::before,
+.sa-submit-page .sa-panel::after,
+.sa-submit-page .sa-readiness-panel::before {
+  display: none !important;
+}
+
+.sa-submit-page .sa-panel__header {
+  border-bottom: 0 !important;
+}
+
+@media (max-width: 1023px) {
+  .rq-page .rq-workbench {
+    border: 1px solid var(--sa-glass-border) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(
+    .host-step,
+    .host-panel,
+    .sa-panel,
+    .sa-dir-card,
+    .rv-bento__card,
+    .rq-workbench,
+    .sp-glass
+  ) {
+    transition: none !important;
+  }
+}
+
+/* Frost glass cards — bespoke stack (not generic aurora) */
+:is(.dark, .light) :is(.rv-page, .rq-page) .sa-frost-card {
+  border: 1px solid var(--sa-frost-border) !important;
+  background: var(--sa-frost-fill) !important;
+  background-image: none !important;
+  backdrop-filter: var(--sa-frost-blur) !important;
+  -webkit-backdrop-filter: var(--sa-frost-blur) !important;
+  box-shadow: var(--sa-frost-shadow) !important;
+}
+
+:is(.dark, .light) :is(.rv-page, .rq-page) .sa-frost-card:hover {
+  border-color: var(--sa-frost-border-hover) !important;
+  box-shadow: var(--sa-frost-shadow-hover) !important;
+}
+
+:is(.dark, .light) :is(.rv-page, .rq-page) .sa-frost-card::before,
+:is(.dark, .light) :is(.rv-page, .rq-page) .sa-frost-card::after {
+  border-color: transparent !important;
+}
+
+:is(.dark, .light) .rq-page .rq-mission--sel.sa-frost-card {
+  border-color: color-mix(in srgb, var(--rq-gold) 48%, var(--sa-frost-border)) !important;
+}

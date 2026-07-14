@@ -155,7 +155,7 @@ const ArchiveL1Atmosphere = memo(function ArchiveL1Atmosphere({
         ctx.fillRect(0, 0, W, H)
       }
 
-      BOKEH.forEach((b, i) => {
+      BOKEH.forEach((b) => {
         if (!reducedMotion) {
           b.x += b.vx
           b.y += b.vy
@@ -272,7 +272,7 @@ const ArchiveL1Atmosphere = memo(function ArchiveL1Atmosphere({
       cancelAnimationFrame(animRef.current)
       ro.disconnect()
     }
-  }, [accentColor, isDark, hubId])
+  }, [accentColor, isDark, hubId, hubSeed])
 
   return (
     <div

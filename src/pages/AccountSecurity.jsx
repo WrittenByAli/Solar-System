@@ -1,26 +1,25 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-    ShieldCheck, KeyRound, Smartphone, Fingerprint, Monitor,
+    ShieldCheck, Smartphone, Fingerprint, Monitor,
     LogOut, Trash2, Copy, Check, RefreshCw,
 } from 'lucide-react'
 import { useUser, useSession } from '@clerk/clerk-react'
 import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { themeText } from '../utils/themeText.js'
+import FogPageShell, { useSceneReveal } from '../components/FogPageShell.jsx'
 import OtpInput from '../components/auth/OtpInput.jsx'
+import AvatarCircle from '../components/AvatarCircle.jsx'
 
 function Card({ title, icon: Icon, isDark, children }) {
+    const { ink } = themeText(isDark)
+    const iconColor = isDark ? '#4fc3f7' : '#0284c7'
+
     return (
-        <section
-            className="rounded-2xl p-5 sm:p-6"
-            style={{
-                background: isDark ? 'rgba(7,20,40,0.85)' : 'rgba(255,255,255,0.9)',
-                border: `1px solid ${isDark ? 'rgba(79,195,247,0.16)' : 'rgba(15,23,42,0.1)'}`,
-            }}
-        >
-            <h2 className="flex items-center gap-2.5 text-sm font-bold mb-4"
-                style={{ color: isDark ? '#f1f5f9' : '#111827' }}>
-                <Icon size={17} style={{ color: isDark ? '#4fc3f7' : '#0284c7' }} aria-hidden />
+        <section className="sa-glass-surface rounded-2xl p-5 sm:p-6">
+            <h2 className="flex items-center gap-2.5 text-sm font-bold mb-4" style={{ color: ink }}>
+                <Icon size={17} style={{ color: iconColor }} aria-hidden />
                 {title}
             </h2>
             {children}
@@ -64,9 +63,9 @@ export default function AccountSecurity() {
     const { username, email, avatarUrl } = useAuth()
     const { theme } = useTheme()
     const isDark = theme === 'dark'
+    const sceneReveal = useSceneReveal()
 
-    const muted = isDark ? '#64748b' : '#475569'
-    const strong = isDark ? '#f1f5f9' : '#111827'
+    const { ink: strong, muted } = themeText(isDark)
 
     /* ── TOTP state ── */
     const [totpSetup, setTotpSetup] = useState(null) // { secret, uri }
@@ -202,6 +201,7 @@ export default function AccountSecurity() {
     }
 
     return (
+        <FogPageShell isDark={isDark} sceneReveal={sceneReveal}>
         <div className="solar-page">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -211,16 +211,7 @@ export default function AccountSecurity() {
             >
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-1">
-                    <span className="flex items-center justify-center rounded-full overflow-hidden shrink-0"
-                        style={{
-                            width: 56, height: 56,
-                            background: 'linear-gradient(135deg, #7c3aed, #4fc3f7)',
-                            border: `2px solid ${isDark ? 'rgba(79,195,247,0.45)' : 'rgba(2,132,199,0.4)'}`,
-                        }}>
-                        {avatarUrl
-                            ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                            : <span className="text-white font-bold text-xl">{(username || '?')[0]?.toUpperCase()}</span>}
-                    </span>
+                    <AvatarCircle avatarUrl={avatarUrl} username={username} size={56} gradient="linear-gradient(135deg, #7c3aed, #4fc3f7)" ringColor={isDark ? 'rgba(79,195,247,0.45)' : 'rgba(2,132,199,0.4)'} />
                     <div className="min-w-0">
                         <h1 className="text-xl font-bold truncate" style={{ color: strong }}>
                             Account &amp; Security
@@ -254,11 +245,7 @@ export default function AccountSecurity() {
                             <p className="text-xs leading-relaxed" style={{ color: muted }}>
                                 1. Add this key to your authenticator app (Google Authenticator, 1Password, Authy…):
                             </p>
-                            <code className="text-xs px-3 py-2.5 rounded-lg break-all select-all" style={{
-                                background: isDark ? 'rgba(2,4,8,0.6)' : 'rgba(240,244,248,0.9)',
-                                border: `1px solid ${isDark ? 'rgba(79,195,247,0.15)' : 'rgba(15,23,42,0.1)'}`,
-                                color: strong,
-                            }}>
+                            <code className="sa-glass-inset text-xs px-3 py-2.5 rounded-lg break-all select-all" style={{ color: strong }}>
                                 {totpSetup.secret}
                             </code>
                             <p className="text-xs" style={{ color: muted }}>
@@ -299,10 +286,7 @@ export default function AccountSecurity() {
                             </p>
                             <div className="grid grid-cols-2 gap-1.5 mb-3">
                                 {backupCodes.map((c) => (
-                                    <code key={c} className="text-xs px-2 py-1 rounded select-all" style={{
-                                        background: isDark ? 'rgba(2,4,8,0.55)' : 'rgba(255,255,255,0.8)',
-                                        color: strong,
-                                    }}>{c}</code>
+                                    <code key={c} className="sa-glass-inset text-xs px-2 py-1 rounded select-all" style={{ color: strong }}>{c}</code>
                                 ))}
                             </div>
                             <button type="button" style={btnStyle(isDark)} onClick={copyCodes}>
@@ -321,11 +305,7 @@ export default function AccountSecurity() {
                     {user.passkeys?.length > 0 && (
                         <ul className="flex flex-col gap-2 mb-4">
                             {user.passkeys.map((pk) => (
-                                <li key={pk.id} className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl"
-                                    style={{
-                                        background: isDark ? 'rgba(2,4,8,0.4)' : 'rgba(243,244,246,0.8)',
-                                        border: `1px solid ${isDark ? 'rgba(79,195,247,0.1)' : 'rgba(15,23,42,0.07)'}`,
-                                    }}>
+                                <li key={pk.id} className="sa-glass-inset flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl">
                                     <span className="text-xs font-medium truncate" style={{ color: strong }}>
                                         {pk.name || 'Passkey'}
                                     </span>
@@ -352,13 +332,10 @@ export default function AccountSecurity() {
                             const { device, browser, place } = describeSession(s)
                             const isCurrent = s.id === currentSession?.id
                             return (
-                                <li key={s.id} className="flex items-center justify-between gap-3 px-3.5 py-3 rounded-xl"
-                                    style={{
-                                        background: isDark ? 'rgba(2,4,8,0.4)' : 'rgba(243,244,246,0.8)',
-                                        border: `1px solid ${isCurrent
-                                            ? (isDark ? 'rgba(52,211,153,0.35)' : 'rgba(5,150,105,0.3)')
-                                            : (isDark ? 'rgba(79,195,247,0.1)' : 'rgba(15,23,42,0.07)')}`,
-                                    }}>
+                                <li
+                                    key={s.id}
+                                    className={`sa-glass-inset flex items-center justify-between gap-3 px-3.5 py-3 rounded-xl${isCurrent ? ' sa-glass-inset--current' : ''}`}
+                                >
                                     <div className="min-w-0">
                                         <p className="text-xs font-semibold truncate" style={{ color: strong }}>
                                             {browser} · {device}
@@ -392,5 +369,6 @@ export default function AccountSecurity() {
                 </Card>
             </motion.div>
         </div>
+        </FogPageShell>
     )
 }

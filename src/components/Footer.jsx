@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useLocation } from 'react-router-dom'
 import { useTheme } from '../App.jsx'
 import { SolarWordCore } from './SolarBrandA.jsx'
+import VantaFogBackground from './solar-archive/VantaFogBackground.jsx'
 
 const NAV_LINKS = [
     { label: 'Home', path: '/' },
@@ -16,6 +17,20 @@ const NAV_LINKS = [
 
 const TAGS = ['SOLAR', 'Peer Review', 'Open Data', 'Public Knowledge']
 
+/** Routes that already render a full-viewport fixed Vanta layer behind the footer. */
+const PAGE_FOG_PATHS = new Set([
+    '/map',
+    '/leaderboard',
+    '/host-archive',
+    '/submit',
+    '/directory',
+    '/reviews',
+    '/review-queue',
+    '/profile',
+    '/account',
+    '/my-submissions',
+])
+
 export default function Footer() {
     const location = useLocation()
     const { theme } = useTheme()
@@ -27,31 +42,36 @@ export default function Footer() {
         location.pathname.startsWith('/archive/')
     ) return null
 
+    const needsFooterVanta = !PAGE_FOG_PATHS.has(location.pathname)
+
     return (
         <footer className="sa-footer">
+            <div className="sa-footer__fx" aria-hidden="true">
+                {needsFooterVanta && (
+                    <VantaFogBackground
+                        isDark={isDark}
+                        entryReveal={1}
+                        className="sa-footer__vanta"
+                    />
+                )}
+                <div className="sa-footer__veil" />
+                <div className="sa-footer__vignette" />
+            </div>
             <div className="sa-footer__inner">
                 <div className="sa-footer__grid">
-                    {/* Brand */}
                     <div className="sa-footer__brand-col">
                         <div className="sa-footer__brand">
-                            <span
-                                className="sa-footer__brand-text"
-                                style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
-                            >
+                            <span className="sa-footer__brand-text">
                                 THE <SolarWordCore /> ARCHIVE
                             </span>
                         </div>
-                        <p
-                            className="sa-footer__tagline"
-                            style={{ color: isDark ? '#475569' : '#4b5563' }}
-                        >
+                        <p className="sa-footer__tagline">
                             A coordinate-based knowledge archive for off-grid autonomy,
                             sustainable living, and open public research. Built by the
                             community, validated by peers.
                         </p>
                     </div>
 
-                    {/* Navigation */}
                     <div className="sa-footer__links-col">
                         <div className="sa-footer__col-label">Navigation</div>
                         <nav className="sa-footer__links">
@@ -60,13 +80,6 @@ export default function Footer() {
                                     key={path}
                                     to={path}
                                     className="sa-footer__link"
-                                    style={{ color: isDark ? '#64748b' : '#4b5563' }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.color = isDark ? '#4fc3f7' : '#0284c7'
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.color = isDark ? '#64748b' : '#4b5563'
-                                    }}
                                 >
                                     <span className="sa-footer__link-arrow">›</span>
                                     {label}
@@ -76,32 +89,13 @@ export default function Footer() {
                     </div>
                 </div>
 
-                {/* Bottom bar */}
-                <div
-                    className="sa-footer__bottom"
-                    style={{
-                        borderTop: `1px solid ${isDark ? 'rgba(79,195,247,0.06)' : 'rgba(15,23,42,0.08)'}`,
-                    }}
-                >
-                    <div
-                        className="sa-footer__copy"
-                        style={{ color: isDark ? '#475569' : '#1e293b' }}
-                    >
+                <div className="sa-footer__bottom">
+                    <div className="sa-footer__copy">
                         © 2026 The Solar Archive · Open Knowledge Platform
                     </div>
                     <div className="sa-footer__tags">
                         {TAGS.map(tag => (
-                            <span
-                                key={tag}
-                                className="sa-footer__tag"
-                                style={{
-                                    background: isDark
-                                        ? 'rgba(79,195,247,0.05)'
-                                        : 'rgba(15,23,42,0.05)',
-                                    border: `1px solid ${isDark ? 'rgba(79,195,247,0.1)' : 'rgba(15,23,42,0.1)'}`,
-                                    color: isDark ? '#475569' : '#1e293b',
-                                }}
-                            >
+                            <span key={tag} className="sa-footer__tag">
                                 {tag}
                             </span>
                         ))}

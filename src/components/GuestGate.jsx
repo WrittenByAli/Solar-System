@@ -132,7 +132,7 @@ export default function GuestGate() {
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                             padding: '10px 4px', border: 'none', background: 'none', cursor: 'pointer',
                             fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit',
-                            color: isDark ? '#64748b' : '#64748b',
+                            color: isDark ? '#64748b' : '#475569',
                         }}
                     >
                         <ArrowLeft size={14} aria-hidden /> Keep browsing as guest

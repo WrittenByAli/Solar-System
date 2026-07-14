@@ -17,9 +17,9 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Inter', 'system-ui', 'sans-serif'],
-                mono: ['JetBrains Mono', 'monospace'],
-                /** Heavy condensed display — matches SOLAR wordmark (custom SVG stays on “A” only). */
-                solar: ['Anton', 'Impact', 'Haettenschweiler', 'Arial Narrow', 'system-ui', 'sans-serif'],
+                mono: ['Inter', 'system-ui', 'sans-serif'],
+                solar: ['Inter', 'system-ui', 'sans-serif'],
+                display: ['Inter', 'system-ui', 'sans-serif'],
             },
             colors: {
                 space: {

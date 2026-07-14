@@ -5,28 +5,36 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:e2e": "cross-env VITE_E2E=true vite --host 127.0.0.1 --port 5199 --strictPort",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "lint": "eslint src e2e"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.8",
-    "@react-three/drei": "^9.114.3",
-    "@react-three/fiber": "^8.17.10",
-    "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.110.0",
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.344.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.0",
-    "three": "^0.184.0"
+    "three": "^0.184.0",
+    "vanta": "^0.5.24"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.61.1",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.17",
-    "playwright": "^1.60.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "vite": "^5.1.0"

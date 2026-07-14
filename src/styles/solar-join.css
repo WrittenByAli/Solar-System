@@ -6,8 +6,7 @@
 ══════════════════════════════════════════════════════════════ */
 
 .sj-page {
-  --sj-font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
-             'Inter', 'Segoe UI', system-ui, sans-serif;
+  --sj-font: var(--sa-font);
   --sj-ink: #111111;
   --sj-ink-2: #6b7280;
   --sj-ink-3: #9ca3af;
@@ -118,19 +117,6 @@
   letter-spacing: 0.02em;
   color: var(--sj-ink-2);
   margin-top: 5px;
-}
-
-/* ── Ambient backdrop ─────────────────────────────────────── */
-
-.sj-ambient {
-  position: absolute;
-  inset: -80px -40px -80px -60px;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: -1;
-  /* dissolve toward the edges so the layer never reads as a rectangle */
-  -webkit-mask-image: radial-gradient(75% 75% at 50% 46%, #000 55%, transparent 98%);
-  mask-image: radial-gradient(75% 75% at 50% 46%, #000 55%, transparent 98%);
 }
 
 .sj-ambient__glow {

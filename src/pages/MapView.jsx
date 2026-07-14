@@ -3,12 +3,30 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowRight, Orbit, Search } from 'lucide-react'
 import { useTheme } from '../App.jsx'
-import MapBackground from '../components/map/MapBackground.jsx'
+import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
 import researchData from '../data/researchData.json'
 import { ARCHIVE_HUB_LOCATIONS, loadHubArchiveConfig } from '../utils/archiveInstanceStorage.js'
 import { getHubDisciplineCopy } from '../constants/hubDisciplineCopy.js'
 import { getHubResearchSections, getHubTaxonomy } from '../utils/hubTaxonomyRegistry.js'
 import '../styles/solar-map.css'
+
+const LIGHT_PALETTE = {
+  sun: { color: '#c2410c', glow: 'rgba(194, 65, 12, 0.44)' },
+  mercury: { color: '#4b5563', glow: 'rgba(75, 85, 99, 0.42)' },
+  venus: { color: '#b45309', glow: 'rgba(180, 83, 9, 0.4)' },
+  earth: { color: '#047857', glow: 'rgba(4, 120, 87, 0.4)' },
+  mars: { color: '#b91c1c', glow: 'rgba(185, 28, 28, 0.4)' },
+  jupiter: { color: '#c2410c', glow: 'rgba(194, 65, 12, 0.38)' },
+  saturn: { color: '#a16207', glow: 'rgba(161, 98, 7, 0.38)' },
+  uranus: { color: '#0e7490', glow: 'rgba(14, 116, 144, 0.4)' },
+  neptune: { color: '#4338ca', glow: 'rgba(67, 56, 202, 0.4)' },
+  star: { color: '#b45309', glow: 'rgba(180, 83, 9, 0.42)' },
+}
+
+function displayColors(hub, isDark) {
+  if (isDark) return { color: hub.color, glow: hub.glow }
+  return LIGHT_PALETTE[hub.id] || { color: hub.color, glow: hub.glow }
+}
 
 const PLANETS = [
   {
@@ -84,14 +102,21 @@ const NORTH_STAR = { x: CX, y: 58 }
 
 const HUBS = [FOUNDATION_ARCHIVE, ...PLANETS]
 
-function orbitPosition(planet, elapsed = 0) {
+function orbitSpeedRad(planet) {
+  const degreesPerSecond = 1.55 + (365 / planet.period) * 2.1
+  return degreesPerSecond * (Math.PI / 180)
+}
+
+function positionFromAngle(planet, angleRad) {
   if (!planet?.orbitR) return { x: CX, y: CY }
-  const degreesPerSecond = 2.1 + (365 / planet.period) * 2.8
-  const angle = ((planet.baseAngle + elapsed * degreesPerSecond) % 360) * (Math.PI / 180)
   return {
-    x: CX + planet.orbitR * Math.cos(angle),
-    y: CY + planet.orbitR * Math.sin(angle) * 0.38,
+    x: CX + planet.orbitR * Math.cos(angleRad),
+    y: CY + planet.orbitR * Math.sin(angleRad) * 0.38,
   }
+}
+
+function initialAngleRad(planet) {
+  return planet.baseAngle * (Math.PI / 180)
 }
 
 function enrichHub(hub) {
@@ -124,15 +149,32 @@ export default function MapView() {
   const [hoveredPlanet, setHoveredPlanet] = useState(null)
   const [selectedHubId, setSelectedHubId] = useState('star')
   const [searchVal, setSearchVal] = useState('')
-  const bgParallax = { x: 0, y: 0 }
+  const [sceneReveal, setSceneReveal] = useState(0)
   const animRef = useRef(null)
   const planetGroupsRef = useRef({})
-  const startTimeRef = useRef(performance.now())
+  const planetSpinRefs = useRef({})
+  const ringSpinRefs = useRef({})
+  const orbitAnglesRef = useRef({})
+  const spinAnglesRef = useRef({})
   const lastFrameRef = useRef(performance.now())
-  const orbitStateRef = useRef({})
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [])
+
+  useEffect(() => {
+    let frame
+    const start = performance.now()
+    const duration = 900
+
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / duration)
+      setSceneReveal(1 - Math.pow(1 - p, 3))
+      if (p < 1) frame = requestAnimationFrame(tick)
+    }
+
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
   }, [])
 
   const enrichedHubs = useMemo(() => HUBS.map(enrichHub), [])
@@ -140,29 +182,48 @@ export default function MapView() {
   const hubById = useMemo(() => Object.fromEntries(enrichedHubs.map((h) => [h.id, h])), [enrichedHubs])
   const activeHub = hoveredPlanet || hubById[selectedHubId] || hubById.star
 
-  const animate = useCallback(() => {
-    const now = performance.now()
-    const elapsed = (now - startTimeRef.current) / 1000
-    const delta = Math.min(0.05, Math.max(0.001, (now - lastFrameRef.current) / 1000))
+  const animate = useCallback((now) => {
+    const delta = Math.min(0.032, Math.max(0.001, (now - lastFrameRef.current) / 1000))
     lastFrameRef.current = now
-    const ease = 1 - Math.exp(-delta * 7)
 
     PLANETS.forEach((p) => {
       if (p.orbitR === 0) return
-      const target = orbitPosition(p, elapsed)
-      const prev = orbitStateRef.current[p.id] || target
-      const x = prev.x + (target.x - prev.x) * ease
-      const y = prev.y + (target.y - prev.y) * ease
-      orbitStateRef.current[p.id] = { x, y }
+
+      const prevAngle = orbitAnglesRef.current[p.id] ?? initialAngleRad(p)
+      const angle = prevAngle + orbitSpeedRad(p) * delta
+      orbitAnglesRef.current[p.id] = angle
+
+      const { x, y } = positionFromAngle(p, angle)
       const group = planetGroupsRef.current[p.id]
-      if (group) group.setAttribute('transform', `translate(${x.toFixed(2)}, ${y.toFixed(2)})`)
+      if (group) group.setAttribute('transform', `translate(${x}, ${y})`)
+
+      const spinPeriod = Math.max(9, Math.min(24, p.period / 180))
+      const spinSpeed = (Math.PI * 2) / spinPeriod
+      const prevSpin = spinAnglesRef.current[p.id] ?? 0
+      const spin = prevSpin + spinSpeed * delta
+      spinAnglesRef.current[p.id] = spin
+
+      const spinGroup = planetSpinRefs.current[p.id]
+      if (spinGroup) spinGroup.setAttribute('transform', `rotate(${(spin * 180) / Math.PI})`)
+
+      const ringGroup = ringSpinRefs.current[p.id]
+      if (ringGroup) ringGroup.setAttribute('transform', `rotate(${(spin * 180) / Math.PI})`)
     })
+
     animRef.current = requestAnimationFrame(animate)
   }, [])
 
   useEffect(() => {
-    // No orbit animation on small screens — static positions only
-    if (window.innerWidth <= 640) return
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (window.innerWidth <= 640 || prefersReducedMotion) return
+
+    PLANETS.forEach((p) => {
+      if (p.orbitR === 0) return
+      orbitAnglesRef.current[p.id] = initialAngleRad(p)
+      spinAnglesRef.current[p.id] = 0
+    })
+
+    lastFrameRef.current = performance.now()
     animRef.current = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(animRef.current)
   }, [animate])
@@ -187,45 +248,45 @@ export default function MapView() {
     if (planet) openHub(planet.id)
   }
 
-  const orbitStroke = isDark ? 'rgba(79,195,247,0.14)' : 'rgba(3,105,161,0.12)'
-  const labelFill = isDark ? '#e2e8f0' : '#1e293b'
-
   return (
-    <div className="solar-page solar-map">
-      <MapBackground isDark={isDark} parallax={bgParallax} />
-      <div
-        className="solar-map__ambient"
-        aria-hidden="true"
-        style={{ transform: `translate3d(${bgParallax.x * -8}px, ${bgParallax.y * -6}px, 0)` }}
+    <div className={`solar-page solar-map${isDark ? ' solar-map--dark' : ' solar-map--light'}`}>
+      <VantaFogBackground
+        isDark={isDark}
+        entryReveal={sceneReveal}
+        className="solar-map__vanta"
       />
       <div
-        className="solar-map__grid"
+        className="solar-map__veil"
+        style={{ opacity: Math.max(0, (isDark ? 0.14 : 0.1) - sceneReveal * (isDark ? 0.22 : 0.16)) }}
         aria-hidden="true"
-        style={{ transform: `translate3d(${bgParallax.x * -14}px, ${bgParallax.y * -10}px, 0)` }}
+      />
+      <div
+        className="solar-map__vignette"
+        style={{ opacity: isDark ? 0.2 + sceneReveal * 0.06 : 0.14 + sceneReveal * 0.04 }}
+        aria-hidden="true"
       />
 
-      <div className="solar-map__inner">
+      <div className="solar-map__inner" style={{ opacity: sceneReveal }}>
         <motion.header
           className="solar-map__header"
-          initial={{ opacity: 0, y: -16 }}
+          initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.65, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="solar-map__kicker">
-            <span className="solar-map__kicker-line" />
-            <span>Spatial Discovery · 10 Domains</span>
+            <span>10 Research Domains</span>
           </div>
           <h1 className="solar-map__title">Coordinate Map</h1>
           <p className="solar-map__subtitle">
-            Navigate the solar system of knowledge — hover a hub, then open its archive vault.
+            Search research domains and open their archive hubs.
           </p>
         </motion.header>
 
         <motion.div
           className="solar-map__toolbar"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.15 }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
           <form onSubmit={handleSearch} className="solar-map__toolbar-form">
             <div className="solar-map__search-wrap">
@@ -261,13 +322,14 @@ export default function MapView() {
         >
           {enrichedHubs.map((hub) => {
             const selected = activeHub?.id === hub.id
+            const { color: hubColor } = displayColors(hub, isDark)
             return (
               <button
                 key={hub.id}
                 type="button"
                 className="solar-map__hub-select-btn"
                 data-selected={selected ? 'true' : 'false'}
-                style={{ '--hub-color': hub.color }}
+                style={{ '--hub-color': hubColor }}
                 onMouseEnter={() => setHoveredPlanet(hub)}
                 onMouseLeave={() => setHoveredPlanet(null)}
                 onClick={() => openHub(hub.id)}
@@ -286,19 +348,9 @@ export default function MapView() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.55 }}
           >
-            <div className="solar-map__canvas-glow" aria-hidden="true" />
-            <div className="solar-map__canvas-shimmer" aria-hidden="true" />
-            <div className="solar-map__scanline" aria-hidden="true" />
-
-            <div
-              className="solar-map__canvas-inner"
-            >
+            <div className="solar-map__canvas-inner">
               <svg viewBox="0 0 1000 800" className="solar-map__svg" preserveAspectRatio="xMidYMid meet">
                 <defs>
-                  <radialGradient id="mapNebula" cx="50%" cy="48%" r="55%">
-                    <stop offset="0%" stopColor={isDark ? '#1a2844' : '#e8f0fa'} stopOpacity={isDark ? 0.9 : 0.5} />
-                    <stop offset="100%" stopColor={isDark ? '#020408' : '#f8f9fb'} stopOpacity="0" />
-                  </radialGradient>
                   <radialGradient id="mapSunCorona" cx="50%" cy="50%" r="50%">
                     <stop offset="0%" stopColor="#ff9944" stopOpacity="0.55" />
                     <stop offset="45%" stopColor="#ff6622" stopOpacity="0.18" />
@@ -338,17 +390,13 @@ export default function MapView() {
                   </filter>
                 </defs>
 
-                <rect width="1000" height="800" fill="url(#mapNebula)" />
-
                 {/* Guide line North Star → Sun */}
                 <line
+                  className="solar-map__guide-line"
                   x1={NORTH_STAR.x}
                   y1={NORTH_STAR.y + 20}
                   x2={CX}
                   y2={CY - 40}
-                  stroke={isDark ? 'rgba(245,166,35,0.12)' : 'rgba(180,83,9,0.1)'}
-                  strokeWidth="1"
-                  strokeDasharray="2 6"
                 />
 
                 {/* Orbital rings */}
@@ -360,7 +408,6 @@ export default function MapView() {
                     rx={p.orbitR}
                     ry={p.orbitR * 0.38}
                     className={`solar-map__orbit ${i % 2 ? 'solar-map__orbit--reverse' : ''}`}
-                    stroke={orbitStroke}
                   />
                 ))}
 
@@ -389,7 +436,7 @@ export default function MapView() {
                   </g>
                   <circle r={8.5} fill="url(#mapNsDisk)" />
                   <circle r={2.4} fill="#ffffff" opacity={0.98} />
-                  <text y={54} textAnchor="middle" className="solar-map__hub-label" fill={labelFill}>
+                  <text y={54} textAnchor="middle" className="solar-map__hub-label">
                     {FOUNDATION_ARCHIVE.label}
                   </text>
                 </g>
@@ -411,7 +458,7 @@ export default function MapView() {
                   />
                   <circle r={36} fill="url(#mapSunCore)" />
                   <circle r={14} fill="rgba(255,255,255,0.25)" cx={-10} cy={-10} />
-                  <text y={52} textAnchor="middle" className="solar-map__hub-label" fill={labelFill}>
+                  <text y={52} textAnchor="middle" className="solar-map__hub-label">
                     Sun
                   </text>
                 </g>
@@ -420,13 +467,15 @@ export default function MapView() {
                 {enrichedPlanets.filter((p) => p.orbitR > 0).map((planet) => {
                   const r = planet.size / 2
                   const isActive = activeHub?.id === planet.id
-                  const { x, y } = orbitPosition(planet, 0)
+                  const { x, y } = positionFromAngle(planet, initialAngleRad(planet))
+                  const { color: planetColor, glow: planetGlow } = displayColors(planet, isDark)
 
                   return (
                     <g
                       key={planet.id}
                       ref={(el) => { if (el) planetGroupsRef.current[planet.id] = el }}
-                      transform={`translate(${x.toFixed(2)}, ${y.toFixed(2)})`}
+                      className="solar-map__planet-orbit"
+                      transform={`translate(${x}, ${y})`}
                       onClick={() => openHub(planet.id)}
                       onMouseEnter={() => setHoveredPlanet(planet)}
                       onMouseLeave={() => setHoveredPlanet(null)}
@@ -435,32 +484,33 @@ export default function MapView() {
                     >
                       <circle
                         r={planet.size * (isActive ? 1.75 : 1.45)}
-                        fill={planet.glow}
-                        opacity={isActive ? 0.55 : 0.22}
+                        fill={planetGlow}
+                        opacity={isActive ? (isDark ? 0.55 : 0.62) : (isDark ? 0.22 : 0.42)}
                       />
 
                       {planet.id === 'saturn' && (
                         <ellipse
+                          ref={(el) => { if (el) ringSpinRefs.current[planet.id] = el }}
                           className="solar-map__planet-ring-spin"
                           rx={planet.size * 1.4}
                           ry={planet.size * 0.3}
                           fill="none"
-                          stroke={planet.color}
+                          stroke={planetColor}
                           strokeWidth="3"
-                          opacity="0.65"
+                          opacity={isDark ? 0.65 : 0.82}
                         />
                       )}
 
-                      <circle r={r} fill={planet.color} />
+                      <circle r={r} fill={planetColor} />
                       <g
+                        ref={(el) => { if (el) planetSpinRefs.current[planet.id] = el }}
                         className="solar-map__planet-spin"
-                        style={{ animationDuration: `${Math.max(9, Math.min(24, planet.period / 180))}s` }}
                       >
                         <ellipse
                           rx={r * 0.72}
                           ry={r * 0.13}
                           fill="none"
-                          stroke="rgba(255,255,255,0.24)"
+                          stroke={isDark ? 'rgba(255,255,255,0.24)' : 'rgba(15,23,42,0.32)'}
                           strokeWidth={Math.max(1, r * 0.08)}
                           transform="rotate(-18)"
                         />
@@ -468,7 +518,7 @@ export default function MapView() {
                           rx={r * 0.58}
                           ry={r * 0.09}
                           fill="none"
-                          stroke="rgba(15,23,42,0.18)"
+                          stroke={isDark ? 'rgba(15,23,42,0.18)' : 'rgba(15,23,42,0.3)'}
                           strokeWidth={Math.max(1, r * 0.06)}
                           transform="rotate(22)"
                         />
@@ -476,12 +526,17 @@ export default function MapView() {
                           r={Math.max(1.5, r * 0.12)}
                           cx={r * 0.28}
                           cy={r * 0.12}
-                          fill="rgba(255,255,255,0.18)"
+                          fill={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.28)'}
                         />
                       </g>
-                      <circle r={r * 0.45} fill="rgba(255,255,255,0.2)" cx={-r * 0.22} cy={-r * 0.22} />
+                      <circle
+                        r={r * 0.45}
+                        fill={isDark ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.32)'}
+                        cx={-r * 0.22}
+                        cy={-r * 0.22}
+                      />
 
-                      <text y={r + 14} textAnchor="middle" className="solar-map__hub-label" fill={labelFill}>
+                      <text y={r + 14} textAnchor="middle" className="solar-map__hub-label">
                         {planet.label}
                       </text>
                     </g>
@@ -490,25 +545,15 @@ export default function MapView() {
 
                 {/* Decorative compass ring */}
                 <circle
+                  className="solar-map__compass-ring"
                   cx={CX}
                   cy={CY}
                   r={540}
-                  fill="none"
-                  stroke={isDark ? 'rgba(79,195,247,0.06)' : 'rgba(3,105,161,0.08)'}
-                  strokeWidth="1"
-                  strokeDasharray="1 12"
                 />
               </svg>
             </div>
 
-            <div
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider"
-              style={{
-                background: isDark ? 'rgba(4,12,24,0.75)' : 'rgba(255,255,255,0.85)',
-                border: `1px solid ${isDark ? 'rgba(79,195,247,0.2)' : 'rgba(15,23,42,0.1)'}`,
-                color: isDark ? '#94a3b8' : '#64748b',
-              }}
-            >
+            <div className="solar-map__canvas-hint">
               <Orbit size={12} />
               Click to enter
             </div>

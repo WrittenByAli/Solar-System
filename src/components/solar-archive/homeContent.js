@@ -22,9 +22,9 @@ export const STATS = [
 
 export const STATEMENT_LINES = [
   { text: 'A closed-loop network', accent: false },
-  { text: 'of living labs — where', accent: false },
-  { text: 'energy is shared,', accent: false },
-  { text: 'knowledge is free.', accent: true },
+  { text: 'of living labs —', accent: false },
+  { text: 'where energy is shared,', accent: false },
+  { text: 'and knowledge is free.', accent: true },
 ]
 
 export const ARCHIVE_MECHANICS = [
@@ -63,11 +63,16 @@ export const HERO_BULLETS = [
   'Submit adjacent grid entries that can become reviewed public knowledge.',
 ]
 
+export const CTA_LINES = [
+  { text: 'Start exploring', accent: false },
+  { text: 'the archive.', accent: true },
+]
+
 export const DOMAIN_HIGHLIGHTS = [
-  { label: 'Physics', body: 'Sun hub archives mechanics, thermodynamics, electromagnetism, quantum physics, and relativity.', color: '#ff6b35' },
-  { label: 'Mathematics', body: 'Mercury hub covers algebra, geometry, analysis, statistics, and applied mathematical methods.', color: '#94a3b8' },
-  { label: 'Astronomy', body: 'Saturn hub maps stars, galaxies, cosmology, and observational astronomy across the universe.', color: '#fde68a' },
-  { label: 'Social Science', body: 'Jupiter hub archives economics, sociology, political science, and collective decision-making.', color: '#fb923c' },
+  { label: 'Physics', slug: 'physics', body: 'Sun hub archives mechanics, thermodynamics, electromagnetism, quantum physics, and relativity.' },
+  { label: 'Mathematics', slug: 'mathematics', body: 'Mercury hub covers algebra, geometry, analysis, statistics, and applied mathematical methods.' },
+  { label: 'Astronomy', slug: 'astronomy', body: 'Saturn hub maps stars, galaxies, cosmology, and observational astronomy across the universe.' },
+  { label: 'Social Science', slug: 'social-science', body: 'Jupiter hub archives economics, sociology, political science, and collective decision-making.' },
 ]
 
 /** Non-overlapping scroll chapter spacers — see scrollChapters.js */

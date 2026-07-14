@@ -1,0 +1,113 @@
+/* ═══════════════════════════════════════════════════════════════
+   Shared frosted glass card — /reviews testimonials + /review-queue
+   ═══════════════════════════════════════════════════════════════ */
+
+:is(.rv-page--dark, .rq-page--dark) {
+  --sa-frost-fill:
+    linear-gradient(152deg, rgba(24, 30, 52, 0.78) 0%, rgba(12, 16, 32, 0.58) 48%, rgba(8, 12, 26, 0.66) 100%);
+  --sa-frost-sheen:
+    radial-gradient(ellipse 120% 75% at 10% -18%, rgba(255, 255, 255, 0.11), transparent 58%),
+    radial-gradient(ellipse 70% 50% at 95% 105%, rgba(125, 211, 252, 0.06), transparent 55%);
+  --sa-frost-border: rgba(255, 255, 255, 0.11);
+  --sa-frost-border-hover: rgba(255, 255, 255, 0.2);
+  --sa-frost-blur: blur(24px) saturate(1.45);
+  --sa-frost-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.42),
+    0 2px 10px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --sa-frost-shadow-hover:
+    0 18px 52px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --sa-frost-rim: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.02) 42%, rgba(255, 255, 255, 0.06));
+}
+
+:is(.rv-page--light, .rq-page--light) {
+  --sa-frost-fill:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.68) 0%, rgba(255, 252, 248, 0.46) 52%, rgba(255, 255, 255, 0.58) 100%);
+  --sa-frost-sheen: radial-gradient(ellipse 110% 70% at 12% -15%, rgba(255, 255, 255, 0.55), transparent 58%);
+  --sa-frost-border: rgba(255, 255, 255, 0.72);
+  --sa-frost-border-hover: rgba(255, 255, 255, 0.92);
+  --sa-frost-blur: blur(28px) saturate(1.55);
+  --sa-frost-shadow:
+    0 10px 36px rgba(15, 23, 42, 0.08),
+    0 2px 10px rgba(15, 23, 42, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  --sa-frost-shadow-hover:
+    0 18px 48px rgba(15, 23, 42, 0.12),
+    0 4px 14px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  --sa-frost-rim: linear-gradient(145deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.15) 45%, rgba(255, 255, 255, 0.35));
+}
+
+.sa-frost-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  text-shadow: none;
+  border: 1px solid var(--sa-frost-border) !important;
+  background: var(--sa-frost-fill) !important;
+  background-image: none !important;
+  backdrop-filter: var(--sa-frost-blur) !important;
+  -webkit-backdrop-filter: var(--sa-frost-blur) !important;
+  box-shadow: var(--sa-frost-shadow) !important;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.28s ease;
+}
+
+.sa-frost-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--sa-frost-sheen);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sa-frost-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid transparent;
+  background: var(--sa-frost-rim) border-box;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+}
+
+:is(.rv-page--light, .rq-page--light) .sa-frost-card::after {
+  opacity: 0.9;
+}
+
+.sa-frost-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--sa-frost-border-hover) !important;
+  box-shadow: var(--sa-frost-shadow-hover) !important;
+}
+
+.sa-frost-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sa-frost-card {
+    transition: none;
+  }
+
+  .sa-frost-card:hover {
+    transform: none;
+  }
+}

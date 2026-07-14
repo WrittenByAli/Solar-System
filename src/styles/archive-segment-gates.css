@@ -13,7 +13,7 @@
 
 .archive-root:not([data-theme='dark']) .archive-segment-gate,
 .archive-segment-gate--light {
-  color: #64748b;
+  color: #475569;
   border-color: rgba(100, 116, 139, 0.4);
   background: rgba(248, 250, 252, 0.85);
 }
@@ -56,7 +56,7 @@
 .archive-segment-add-btn--hud {
   font-size: 9px;
   padding: 4px 10px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--sa-font);
 }
 
 .archive-empty-slot-frame {

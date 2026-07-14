@@ -1,9 +1,11 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ExternalLink, Plus, LayoutGrid, Sparkles, AlertCircle, Database, Search } from 'lucide-react'
+import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
+import { ExternalLink, Plus, LayoutGrid, AlertCircle, Database, Search, Radio, BookOpen } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { ARCHIVE_HUB_LOCATIONS, REGISTRY_CATEGORIES, loadArchiveRegistry } from '../utils/archiveInstanceStorage.js'
+import { LAYER_SHORT_NAMES } from '../utils/archiveLayerSpecs.js'
 import { supabase } from '../utils/supabaseClient.js'
 import '../styles/solar-directory.css'
 
@@ -16,7 +18,7 @@ function hubLabel(id) {
     return ARCHIVE_HUB_LOCATIONS.find((h) => h.id === String(id).toLowerCase())?.label || id
 }
 
-const LAYER_NAMES = { 4: 'Entry', 5: 'Detailed', 6: 'Segmented', 7: 'Deep', 8: 'Narrative' }
+const LAYER_NAMES = LAYER_SHORT_NAMES
 
 const fadeUp = {
     hidden: { opacity: 0, y: 18 },
@@ -29,11 +31,26 @@ const fadeUp = {
 export default function ArchiveDirectory() {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
+    const [sceneReveal, setSceneReveal] = useState(0)
     const [tick, setTick] = useState(0)
-    const ink = isDark ? '#ffffff' : '#000000'
+    const ink = isDark ? '#f8fafc' : '#0f172a'
+    const linkColor = isDark ? '#f5a623' : '#0369a1'
 
     useLayoutEffect(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    }, [])
+
+    useEffect(() => {
+        let frame
+        const start = performance.now()
+        const duration = 900
+        const tickReveal = (now) => {
+            const p = Math.min(1, (now - start) / duration)
+            setSceneReveal(1 - Math.pow(1 - p, 3))
+            if (p < 1) frame = requestAnimationFrame(tickReveal)
+        }
+        frame = requestAnimationFrame(tickReveal)
+        return () => cancelAnimationFrame(frame)
     }, [])
 
     useEffect(() => {
@@ -42,56 +59,81 @@ export default function ArchiveDirectory() {
         return () => window.removeEventListener('solar-archive-registry-updated', bump)
     }, [])
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tick invalidates localStorage-backed data the inputs can't see
     const rows = useMemo(() => loadArchiveRegistry(), [tick])
 
-    // Live archive entries from Supabase (Phase 2A — real database reads)
-    const [entries, setEntries] = useState(null) // null = loading
+    // Live archive entries from Supabase, now served by the Postgres
+    // full-text search RPC (GIN index over title/content/tags) with
+    // planet + layer filters applied server-side.
+    const [filteredEntries, setFilteredEntries] = useState(null) // null = loading
+    const [entryHubs, setEntryHubs] = useState([])
+    const [totalApproved, setTotalApproved] = useState(0)
     const [entryHub, setEntryHub] = useState('all')
+    const [entryLayer, setEntryLayer] = useState('all')
     const [entryQuery, setEntryQuery] = useState('')
 
+    // One-time: total approved count + the set of hubs that actually have
+    // approved entries (drives the hub dropdown options).
     useEffect(() => {
         let active = true
         supabase
             .from('archive_entries')
-            .select('id,title,short_summary,layer,planet_id,status,created_at')
+            .select('planet_id', { count: 'exact' })
             .eq('status', 'approved')
-            .order('created_at', { ascending: false })
-            .limit(200)
-            .then(({ data, error }) => {
-                if (!active) return
-                if (error) {
-                    console.error('Directory entries fetch failed:', error.message)
-                    setEntries([])
-                    return
-                }
-                setEntries(data || [])
+            .is('deleted_at', null)
+            .then(({ data, count, error }) => {
+                if (!active || error) return
+                setTotalApproved(count || 0)
+                setEntryHubs([...new Set((data || []).map((e) => e.planet_id))].sort())
             })
         return () => { active = false }
     }, [])
 
-    const entryHubs = useMemo(() => {
-        if (!entries) return []
-        return [...new Set(entries.map((e) => e.planet_id))].sort()
-    }, [entries])
-
-    const filteredEntries = useMemo(() => {
-        if (!entries) return []
-        const q = entryQuery.trim().toLowerCase()
-        return entries.filter((e) =>
-            (entryHub === 'all' || e.planet_id === entryHub) &&
-            (!q || e.title.toLowerCase().includes(q) || (e.short_summary || '').toLowerCase().includes(q)),
-        )
-    }, [entries, entryHub, entryQuery])
+    // Debounced search — re-runs on query/hub/layer change.
+    useEffect(() => {
+        let active = true
+        const run = () => {
+            supabase
+                .rpc('search_archive_entries', {
+                    p_query: entryQuery.trim(),
+                    p_planet: entryHub === 'all' ? null : entryHub,
+                    p_layer: entryLayer === 'all' ? null : Number(entryLayer),
+                    p_limit: 200,
+                    p_offset: 0,
+                })
+                .then(({ data, error }) => {
+                    if (!active) return
+                    if (error) {
+                        console.error('Directory search failed:', error.message)
+                        setFilteredEntries([])
+                        return
+                    }
+                    setFilteredEntries(data || [])
+                })
+        }
+        const t = setTimeout(run, entryQuery ? 250 : 0)
+        return () => { active = false; clearTimeout(t) }
+    }, [entryQuery, entryHub, entryLayer])
 
     return (
-        <div className="solar-page sa-dir-page">
-            {/* Cinematic background */}
-            <div className="sa-dir-bg" aria-hidden="true">
-                <div className="sa-dir-bg__grid" />
-                <div className="sa-dir-bg__stars" />
-                <div className="sa-dir-bg__glow" />
-            </div>
+        <div className={`solar-page sa-dir-page${isDark ? ' sa-dir-page--dark' : ' sa-dir-page--light'}`}>
+            <VantaFogBackground
+                isDark={isDark}
+                entryReveal={sceneReveal}
+                className="sa-dir-page__vanta"
+            />
+            <div
+                className="sa-dir-page__veil"
+                style={{ opacity: Math.max(0, (isDark ? 0.14 : 0.1) - sceneReveal * (isDark ? 0.22 : 0.16)) }}
+                aria-hidden="true"
+            />
+            <div
+                className="sa-dir-page__vignette"
+                style={{ opacity: isDark ? 0.2 + sceneReveal * 0.06 : 0.14 + sceneReveal * 0.04 }}
+                aria-hidden="true"
+            />
 
+            <div className="sa-dir-page__inner" style={{ opacity: sceneReveal }}>
             <div className="sa-dir-shell">
                 {/* ── Hero ── */}
                 <motion.div
@@ -100,22 +142,18 @@ export default function ArchiveDirectory() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 >
-                    <h1 className="sa-dir-hero__title">
-                        Explore the<br />
-                        <span className="sa-dir-hero__title--accent">Archive Network</span>
-                    </h1>
+                    <h1 className="sa-dir-hero__title">Archive Directory</h1>
                     <p className="sa-dir-hero__sub">
-                        A federated knowledge network of Solar Archive deployments. Each listing is a portable archive pack hosted on a research hub in the SOLAR coordinate system.
+                        Browse hosted archives and approved research entries.
                     </p>
                     <div className="sa-dir-hero__prototype">
                         <AlertCircle size={14} style={{ flexShrink: 0, color: ink }} />
                         <span>
-                            <strong style={{ color: ink }}>Prototype (frontend-only).</strong>{' '}
-                            Listings exist only in this browser&apos;s local registry — not synced to{' '}
-                            <a href="https://archive.solar" target="_blank" rel="noopener noreferrer" style={{ color: ink, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                            <strong style={{ color: ink }}>Local registry.</strong>{' '}
+                            Hosted archive listings are stored in this browser and are not synced to{' '}
+                            <a href="https://archive.solar" target="_blank" rel="noopener noreferrer" style={{ color: linkColor, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                                 archive.solar <ExternalLink size={10} />
                             </a>.
-                            A future backend would power a public federation directory.
                         </span>
                     </div>
                 </motion.div>
@@ -128,7 +166,7 @@ export default function ArchiveDirectory() {
                     transition={{ delay: 0.18, duration: 0.45 }}
                 >
                     <Link to="/create-archive" className="sa-dir-btn-primary">
-                        <Plus size={16} /> Start an archive
+                        <Plus size={16} /> Create Archive
                     </Link>
                     {rows.length > 0 && (
                         <span className="sa-dir-count">
@@ -147,13 +185,13 @@ export default function ArchiveDirectory() {
                         animate="show"
                         transition={{ delay: 0.26 }}
                     >
-                        <span className="sa-dir-empty__icon" aria-hidden="true">📡</span>
-                        <p className="sa-dir-empty__title">No archives registered yet</p>
+                        <Radio className="sa-dir-empty__icon" size={28} aria-hidden="true" />
+                        <p className="sa-dir-empty__title">No Archives</p>
                         <p className="sa-dir-empty__sub">
-                            Create your first archive via Host Archive, then enable &quot;list on directory&quot; to see it appear here.
+                            Create an archive and enable directory listing to publish it here.
                         </p>
                         <Link to="/create-archive" className="sa-dir-btn-primary" style={{ display: 'inline-flex', marginTop: 22 }}>
-                            <Sparkles size={15} /> Create your first archive
+                            <Plus size={15} /> Create Archive
                         </Link>
                     </motion.div>
                 ) : (
@@ -170,15 +208,13 @@ export default function ArchiveDirectory() {
                                     duration: 0.48,
                                     ease: [0.22, 1, 0.36, 1],
                                 }}
-                                whileHover={{ y: -3, transition: { type: 'spring', stiffness: 280, damping: 22 } }}
+                                whileHover={{ y: -1 }}
                             >
-                                <div className="sa-dir-card__scan" />
-
                                 {/* Cover thumbnail */}
                                 <div className="sa-dir-thumb">
                                     {row.coverThumb?.startsWith('data:')
                                         ? <img src={row.coverThumb} alt="" />
-                                        : <span aria-hidden="true">📚</span>
+                                        : <BookOpen size={22} aria-hidden="true" />
                                     }
                                 </div>
 
@@ -231,19 +267,19 @@ export default function ArchiveDirectory() {
                     aria-label="Live archive entries"
                 >
                     <div className="sa-dir-entries__head">
-                        <h2 className="sa-dir-entries__title">
-                            <Database size={15} style={{ flexShrink: 0 }} />
-                            Live archive entries
-                        </h2>
-                        <span className="sa-dir-count">
-                            {entries === null
-                                ? 'Loading…'
-                                : `${filteredEntries.length} of ${entries.length} entr${entries.length !== 1 ? 'ies' : 'y'}`}
-                        </span>
+                        <div className="sa-dir-entries__head-top">
+                            <h2 className="sa-dir-entries__title">
+                                <Database size={15} style={{ flexShrink: 0 }} />
+                                Archive Entries
+                            </h2>
+                            <span className="sa-dir-count">
+                                {filteredEntries === null
+                                    ? 'Loading…'
+                                    : `${filteredEntries.length} of ${totalApproved} entr${totalApproved !== 1 ? 'ies' : 'y'}`}
+                            </span>
+                        </div>
+                        <p className="sa-dir-entries__sub">Approved research from the shared archive database.</p>
                     </div>
-                    <p className="sa-dir-entries__sub">
-                        Approved research entries, streamed live from the shared SOLAR database.
-                    </p>
 
                     <div className="sa-dir-entries__filters">
                         <div className="sa-dir-entries__search">
@@ -267,14 +303,25 @@ export default function ArchiveDirectory() {
                                 <option key={h} value={h}>{hubLabel(h) || h}</option>
                             ))}
                         </select>
+                        <select
+                            className="sa-dir-entries__select"
+                            value={entryLayer}
+                            onChange={(e) => setEntryLayer(e.target.value)}
+                            aria-label="Filter by layer"
+                        >
+                            <option value="all">All layers</option>
+                            {Object.entries(LAYER_NAMES).map(([l, name]) => (
+                                <option key={l} value={l}>L{l} · {name}</option>
+                            ))}
+                        </select>
                     </div>
 
-                    {entries !== null && filteredEntries.length === 0 && (
+                    {filteredEntries !== null && filteredEntries.length === 0 && (
                         <p className="sa-dir-entries__none">No entries match this filter.</p>
                     )}
 
                     <div className="sa-dir-entries__grid">
-                        {filteredEntries.map((e, i) => (
+                        {(filteredEntries || []).map((e, i) => (
                             <motion.div
                                 key={e.id}
                                 initial={{ opacity: 0, y: 10 }}
@@ -295,6 +342,7 @@ export default function ArchiveDirectory() {
                         ))}
                     </div>
                 </motion.section>
+            </div>
             </div>
         </div>
     )
