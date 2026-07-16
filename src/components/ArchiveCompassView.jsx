@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   displayToGrid,
   leavesForSubfieldGrid,
@@ -174,12 +174,11 @@ function L2DomainCard({ domain, taxonomy, onSubfieldClick, onProposeSubject }) {
         <motion.button
           type="button"
           className="cv-add-btn"
-          title={`Propose a new subject under ${domain.label} — it goes through the same 3-reviewer approval as every submission.`}
+          title={`Suggest a new subject under ${domain.label} — it goes through the same 3-reviewer approval as every submission.`}
           onClick={() => onProposeSubject(domain.id)}
           whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
         >
-          <Plus size={13} aria-hidden />
-          <span>Add subject</span>
+          <span>Suggest a subject</span>
         </motion.button>
       )}
     </motion.div>
@@ -393,13 +392,12 @@ function CompassL3({ taxonomy, isDark, activeSubfieldId, onBack, onTopicClick, o
           <motion.button
             type="button"
             className="cv-nav-btn cv-add-btn cv-add-btn--nav"
-            title={`Propose a new subject under ${domain.label} — reviewed by 3 reviewers before it appears in the archive.`}
+            title={`Suggest a new subject under ${domain.label} — reviewed by 3 reviewers before it appears in the archive.`}
             onClick={() => onProposeSubject(domain.id, activeSubfieldId || undefined)}
             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
             style={{ color: domain.color, borderColor: `${domain.color}55` }}
           >
-            <Plus size={14} aria-hidden />
-            <span>Add subject</span>
+            <span>Suggest a subject</span>
           </motion.button>
         )}
 

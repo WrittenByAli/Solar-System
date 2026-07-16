@@ -3086,33 +3086,30 @@ export default function ArchiveGrid() {
   }, [compassAnchorViewXY, clamp, halfW, halfH, vpSize])
 
   /**
-   * L2/L3 "add subject": pick the first free cell orthogonally adjacent to the
-   * selected domain's (or subfield's) topic cells and open /submit prefilled.
-   * New subjects enter as L4 pending entries — the same 3-reviewer consensus
-   * pipeline as every other submission.
+   * L2/L3 "suggest a subject": open /submit prefilled with this hub, the
+   * domain (and subfield, from L3), and let the form's own availableSlots
+   * mechanism pick the coordinate.
+   *
+   * This deliberately does NOT guess a coordX/coordY. An earlier version
+   * computed a cell adjacent to a taxonomy LEAF's abstract anchor position,
+   * but SubmitArchive.jsx's own coordinate validation
+   * (availableSlots/selectedCoordinateIsValid) only accepts cells adjacent
+   * to a REAL archive_entries row -- the two coordinate spaces aren't
+   * guaranteed to overlap (not every compiled taxonomy leaf has a seeded
+   * entry sitting exactly on it), so the guessed coordinate could silently
+   * fail validation and block submission with no visible cause. Passing
+   * only domainId/subfieldId lets the already-correct, already-tested
+   * manual-submission flow (the same query params a direct L2/L3 pick
+   * uses) find a guaranteed-valid slot instead.
+   *
+   * New subjects enter as L4 pending entries -- the same 3-reviewer
+   * consensus pipeline as every other submission.
    */
   const proposeSubjectSlot = useCallback((domainId, subfieldId) => {
-    if (!hubTaxonomy) return
-    const domain = hubTaxonomy.domains.find((d) => d.id === domainId)
-    const leaves = subfieldId
-      ? hubTaxonomy.leaves.filter((l) => l.subfieldId === subfieldId)
-      : hubTaxonomy.leaves.filter((l) => domain?.subfields?.some((sf) => sf.id === l.subfieldId))
-    const sorted = [...leaves].sort((a, b) => b.ly - a.ly || a.lx - b.lx)
-    for (const leaf of sorted) {
-      for (const [dx, dy] of [[0, 1], [-1, 0], [1, 0], [0, -1]]) {
-        const lx = leaf.lx + dx
-        const ly = leaf.ly + dy
-        const gx = lx + halfW
-        const gy = halfH - ly
-        if (gx < 0 || gy < 0 || gx >= gridW || gy >= gridH) continue
-        if (sectionEntries[`${gx},${gy}`]) continue
-        navigate(`/submit?planet=${encodeURIComponent(hubId)}&coordX=${lx}&coordY=${ly}&archiveLayer=4`)
-        return
-      }
-    }
-    // every adjacent cell taken — let the form's slot picker offer the rest
-    navigate(`/submit?planet=${encodeURIComponent(hubId)}&archiveLayer=4`)
-  }, [hubTaxonomy, sectionEntries, halfW, halfH, gridW, gridH, hubId, navigate])
+    const params = new URLSearchParams({ planet: hubId, archiveLayer: '4', domainId })
+    if (subfieldId) params.set('subfieldId', subfieldId)
+    navigate(`/submit?${params.toString()}`)
+  }, [hubId, navigate])
 
   /** L2/L3: center a viewport sub-tile and step one layer deeper (matches 4× lattice drill). */
   const drillSubfield = useCallback(
