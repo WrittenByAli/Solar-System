@@ -57,6 +57,8 @@ import { getStaticLatticeTile, getStaticFocusHint } from '../utils/staticLayerMa
 import ArchiveCompassView from '../components/ArchiveCompassView.jsx'
 import ArchiveL1Atmosphere from '../components/ArchiveL1Atmosphere.jsx'
 import ArchiveHubGlobe from '../components/ArchiveHubGlobe.jsx'
+import SuggestSubjectPopup from '../components/SuggestSubjectPopup.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 import '../styles/archive-l1-atmosphere.css'
 import '../styles/archive-nav-responsive.css'
 import '../styles/planet-intro.css'
@@ -2462,6 +2464,7 @@ export default function ArchiveGrid() {
   const hubId = normalizeHubId(routePlanetId)
   const { theme, toggleTheme } = useTheme()
   const isDark = theme === 'dark'
+  const { profile, isGuest } = useAuth()
   const navigate = useNavigate()
   const vpRef = useRef(null)
   const panClampSnapshotRef = useRef({ x: 0, y: 0 })
@@ -3086,30 +3089,107 @@ export default function ArchiveGrid() {
   }, [compassAnchorViewXY, clamp, halfW, halfH, vpSize])
 
   /**
-   * L2/L3 "suggest a subject": open /submit prefilled with this hub, the
-   * domain (and subfield, from L3), and let the form's own availableSlots
-   * mechanism pick the coordinate.
-   *
-   * This deliberately does NOT guess a coordX/coordY. An earlier version
-   * computed a cell adjacent to a taxonomy LEAF's abstract anchor position,
-   * but SubmitArchive.jsx's own coordinate validation
-   * (availableSlots/selectedCoordinateIsValid) only accepts cells adjacent
-   * to a REAL archive_entries row -- the two coordinate spaces aren't
-   * guaranteed to overlap (not every compiled taxonomy leaf has a seeded
-   * entry sitting exactly on it), so the guessed coordinate could silently
-   * fail validation and block submission with no visible cause. Passing
-   * only domainId/subfieldId lets the already-correct, already-tested
-   * manual-submission flow (the same query params a direct L2/L3 pick
-   * uses) find a guaranteed-valid slot instead.
-   *
-   * New subjects enter as L4 pending entries -- the same 3-reviewer
-   * consensus pipeline as every other submission.
+   * L2/L3 "suggest a subject": opens the inline SuggestSubjectPopup instead
+   * of navigating to /submit, so the user never leaves the compass. Only
+   * remembers which domain/subfield the popup is for -- the actual write
+   * happens in submitSuggestedSubject below.
    */
+  const [suggestPopup, setSuggestPopup] = useState(null) // { domainId, subfieldId, domainLabel, color } | null
   const proposeSubjectSlot = useCallback((domainId, subfieldId) => {
-    const params = new URLSearchParams({ planet: hubId, archiveLayer: '4', domainId })
-    if (subfieldId) params.set('subfieldId', subfieldId)
-    navigate(`/submit?${params.toString()}`)
-  }, [hubId, navigate])
+    const domain = hubTaxonomy?.domains?.find((d) => d.id === domainId)
+    setSuggestPopup({
+      domainId,
+      subfieldId: subfieldId || null,
+      domainLabel: domain?.label || '',
+      color: domain?.color || '#f5a623',
+    })
+  }, [hubTaxonomy])
+
+  /**
+   * Writes the suggested subject directly to archive_entries as a pending
+   * L4 entry (status='pending'), same shape SubmitArchive.jsx's own insert
+   * uses. The 3-reviewer consensus trigger (process_review_consensus) and
+   * the new-submission notification trigger (notify_reviewers_new_submission)
+   * both fire on any INSERT regardless of which code path performed it, so
+   * no extra plumbing is needed for review/notification -- they're already
+   * server-side and insert-path-agnostic.
+   *
+   * Coordinate picking: finds an empty cell orthogonally adjacent to REAL
+   * existing content (sectionEntries -- approved DB rows + static/local
+   * data), never to an abstract taxonomy leaf position. An earlier version
+   * of the L2/L3 "propose a subject" flow computed adjacency against the
+   * compiled taxonomy's leaf anchors instead, which don't necessarily
+   * correspond to any real row, and that silently broke submission (see
+   * project memory, 2026-07-16). Do not reintroduce that mistake here.
+   */
+  const submitSuggestedSubject = useCallback(async (title, { domainId, subfieldId } = {}) => {
+    if (!profile?.id) return { ok: false, error: 'You need to be signed in to suggest a subject.' }
+
+    const occupied = new Set(Object.keys(sectionEntries))
+    const candidates = []
+    occupied.forEach((key) => {
+      const [gxRaw, gyRaw] = key.split(',')
+      const gx = parseInt(gxRaw, 10)
+      const gy = parseInt(gyRaw, 10)
+      if (!Number.isFinite(gx) || !Number.isFinite(gy)) return
+      ;[[gx - 1, gy], [gx + 1, gy], [gx, gy - 1], [gx, gy + 1]].forEach(([nx, ny]) => {
+        if (nx < 0 || ny < 0 || nx >= gridW || ny >= gridH) return
+        const nKey = `${nx},${ny}`
+        if (occupied.has(nKey)) return
+        candidates.push({ gx: nx, gy: ny })
+      })
+    })
+    if (candidates.length === 0) {
+      return { ok: false, error: 'No open slot is available for this hub right now.' }
+    }
+
+    // Try a handful of distinct candidates in case of a race with another
+    // user's pending submission at the same coordinate -- sectionEntries
+    // only reflects APPROVED entries, so it can't see someone else's
+    // in-flight pending claim on the same cell. Same already-handled race
+    // condition the manual /submit flow can hit.
+    const triedIdx = new Set()
+    const attempts = Math.min(5, candidates.length)
+    for (let i = 0; i < attempts; i += 1) {
+      let idx = Math.floor(Math.random() * candidates.length)
+      while (triedIdx.has(idx)) idx = (idx + 1) % candidates.length
+      triedIdx.add(idx)
+      const { gx, gy } = candidates[idx]
+      const coordX = gx - halfW
+      const coordY = halfH - gy
+
+      // Must serialize retries: each attempt needs the previous one's error before trying the next slot.
+      const { error } = await supabase.from('archive_entries').insert({
+        title,
+        content: '',
+        short_summary: '',
+        layer: 4,
+        planet_id: hubId,
+        hub_id: hubId,
+        coord_x: coordX,
+        coord_y: coordY,
+        status: 'pending',
+        submitted_by: profile.id,
+        updates_entry_id: null,
+        tags: [domainId, subfieldId].filter(Boolean),
+        attachments: [],
+        alternate_perspectives: [],
+        is_draft: false,
+        draft_saved_at: null,
+      })
+      if (!error) return { ok: true }
+      if (!/idx_archive_entries_unique_base_topic/.test(error.message || '')) {
+        return {
+          ok: false,
+          error: /rate limit/i.test(error.message || '')
+            ? 'You are submitting too quickly. Please wait a bit and try again.'
+            : "Couldn't save your suggestion. Please try again.",
+        }
+      }
+      // else: coordinate collision -- loop and try another candidate
+    }
+    return { ok: false, error: 'That slot was just claimed by another submission. Please try again.' }
+  }, [profile, sectionEntries, gridW, gridH, halfW, halfH, hubId])
 
   /** L2/L3: center a viewport sub-tile and step one layer deeper (matches 4× lattice drill). */
   const drillSubfield = useCallback(
@@ -3822,6 +3902,15 @@ export default function ArchiveGrid() {
                   onOpenTopic={openTopicFromCompass}
                 />
               )}
+              <SuggestSubjectPopup
+                open={!!suggestPopup}
+                isDark={isDark}
+                isGuest={isGuest}
+                domainLabel={suggestPopup?.domainLabel}
+                color={suggestPopup?.color}
+                onClose={() => setSuggestPopup(null)}
+                onSubmit={(title) => submitSuggestedSubject(title, suggestPopup)}
+              />
               <SubjectLatticeOverlay
                 layer={layer}
                 viewX={viewX}
