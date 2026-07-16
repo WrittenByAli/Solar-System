@@ -17,7 +17,7 @@ import {
     deriveAchievements, buildTimeline, favoritePlanets,
 } from '../utils/profileInsights.js'
 import AvatarCircle from '../components/AvatarCircle.jsx'
-import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
+import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import GlassCard from '../components/profile/GlassCard.jsx'
 import AnimatedCounter from '../components/profile/AnimatedCounter.jsx'
 import ProgressRing from '../components/profile/ProgressRing.jsx'
@@ -347,7 +347,7 @@ export default function Profile() {
 
     return (
         <div className="solar-page sp-page">
-            <VantaFogBackground
+            <LazyVantaFogBackground
                 isDark={isDark}
                 entryReveal={1}
                 className="sp-page__vanta"

@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowRight, Orbit, Search } from 'lucide-react'
 import { useTheme } from '../App.jsx'
-import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
+import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import researchData from '../data/researchData.json'
-import { ARCHIVE_HUB_LOCATIONS, loadHubArchiveConfig } from '../utils/archiveInstanceStorage.js'
+import { getGridDimensions, getHub } from '../utils/hubRegistry.js'
 import { getHubDisciplineCopy } from '../constants/hubDisciplineCopy.js'
 import { getHubResearchSections, getHubTaxonomy } from '../utils/hubTaxonomyRegistry.js'
 import '../styles/solar-map.css'
@@ -125,10 +125,10 @@ function enrichHub(hub) {
   const taxonomy = getHubTaxonomy(id)
   const copy = getHubDisciplineCopy(id)
   const sections = getHubResearchSections(id)
-  const location = ARCHIVE_HUB_LOCATIONS.find((h) => h.id === id)
-  const cfg = loadHubArchiveConfig(id)
+  const hubRecord = getHub(id)
+  const dims = getGridDimensions(id)
   const sectionCount = sections?.length || dataHub?.sections?.length || 0
-  const discipline = taxonomy?.discipline || copy?.domain || location?.subtitle || dataHub?.domain || hub.domain
+  const discipline = taxonomy?.discipline || hubRecord?.description || dataHub?.domain || hub.domain
 
   return {
     ...hub,
@@ -137,7 +137,7 @@ function enrichHub(hub) {
     desc: copy?.intro || dataHub?.intro || dataHub?.description?.split('\n')[0] || dataHub?.summary || hub.desc,
     topics: sections?.slice(0, 5).map((s) => s.title).filter(Boolean) || hub.topics,
     sectionCount,
-    gridLabel: `${cfg.gridWidth || 3840} × ${cfg.gridHeight || 2160}`,
+    gridLabel: `${dims.gridW} × ${dims.gridH}`,
   }
 }
 
@@ -157,9 +157,16 @@ export default function MapView() {
   const orbitAnglesRef = useRef({})
   const spinAnglesRef = useRef({})
   const lastFrameRef = useRef(performance.now())
+  const [hubsTick, setHubsTick] = useState(0)
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [])
+
+  useEffect(() => {
+    const bump = () => setHubsTick((t) => t + 1)
+    window.addEventListener('solar-hubs-updated', bump)
+    return () => window.removeEventListener('solar-hubs-updated', bump)
   }, [])
 
   useEffect(() => {
@@ -177,7 +184,8 @@ export default function MapView() {
     return () => cancelAnimationFrame(frame)
   }, [])
 
-  const enrichedHubs = useMemo(() => HUBS.map(enrichHub), [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- hubsTick re-syncs once late Supabase hydration lands
+  const enrichedHubs = useMemo(() => HUBS.map(enrichHub), [hubsTick])
   const enrichedPlanets = useMemo(() => enrichedHubs.filter((h) => h.id !== 'star'), [enrichedHubs])
   const hubById = useMemo(() => Object.fromEntries(enrichedHubs.map((h) => [h.id, h])), [enrichedHubs])
   const activeHub = hoveredPlanet || hubById[selectedHubId] || hubById.star
@@ -250,7 +258,7 @@ export default function MapView() {
 
   return (
     <div className={`solar-page solar-map${isDark ? ' solar-map--dark' : ' solar-map--light'}`}>
-      <VantaFogBackground
+      <LazyVantaFogBackground
         isDark={isDark}
         entryReveal={sceneReveal}
         className="solar-map__vanta"

@@ -107,6 +107,28 @@ html.sa-home-scroll body {
   scroll-snap-type: y mandatory;
 }
 
+/* Static fog fallback — paints immediately (no JS), sits directly under the
+   Vanta canvas, and remains the full backdrop for reduced-motion / Save-Data
+   visitors who never load the WebGL fog. Colours mirror FOG_PALETTES so the
+   deferred hand-off to the animated fog is visually seamless. */
+.solar-archive-root__vanta-fallback {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 68% at 50% 30%, rgba(61, 90, 128, 0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 72% 60% at 70% 82%, rgba(36, 53, 82, 0.55) 0%, transparent 55%),
+    #101828;
+}
+
+.solar-archive-root--light .solar-archive-root__vanta-fallback {
+  background:
+    radial-gradient(ellipse 90% 68% at 50% 28%, rgba(255, 192, 120, 0.40) 0%, transparent 60%),
+    radial-gradient(ellipse 72% 60% at 72% 82%, rgba(142, 197, 255, 0.40) 0%, transparent 55%),
+    #f6f1ea;
+}
+
 /* Vanta FOG canvas host */
 .solar-archive-root__vanta {
   position: fixed;

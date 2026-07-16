@@ -1,10 +1,11 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
+import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import { ExternalLink, Plus, LayoutGrid, AlertCircle, Database, Search, Radio, BookOpen } from 'lucide-react'
 import { useTheme } from '../App.jsx'
-import { ARCHIVE_HUB_LOCATIONS, REGISTRY_CATEGORIES, loadArchiveRegistry } from '../utils/archiveInstanceStorage.js'
+import { REGISTRY_CATEGORIES, loadArchiveRegistry } from '../utils/archiveInstanceStorage.js'
+import { getHub } from '../utils/hubRegistry.js'
 import { LAYER_SHORT_NAMES } from '../utils/archiveLayerSpecs.js'
 import { supabase } from '../utils/supabaseClient.js'
 import '../styles/solar-directory.css'
@@ -15,7 +16,7 @@ function categoryLabel(id) {
 
 function hubLabel(id) {
     if (!id) return null
-    return ARCHIVE_HUB_LOCATIONS.find((h) => h.id === String(id).toLowerCase())?.label || id
+    return getHub(id)?.name || id
 }
 
 const LAYER_NAMES = LAYER_SHORT_NAMES
@@ -33,11 +34,18 @@ export default function ArchiveDirectory() {
     const isDark = theme === 'dark'
     const [sceneReveal, setSceneReveal] = useState(0)
     const [tick, setTick] = useState(0)
+    const [, setHubsTick] = useState(0)
     const ink = isDark ? '#f8fafc' : '#0f172a'
     const linkColor = isDark ? '#f5a623' : '#0369a1'
 
     useLayoutEffect(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    }, [])
+
+    useEffect(() => {
+        const bump = () => setHubsTick((t) => t + 1)
+        window.addEventListener('solar-hubs-updated', bump)
+        return () => window.removeEventListener('solar-hubs-updated', bump)
     }, [])
 
     useEffect(() => {
@@ -117,7 +125,7 @@ export default function ArchiveDirectory() {
 
     return (
         <div className={`solar-page sa-dir-page${isDark ? ' sa-dir-page--dark' : ' sa-dir-page--light'}`}>
-            <VantaFogBackground
+            <LazyVantaFogBackground
                 isDark={isDark}
                 entryReveal={sceneReveal}
                 className="sa-dir-page__vanta"

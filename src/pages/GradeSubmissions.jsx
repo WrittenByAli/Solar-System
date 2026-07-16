@@ -1,13 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, {
+  useCallback, useEffect, useMemo, useRef, useState,
+} from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   ClipboardCheck, HelpCircle, Inbox, SearchX, FilterX, X,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../App.jsx'
-import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
+import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { supabase } from '../utils/supabaseClient.js'
+import { useReviewQueueRealtime } from '../hooks/useReviewQueueRealtime.js'
 import { POINTS_PER_REVIEW_COMPLETED } from '../constants/reviewWorkflow.js'
 import { LAYER_SHORT_NAMES } from '../utils/archiveLayerSpecs.js'
 import fallbackData from '../data/researchData.json'
@@ -31,7 +34,9 @@ const reveal = (reduce, delay = 0) => ({
   transition: { duration: 0.72, delay, ease: [0.22, 1, 0.36, 1] },
 })
 
-function ScrollIntroSection({ pendingCount, points, pointsPerReview, showCta }) {
+function ScrollIntroSection({
+  pendingCount, points, pointsPerReview, showCta, queueDisconnected,
+}) {
   const reduce = useReducedMotion()
 
   return (
@@ -39,6 +44,21 @@ function ScrollIntroSection({ pendingCount, points, pointsPerReview, showCta }) 
       <div className="rq-scroll-intro__inner">
         <motion.p className="rq-scroll-intro__eyebrow" {...reveal(reduce, 0)}>
           Review queue
+          {queueDisconnected && (
+            <span
+              data-testid="rq-live-reconnecting"
+              style={{
+                marginLeft: '0.6em',
+                fontSize: '0.55em',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'var(--rq-muted)',
+                opacity: 0.85,
+              }}
+            >
+              · Reconnecting live updates…
+            </span>
+          )}
         </motion.p>
 
         <div className="rq-scroll-intro__statement">
@@ -80,7 +100,17 @@ function ScrollIntroSection({ pendingCount, points, pointsPerReview, showCta }) 
 
         {showCta && (
           <motion.div className="rq-scroll-intro__actions" {...reveal(reduce, 0.56)}>
-            <a href="#sa-review-queue-workbench" className="rq-scroll-intro__cta" data-testid="rq-intro-cta">
+            <a
+              href="#sa-review-queue-workbench"
+              className="rq-scroll-intro__cta"
+              data-testid="rq-intro-cta"
+              // In-page scroll only: a raw hash change would be swallowed by
+              // HashRouter as an unknown route and redirect to home.
+              onClick={(e) => {
+                e.preventDefault()
+                document.getElementById('sa-review-queue-workbench')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+              }}
+            >
               Start reviewing
             </a>
           </motion.div>
@@ -138,6 +168,11 @@ export default function GradeSubmissions() {
   const [helpOpen, setHelpOpen] = useState(false)
 
   const myId = profile?.id || null
+  // Only the very first load shows the full-page skeleton -- a live
+  // update arriving later (another user's submission, another reviewer's
+  // grade) must not yank the workbench back to a loading state out from
+  // under whoever is mid-review.
+  const hasLoadedOnceRef = useRef(false)
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -156,10 +191,23 @@ export default function GradeSubmissions() {
     return () => cancelAnimationFrame(frame)
   }, [])
 
+  // Live refresh: Realtime (new submissions, incoming reviews) bumps
+  // listTick, with a slow poll as a fallback safety net. See
+  // useReviewQueueRealtime.js for why archive_entries INSERT/UPDATE and
+  // reviews INSERT are the two signals that matter here.
+  const queueConnectionState = useReviewQueueRealtime(!!myId, useCallback(() => setListTick((t) => t + 1), []))
+
+  // A different account signing in within the same page life (rare, but
+  // possible without a full remount) should see its own first-load
+  // skeleton rather than silently reusing the previous account's.
+  useEffect(() => {
+    hasLoadedOnceRef.current = false
+  }, [myId])
+
   useEffect(() => {
     if (!myId) { setLoading(false); return }
     let active = true
-    setLoading(true)
+    if (!hasLoadedOnceRef.current) setLoading(true)
 
     async function load() {
       const { data: pending, error } = await supabase
@@ -170,7 +218,12 @@ export default function GradeSubmissions() {
         .is('deleted_at', null)
         .order('created_at', { ascending: true })
       if (!active) return
-      if (error || !Array.isArray(pending)) { setQueue([]); setLoading(false); return }
+      if (error || !Array.isArray(pending)) {
+        setQueue([])
+        setLoading(false)
+        hasLoadedOnceRef.current = true
+        return
+      }
 
       const candidates = pending.filter((e) => e.submitted_by !== myId)
       const ids = candidates.map((e) => e.id)
@@ -207,6 +260,7 @@ export default function GradeSubmissions() {
       setUsernamesById(nameMap)
       setBaseTitlesById(baseMap)
       setLoading(false)
+      hasLoadedOnceRef.current = true
     }
     load()
     return () => { active = false }
@@ -367,7 +421,7 @@ export default function GradeSubmissions() {
       className={`solar-page rq-page${isDark ? ' rq-page--dark' : ' rq-page--light'}`}
       data-testid="review-queue-page"
     >
-      <VantaFogBackground
+      <LazyVantaFogBackground
         isDark={isDark}
         entryReveal={sceneReveal}
         className="rq-page__vanta"
@@ -389,6 +443,7 @@ export default function GradeSubmissions() {
           points={points}
           pointsPerReview={POINTS_PER_REVIEW_COMPLETED}
           showCta={hasQueue}
+          queueDisconnected={queueConnectionState === 'disconnected'}
         />
 
         <section

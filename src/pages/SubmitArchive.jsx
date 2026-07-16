@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
+import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import { Upload, CheckCircle, ChevronDown, AlertCircle, X, Link2, PenLine, Flag, Info, Lock, ShieldCheck, Zap, Star } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import SubmissionLayerGuide, {
@@ -27,7 +27,7 @@ import {
 import { buildMergedSectionEntries } from '../utils/archiveSectionEntries.js'
 import { buildSortedSegments } from '../utils/segmentDifficulty.js'
 import { getHubResearchSections, getHubTaxonomy } from '../utils/hubTaxonomyRegistry.js'
-import { readGridDimensionsFromStorage, normalizeHubId } from '../utils/archiveInstanceStorage.js'
+import { getGridDimensions, getHub, normalizeHubId } from '../utils/hubRegistry.js'
 import { fetchPlanetOptions } from '../utils/planetOptions.js'
 
 import fallbackData from '../data/researchData.json'
@@ -336,6 +336,8 @@ export default function SubmitArchive() {
     const [searchParams, setSearchParams] = useSearchParams()
     const isSegmentReport = searchParams.get('intent') === 'segmentReport'
     const [submitted, setSubmitted] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submitError, setSubmitError] = useState('')
     const [form, setForm] = useState(emptyForm)
     const [errors, setErrors] = useState({})
     const [attachments, setAttachments] = useState([])
@@ -432,8 +434,10 @@ export default function SubmitArchive() {
 
     const hubIdForForm = normalizeHubId(form.planet || 'earth')
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tick invalidates localStorage-backed data the inputs can't see
-    const gridDimsForMerge = useMemo(() => readGridDimensionsFromStorage(hubIdForForm), [hubIdForForm, submissionMergeTick])
+    const gridDimsForMerge = useMemo(() => getGridDimensions(hubIdForForm), [hubIdForForm, submissionMergeTick])
     const { gridW: mergeGridW, gridH: mergeGridH, halfW: mergeHalfW, halfH: mergeHalfH } = gridDimsForMerge
+    const hubForForm = useMemo(() => getHub(hubIdForForm), [hubIdForForm])
+    const layerRangeBlocksPreview = !isSegmentReport && !!hubForForm && (previewLayer < hubForForm.minLayer || previewLayer > hubForForm.maxLayer)
 
     const selectedTaxonomy = useMemo(
         () => (form.planet ? getHubTaxonomy(hubIdForForm) : null),
@@ -539,6 +543,7 @@ export default function SubmitArchive() {
     const availableSlots = useMemo(() => {
         if (!form.planet || !planetDataForMerge) return []
         if (selectedTaxonomy && !form.topicKey) return []
+        if (layerRangeBlocksPreview) return []
 
         const occupied = new Set(Object.keys(mergedSectionEntries))
         getSubmissions().forEach((raw) => {
@@ -599,6 +604,7 @@ export default function SubmitArchive() {
         mergeHalfH,
         mergeGridW,
         mergeGridH,
+        layerRangeBlocksPreview,
         submissionMergeTick,
     ])
 
@@ -1059,7 +1065,9 @@ export default function SubmitArchive() {
             const invalidPerspective = parseAlternatePerspectives(form.alternatePerspectives).find((ap) => ap.hubId && !planetIds.has(ap.hubId))
             if (invalidPerspective) errs.alternatePerspectives = `Unknown hub "${invalidPerspective.hubId}". Use a planet id like earth, mars, jupiter, etc.`
         }
-        if (!isSegmentReport && (previewLayer === 7 || previewLayer === 8) && l56GateBlocksNarrative) {
+        if (layerRangeBlocksPreview) {
+            errs.previewLayer = `This hub only accepts L${hubForForm.minLayer}–L${hubForForm.maxLayer} entries.`
+        } else if (!isSegmentReport && (previewLayer === 7 || previewLayer === 8) && l56GateBlocksNarrative) {
             errs.previewLayer = L56_NARRATIVE_GATE_MESSAGE
         } else if (!isSegmentReport && previewLayer === 8 && l7GateBlocksL8) {
             errs.previewLayer = `Complete all ${L7_NARRATIVE_SEGMENT_COUNT} Layer 7 narrative tiles at this coordinate (catalog + approved submissions) before targeting Layer 8.`
@@ -1069,11 +1077,14 @@ export default function SubmitArchive() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        if (isSubmitting) return // guards against double-click/double-Enter firing two inserts
         const errs = validate()
         if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
         const authorUsername = username || 'guest'
         setSubmittedCoords({ x: normalizeCoordString(form.coordX), y: normalizeCoordString(form.coordY) })
+        setSubmitError('')
+        setIsSubmitting(true)
 
         if (isSegmentReport) {
             const attachmentCount = attachments.length
@@ -1097,6 +1108,7 @@ export default function SubmitArchive() {
             }
             setAttachmentCountSubmitted(attachmentCount)
             setSubmitted(true)
+            setIsSubmitting(false)
             return
         }
 
@@ -1133,12 +1145,17 @@ export default function SubmitArchive() {
 
         let dbError = null
         if (isEditMode && editEntryId) {
-            // Soft-delete the prior copy rather than mutating it in place --
-            // any reviews already attached to the old row's id stay attached
-            // to that (now hidden) row instead of poisoning a fresh consensus
-            // count on the edited version.
-            await supabase.from('archive_entries').update({ deleted_at: new Date().toISOString() }).eq('id', editEntryId)
-            ;({ error: dbError } = await supabase.from('archive_entries').insert(entryPayload))
+            // Soft-deletes the prior copy and inserts the replacement in one
+            // atomic RPC call (see replace_archive_entry_on_edit) -- any
+            // reviews already attached to the old row's id stay attached to
+            // that (now hidden) row instead of poisoning a fresh consensus
+            // count on the edited version, and a failure partway through
+            // (rate limit, validation) rolls back cleanly instead of leaving
+            // the old row deleted with no replacement inserted.
+            ;({ error: dbError } = await supabase.rpc('replace_archive_entry_on_edit', {
+                p_old_entry_id: editEntryId,
+                p_new_entry: entryPayload,
+            }))
         } else if (draftIdRef.current) {
             // Finalize the autosaved draft in place instead of inserting a duplicate row.
             ;({ error: dbError } = await supabase.from('archive_entries').update(entryPayload).eq('id', draftIdRef.current))
@@ -1148,7 +1165,21 @@ export default function SubmitArchive() {
         }
 
         if (dbError) {
+            // A failed DB write (rate limit, RLS, coordinate/planet validation,
+            // the new duplicate-topic constraint, network error, etc.) must
+            // never fall through to the "Success!" screen -- that previously
+            // happened unconditionally regardless of dbError, silently
+            // discarding the submission while telling the user it worked.
             console.error('Supabase insert failed:', dbError.message)
+            setSubmitError(
+                dbError.message?.includes('idx_archive_entries_unique_base_topic')
+                    ? 'That coordinate was just claimed by another submission. Pick a different slot and try again.'
+                    : dbError.message?.includes('rate limit') || dbError.code === '429'
+                        ? 'You are submitting too quickly. Please wait a bit and try again.'
+                        : "Couldn't save your submission. Please try again."
+            )
+            setIsSubmitting(false)
+            return
         }
 
         // Deepen-mode and edit-mode submissions are Supabase-only -- the
@@ -1175,6 +1206,7 @@ export default function SubmitArchive() {
         }
         setAttachmentCountSubmitted(submittedAttachments.length)
         setSubmitted(true)
+        setIsSubmitting(false)
     }
 
     const selectedPlanet = planetOptions.find(p => p.id === form.planet)
@@ -1287,7 +1319,7 @@ export default function SubmitArchive() {
         const wasSegmentReport = searchParams.get('intent') === 'segmentReport'
         return (
             <div className={`solar-page solar-page--center sa-submit-page${isDark ? ' sa-submit-page--dark' : ' sa-submit-page--light'}`}>
-                <VantaFogBackground
+                <LazyVantaFogBackground
                     isDark={isDark}
                     entryReveal={sceneReveal}
                     className="sa-submit-page__vanta"
@@ -1379,7 +1411,7 @@ export default function SubmitArchive() {
 
     return (
         <div className={`solar-page sa-submit-page${isDark ? ' sa-submit-page--dark' : ' sa-submit-page--light'}`}>
-            <VantaFogBackground
+            <LazyVantaFogBackground
                 isDark={isDark}
                 entryReveal={sceneReveal}
                 className="sa-submit-page__vanta"
@@ -1856,6 +1888,7 @@ export default function SubmitArchive() {
                                 <Field label="Available grid slot" required>
                                     <div className="relative">
                                         <select
+                                            aria-label="Available grid slot"
                                             value={selectedSlotValue}
                                             disabled={!isSegmentReport && selectedTaxonomy && !form.topicKey}
                                             onChange={e => { const [x, y] = e.target.value.split(':'); set('coordX', x); set('coordY', y) }}
@@ -1943,7 +1976,7 @@ export default function SubmitArchive() {
                                             style={{ borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.09)', background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(15,23,42,0.03)' }}>
                                             {[4, 5, 6, 7, 8].map((lyr) => {
                                                 const isActive = previewLayer === lyr
-                                                const isGated  = ((lyr === 7 || lyr === 8) && l56GateBlocksNarrative) || (lyr === 8 && l7GateBlocksL8)
+                                                const isGated  = ((lyr === 7 || lyr === 8) && l56GateBlocksNarrative) || (lyr === 8 && l7GateBlocksL8) || (!!hubForForm && (lyr < hubForForm.minLayer || lyr > hubForForm.maxLayer))
                                                 return (
                                                     <button key={lyr} type="button"
                                                         onClick={() => handlePreviewLayerChange(lyr)}
@@ -1988,12 +2021,17 @@ export default function SubmitArchive() {
                                                 Open details
                                             </span>
                                         </motion.button>
-                                        {(previewLayer === 7 || previewLayer === 8) && l56GateBlocksNarrative && (
+                                        {layerRangeBlocksPreview && (
+                                            <p className="text-xs mt-2 rounded-lg px-2 py-1.5" style={{ color: isDark ? '#fde68a' : '#854d0e', background: isDark ? 'rgba(120,53,15,0.28)' : 'rgba(254,243,199,0.72)', border: `1px solid ${isDark ? 'rgba(251,191,36,0.35)' : 'rgba(180,83,9,0.25)'}` }}>
+                                                This hub only accepts L{hubForForm.minLayer}–L{hubForForm.maxLayer} entries.
+                                            </p>
+                                        )}
+                                        {!layerRangeBlocksPreview && (previewLayer === 7 || previewLayer === 8) && l56GateBlocksNarrative && (
                                             <p className="text-xs mt-2 rounded-lg px-2 py-1.5" style={{ color: isDark ? '#fde68a' : '#854d0e', background: isDark ? 'rgba(120,53,15,0.28)' : 'rgba(254,243,199,0.72)', border: `1px solid ${isDark ? 'rgba(251,191,36,0.35)' : 'rgba(180,83,9,0.25)'}` }}>
                                                 {L56_NARRATIVE_GATE_MESSAGE}
                                             </p>
                                         )}
-                                        {previewLayer === 8 && !l56GateBlocksNarrative && l7GateBlocksL8 && (
+                                        {!layerRangeBlocksPreview && previewLayer === 8 && !l56GateBlocksNarrative && l7GateBlocksL8 && (
                                             <p className="text-xs mt-2 rounded-lg px-2 py-1.5" style={{ color: isDark ? '#fde68a' : '#854d0e', background: isDark ? 'rgba(120,53,15,0.28)' : 'rgba(254,243,199,0.72)', border: `1px solid ${isDark ? 'rgba(251,191,36,0.35)' : 'rgba(180,83,9,0.25)'}` }}>
                                                 Layer 8 is locked until this coordinate has <strong>{L7_NARRATIVE_SEGMENT_COUNT} narrative sentences</strong> counted toward Layer&nbsp;7.
                                             </p>
@@ -2067,13 +2105,13 @@ export default function SubmitArchive() {
                                 {showAttachmentsField && (
                                     <Field label="Images, sketches, and links (optional)">
                                         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                                            <select value={attachKind} onChange={(e) => setAttachKind(e.target.value)}
+                                            <select aria-label="Attachment type" value={attachKind} onChange={(e) => setAttachKind(e.target.value)}
                                                 style={{ ...inputStyle, maxWidth: 220, cursor: 'pointer' }}>
                                                 {KIND_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                                             </select>
                                             <label className="text-xs font-medium cursor-pointer px-4 py-2.5 rounded-xl border text-center"
                                                 style={{ borderColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(15,23,42,0.2)', color: isDark ? '#cbd5e1' : '#475569' }}>
-                                                <input type="file" multiple accept="image/*,.svg,image/svg+xml,application/pdf" className="hidden"
+                                                <input type="file" multiple accept="image/png,image/jpeg,image/gif,image/webp,application/pdf" className="hidden"
                                                     onChange={(e) => { appendFiles(e.target.files, attachKind); e.target.value = '' }} />
                                                 Choose files…
                                             </label>
@@ -2171,17 +2209,26 @@ export default function SubmitArchive() {
                             </p>
                         )}
 
+                        {submitError && (
+                            <p className="text-center text-xs font-semibold" style={{ color: errorColor }}>{submitError}</p>
+                        )}
+
                         {/* ── SUBMIT ── */}
                         <motion.button type="submit"
-                            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                            disabled={isSubmitting}
+                            whileHover={isSubmitting ? undefined : { scale: 1.02 }} whileTap={isSubmitting ? undefined : { scale: 0.97 }}
                             className="sa-submit-btn"
                             style={{
                                 background:  isSegmentReport ? 'linear-gradient(135deg, #b91c1c, #f97316)' : isFormReady ? 'linear-gradient(135deg, #f5a623, #fb923c)' : isDark ? 'linear-gradient(135deg, #262a33, #16181d)' : 'linear-gradient(135deg, #3f4a5c, #23293a)',
                                 boxShadow:   isSegmentReport ? '0 8px 24px rgba(185,28,28,0.25)' : isFormReady ? '0 1px 0 rgba(255,255,255,0.2) inset, 0 10px 32px rgba(245,166,35,0.3)' : '0 1px 0 rgba(255,255,255,0.06) inset, 0 8px 24px rgba(0,0,0,0.3)',
+                                opacity: isSubmitting ? 0.7 : 1,
+                                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                             }}
                         >
                             {isSegmentReport ? <Flag size={17} /> : <Upload size={17} />}
-                            {isSegmentReport ? 'Send segment report' : isEditMode ? 'Save changes' : 'Submit to the Archive'}
+                            {isSubmitting
+                                ? 'Submitting…'
+                                : isSegmentReport ? 'Send segment report' : isEditMode ? 'Save changes' : 'Submit to the Archive'}
                             {isFormReady && !isSegmentReport && (
                                 <motion.span
                                     className="pointer-events-none absolute inset-0 rounded-2xl"

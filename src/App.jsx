@@ -200,10 +200,23 @@ function AppShell() {
 
     return (
         <div className={`min-h-screen relative min-w-0 max-w-[100vw] overflow-x-hidden ${theme === 'dark' ? 'dark bg-[var(--sa-bg)] text-[var(--sa-text)]' : 'light bg-[var(--sa-bg)] text-[var(--sa-text)]'}`}>
+            {/* HashRouter owns the URL fragment — letting this anchor mutate
+                the hash would read as a route change ("/main-content" is
+                unknown -> redirected home), so the skip happens in-page. */}
+            <a
+                href="#main-content"
+                className="solar-skip-link"
+                onClick={(e) => {
+                    e.preventDefault()
+                    document.getElementById('main-content')?.focus()
+                }}
+            >Skip to content</a>
             {!hideStarField && <StarField theme={theme} />}
             <Navbar />
             <FoundationArchiveStar />
-            <AnimatedRoutes />
+            <main id="main-content" tabIndex={-1}>
+                <AnimatedRoutes />
+            </main>
             <Footer />
         </div>
     )

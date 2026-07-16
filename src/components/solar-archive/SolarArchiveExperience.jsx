@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from 'framer-motion'
 import { useTheme } from '../../App.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
-import VantaFogBackground from './VantaFogBackground.jsx'
+import LazyVantaFogBackground from './LazyVantaFogBackground.jsx'
 import ScrollStoryUI from './ScrollStoryUI.jsx'
 import ArchiveLoader from './ArchiveLoader.jsx'
 import { SCROLL_CHAPTERS } from './homeContent.js'
@@ -18,6 +18,12 @@ import {
   markHomeIntroSeen,
 } from '../../utils/homeIntroStorage.js'
 import '../../styles/solar-archive-home.css'
+
+// The animated WebGL fog is loaded via LazyVantaFogBackground, which defers
+// three.js (~189 kB gzip) off the initial-render critical path and skips it
+// for reduced-motion / Save-Data. The static CSS fallback below
+// (.solar-archive-root__vanta-fallback) covers the interim and is the
+// permanent backdrop when the fog is skipped.
 
 function shouldPlayIntroLoader(authLoaded, introKey) {
   if (!authLoaded || !introKey) return false
@@ -234,7 +240,11 @@ export default function SolarArchiveExperience() {
     <div ref={containerRef} className={`solar-archive-root ${isDark ? 'solar-archive-root--dark' : 'solar-archive-root--light'}`}>
       {contentReady && (
         <>
-          <VantaFogBackground isDark={isDark} scrollProgress={scrollProgress} entryReveal={sceneReveal} />
+          {/* Static fog fallback — paints instantly, and is the permanent
+              backdrop for reduced-motion / Save-Data visitors. */}
+          <div className="solar-archive-root__vanta-fallback" aria-hidden="true" />
+          <LazyVantaFogBackground isDark={isDark} scrollProgress={scrollProgress} entryReveal={sceneReveal} />
+
 
           <div className="solar-archive-root__veil" style={{ opacity: Math.max(0, (isDark ? 0.18 : 0.12) - sceneReveal * (isDark ? 0.28 : 0.2)) }} aria-hidden="true" />
           <div className="solar-archive-root__vignette" style={{ opacity: isDark ? 0.22 + scrollProgress * 0.12 : 0.16 + scrollProgress * 0.08 }} aria-hidden="true" />

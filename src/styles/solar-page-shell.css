@@ -1,5 +1,29 @@
 /* Shared layout below fixed Navbar — all non-archive routes */
 
+/* Skip-to-content link -- visually hidden until keyboard-focused, then
+   pinned top-left above the fixed navbar so it's never obscured. */
+.solar-skip-link {
+  position: fixed;
+  top: -100px;
+  left: 12px;
+  z-index: 100;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: var(--sa-bg-elevated, #0f172a);
+  color: var(--sa-text, #f8fafc);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: top 0.15s ease;
+}
+
+.solar-skip-link:focus {
+  top: 12px;
+  outline: 2px solid #f5a623;
+  outline-offset: 2px;
+}
+
 :root {
   --solar-nav-offset: calc(5rem + env(safe-area-inset-top, 0px));
   --solar-page-heading-size: clamp(2.35rem, 8vw, 5.15rem);

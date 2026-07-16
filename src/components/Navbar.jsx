@@ -26,9 +26,10 @@ import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import FoundationLogo from './FoundationLogo.jsx'
 import { SolarWordCore } from './SolarBrandA.jsx'
-import VantaFogBackground from './solar-archive/VantaFogBackground.jsx'
+import LazyVantaFogBackground from './solar-archive/LazyVantaFogBackground.jsx'
 import AvatarCircle from './AvatarCircle.jsx'
 import NotificationBell from './NotificationBell.jsx'
+import { useNotifications } from '../hooks/useNotifications.js'
 
 const baseNavLinks = [
     { label: 'Home', path: '/', icon: Home },
@@ -69,6 +70,15 @@ export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false)
     const [accountOpen, setAccountOpen] = useState(false)
     const reduceMotion = useReducedMotion()
+
+    // Owned once here (not inside NotificationBell) because all three
+    // responsive nav variants below render a NotificationBell simultaneously
+    // — see the comment on NotificationBell itself for why. Calling
+    // useNotifications 3x would mean 3 separate Realtime WebSocket
+    // subscriptions, not just 3 redundant polls -- worse than the original
+    // problem this pattern was built to avoid.
+    const notifyUserId = profile?.id
+    const notifications = useNotifications(notifyUserId)
 
     const navLinks = useMemo(() => {
         let next = baseNavLinks
@@ -164,6 +174,7 @@ export default function Navbar() {
 
     return (
         <nav
+            aria-label="Primary"
             className={`solar-navbar fixed top-0 left-0 right-0 z-50${isHome ? ' solar-navbar--home' : ''}${isReviewQueue ? ' solar-navbar--review-queue' : ''}`}
         >
             <div className="solar-navbar__bg" aria-hidden="true">
@@ -248,7 +259,7 @@ export default function Navbar() {
                     {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
                 </button>
 
-                {isLoggedIn && <NotificationBell userId={profile?.id} iconSize={15} className="snav-icon-btn ml-1" />}
+                {isLoggedIn && <NotificationBell userId={profile?.id} notifications={notifications} iconSize={15} className="snav-icon-btn ml-1" />}
 
                 {isLoggedIn ? (
                     <div className="relative ml-2 shrink-0">
@@ -314,7 +325,7 @@ export default function Navbar() {
                 >
                     {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                 </button>
-                {isLoggedIn && <NotificationBell userId={profile?.id} iconSize={16} className="snav-icon-btn shrink-0" />}
+                {isLoggedIn && <NotificationBell userId={profile?.id} notifications={notifications} iconSize={16} className="snav-icon-btn shrink-0" />}
                 {isLoggedIn ? (
                     <div className="relative shrink-0">
                         <button
@@ -359,6 +370,7 @@ export default function Navbar() {
                 {isLoggedIn && (
                     <NotificationBell
                         userId={profile?.id}
+                        notifications={notifications}
                         iconSize={17}
                         className="snav-icon-btn min-w-[40px] min-h-[40px]"
                     />
@@ -411,7 +423,7 @@ export default function Navbar() {
                         className={`snav-sheet absolute top-full left-0 right-0 md:hidden max-h-[min(75dvh,32rem)] overflow-hidden overscroll-contain${isDark ? '' : ' snav-sheet--light'}`}
                     >
                         <div className="snav-sheet__fx" aria-hidden="true">
-                            <VantaFogBackground
+                            <LazyVantaFogBackground
                                 isDark={isDark}
                                 entryReveal={1}
                                 className="snav-sheet__vanta"

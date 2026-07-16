@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useLocation } from 'react-router-dom'
 import { useTheme } from '../App.jsx'
 import { SolarWordCore } from './SolarBrandA.jsx'
-import VantaFogBackground from './solar-archive/VantaFogBackground.jsx'
+import LazyVantaFogBackground from './solar-archive/LazyVantaFogBackground.jsx'
 
 const NAV_LINKS = [
     { label: 'Home', path: '/' },
@@ -48,7 +48,7 @@ export default function Footer() {
         <footer className="sa-footer">
             <div className="sa-footer__fx" aria-hidden="true">
                 {needsFooterVanta && (
-                    <VantaFogBackground
+                    <LazyVantaFogBackground
                         isDark={isDark}
                         entryReveal={1}
                         className="sa-footer__vanta"
@@ -74,7 +74,7 @@ export default function Footer() {
 
                     <div className="sa-footer__links-col">
                         <div className="sa-footer__col-label">Navigation</div>
-                        <nav className="sa-footer__links">
+                        <nav className="sa-footer__links" aria-label="Footer">
                             {NAV_LINKS.map(({ label, path }) => (
                                 <Link
                                     key={path}

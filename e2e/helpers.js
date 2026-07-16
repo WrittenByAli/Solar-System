@@ -87,6 +87,38 @@ export async function mockSupabaseQueue(page, entries = [MOCK_QUEUE_ENTRY]) {
   await page.route(/\/rest\/v1\//, handler)
 }
 
+/**
+ * Mocks the `notifications` table's GET (list) and HEAD (exact-count, used
+ * by fetchUnreadCount) requests — the same route-interception convention as
+ * mockSupabaseQueue, kept separate since notifications is an independent
+ * concern from the review-queue mocks above.
+ */
+export async function mockNotifications(page, rows = []) {
+  const handler = async (route) => {
+    const url = route.request().url()
+    const method = route.request().method()
+    if (!url.includes('/rest/v1/notifications')) {
+      await route.continue()
+      return
+    }
+    if (method === 'GET' || method === 'HEAD') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'content-range': `0-${Math.max(0, rows.length - 1)}/${rows.length}` },
+        body: method === 'HEAD' ? '' : JSON.stringify(rows),
+      })
+      return
+    }
+    if (method === 'PATCH') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+      return
+    }
+    await route.continue()
+  }
+  await page.route(/\/rest\/v1\/notifications/, handler)
+}
+
 export function hashUrl(path) {
   return `/#${path.startsWith('/') ? path : `/${path}`}`
 }

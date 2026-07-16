@@ -36,3 +36,7 @@ npm run dev            # http://localhost:5173
 
 `CLAUDE.md` documents the routing table, theme system, layer model, and
 backend state in detail.
+
+`HOSTING_GUIDE.md` explains what hosting the archive means (cloud vs home PC),
+hardware and cost implications, and the decision between cloud launch, hybrid,
+and full self-host.

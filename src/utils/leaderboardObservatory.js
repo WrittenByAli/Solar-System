@@ -259,6 +259,16 @@ export function enrichContributor(profile, rank, totalCount, planets = []) {
 }
 
 export function buildObservatoryModel(profiles, planets = []) {
+    // Tie-break MUST stay byte-for-byte identical to leaderboard_view's own
+    // `row_number() OVER (ORDER BY up.points DESC, up.username)` (see the
+    // materialized view definition, migration
+    // leaderboard_materialized_view_and_cron). Leaderboard.jsx discards the
+    // DB's own `rank` column and recomputes it here instead -- this is the
+    // ONLY reason that's still correct today. Changing either comparator
+    // without the other will silently desync the displayed rank from the
+    // database's rank. DEMO_PROFILES (the empty-leaderboard preview, which
+    // has no `rank` field at all) is why this can't simply be replaced with
+    // "trust the DB's rank" -- this function has to work for both shapes.
     const ranked = [...profiles].sort((a, b) => (b.points || 0) - (a.points || 0) || a.username.localeCompare(b.username))
     const contributors = ranked.map((p, i) => enrichContributor(p, i + 1, ranked.length, planets))
     const stars = contributors.map((c, i) => ({
@@ -280,6 +290,57 @@ export function buildObservatoryModel(profiles, planets = []) {
             profileCount: ranked.length,
         },
     }
+}
+
+/**
+ * Re-rank an already-enriched contributor list for the leaderboard toolbar
+ * (search / planet filter / reviewer-vs-contributor tabs). Operates on
+ * buildObservatoryModel's output, not raw profiles, so every visual field
+ * (tier, planetVisuals, etc.) survives.
+ *
+ * Rank is recomputed relative to the CURRENT view (e.g. "Reviewers · Earth"
+ * shows ranks 1..N within that scoped list), not the all-time points rank
+ * carried over from buildObservatoryModel -- that matches how every
+ * mode/filter-combo leaderboard actually behaves elsewhere (a per-view
+ * ranking, not a fixed global one reused everywhere).
+ *
+ * `metric` picks both the sort key AND, when a planetId is given, which
+ * per-planet jsonb breakdown to filter/sort by -- there is no "points
+ * earned in this planet" figure (points are a single flat total with no
+ * per-planet breakdown), so a planet filter under the default 'points'
+ * metric filters to participants in that hub but still sorts/displays their
+ * real total points, rather than fabricating a per-planet points number.
+ */
+export function applyLeaderboardView(contributors, { metric = 'points', planetId = null, searchQuery = '' } = {}) {
+    let scoped = contributors
+
+    if (planetId) {
+        const byPlanetKey = metric === 'reviewsCompleted' ? 'reviewsByPlanet' : 'contributionsByPlanet'
+        scoped = scoped.filter((c) => {
+            const own = (c.contributionsByPlanet || {})[planetId] > 0
+            const reviewed = (c.reviewsByPlanet || {})[planetId] > 0
+            if (metric === 'points') return own || reviewed // default metric: show any participant in this hub
+            return (c[byPlanetKey] || {})[planetId] > 0
+        })
+    }
+
+    const metricValue = (c) => {
+        if (metric === 'points') return c.points || 0
+        if (planetId) {
+            const byPlanetKey = metric === 'reviewsCompleted' ? 'reviewsByPlanet' : 'contributionsByPlanet'
+            return (c[byPlanetKey] || {})[planetId] || 0
+        }
+        return c[metric] || 0
+    }
+
+    const ranked = [...scoped]
+        .sort((a, b) => metricValue(b) - metricValue(a) || a.username.localeCompare(b.username))
+        .map((c, i) => ({ ...c, viewRank: i + 1, viewMetricValue: metricValue(c) }))
+
+    const q = searchQuery.trim().toLowerCase()
+    const visible = q ? ranked.filter((c) => c.username.toLowerCase().includes(q)) : ranked
+
+    return { ranked, visible }
 }
 
 export function getWeeklyMission(approvedCount, reviewCount) {

@@ -1,185 +1,392 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, CheckCircle, XCircle } from 'lucide-react'
+import { AlertCircle, Bell, CheckCheck, Inbox, RefreshCw } from 'lucide-react'
 import { useTheme } from '../App.jsx'
-import {
-    fetchRecentNotifications,
-    fetchUnreadCount,
-    markAllNotificationsRead,
-    markNotificationRead,
-} from '../utils/notifications.js'
+import { resolveNotificationVisual } from '../utils/notificationTypes.js'
+import { groupByRecency, relativeTime } from '../utils/notificationGrouping.js'
+import '../styles/solar-notifications.css'
 
-const POLL_MS = 60_000
+const HOVER_PREVIEW_DELAY_MS = 250
+const SUCCESS_FLASH_MS = 1800
 
-function relativeTime(iso) {
-    const then = new Date(iso).getTime()
-    if (!Number.isFinite(then)) return ''
-    const diffMs = Date.now() - then
-    const mins = Math.floor(diffMs / 60_000)
-    if (mins < 1) return 'just now'
-    if (mins < 60) return `${mins}m ago`
-    const hrs = Math.floor(mins / 60)
-    if (hrs < 24) return `${hrs}h ago`
-    const days = Math.floor(hrs / 24)
-    return `${days}d ago`
-}
-
-export default function NotificationBell({ userId, iconSize = 15, className = 'snav-icon-btn' }) {
+/**
+ * Rendered 3x simultaneously by Navbar (desktop / tablet / mobile responsive
+ * variants — all three are mounted at once, CSS `hidden`/`flex` breakpoint
+ * classes just toggle which is visible, they don't unmount the other two).
+ * That's why Navbar owns a single `useNotifications()` instance and passes
+ * its output down as the `notifications` prop -- three independent hook
+ * instances would mean three separate Realtime WebSocket subscriptions, not
+ * just three redundant polls.
+ */
+export default function NotificationBell({ userId, notifications, iconSize = 15, className = 'snav-icon-btn' }) {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
     const navigate = useNavigate()
+
+    const {
+        unseenCount = 0,
+        items = [],
+        itemsLoaded = false,
+        itemsError = null,
+        hasMoreItems = false,
+        loadingMore = false,
+        connectionState = 'connecting',
+        refreshItems,
+        loadMoreItems,
+        markRead,
+        markAllRead,
+        markAllSeen,
+    } = notifications || {}
+
     const [open, setOpen] = useState(false)
-    const [unreadCount, setUnreadCount] = useState(0)
-    const [items, setItems] = useState([])
-    const [loaded, setLoaded] = useState(false)
+    const [activeIndex, setActiveIndex] = useState(-1)
+    const [previewId, setPreviewId] = useState(null)
+    const [showClearedFlash, setShowClearedFlash] = useState(false)
 
-    const refreshCount = useCallback(async () => {
-        if (!userId) return
-        setUnreadCount(await fetchUnreadCount(userId))
-    }, [userId])
+    const triggerRef = useRef(null)
+    const menuRef = useRef(null)
+    const itemRefs = useRef([])
+    const hoverTimerRef = useRef(null)
+    const flashTimerRef = useRef(null)
 
-    useEffect(() => {
-        if (!userId) return
-        refreshCount()
-        const id = setInterval(refreshCount, POLL_MS)
-        const onFocus = () => refreshCount()
-        window.addEventListener('focus', onFocus)
-        return () => {
-            clearInterval(id)
-            window.removeEventListener('focus', onFocus)
-        }
-    }, [userId, refreshCount])
+    const grouped = useMemo(() => groupByRecency(items), [items])
+    const flatItems = useMemo(() => grouped.flatMap(([, rows]) => rows), [grouped])
+    // "Mark all read" keys off actual unread ITEMS (dots), not the badge --
+    // the badge (unseen) is already zeroed the moment the dropdown opens.
+    const hasUnreadItems = useMemo(() => items.some((x) => !x.is_read), [items])
 
-    const openDropdown = useCallback(() => {
+    const closeDropdown = useCallback(() => {
+        setOpen(false)
+        setActiveIndex(-1)
+    }, [])
+
+    const toggleDropdown = useCallback(() => {
         setOpen((o) => !o)
     }, [])
 
+    // On every open: refresh (cheap bounded query, covers the rare gap
+    // between a dropped Realtime event and the next poll, up to 60s away)
+    // and mark everything SEEN -- the badge count acknowledges the moment
+    // the panel is opened, while per-item unread dots stay until clicked.
     useEffect(() => {
         if (!open || !userId) return
-        let active = true
-        fetchRecentNotifications(userId, 10).then((rows) => {
-            if (active) {
-                setItems(rows)
-                setLoaded(true)
-            }
-        })
-        return () => { active = false }
-    }, [open, userId])
+        refreshItems?.({ preserveLimit: true })
+        markAllSeen?.()
+    }, [open, userId, refreshItems, markAllSeen])
 
-    const handleItemClick = useCallback(async (n) => {
-        setOpen(false)
-        if (!n.is_read) {
-            setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)))
-            setUnreadCount((c) => Math.max(0, c - 1))
-            await markNotificationRead(n.id)
+    // Standard menu pattern: focus the panel itself on open so arrow keys
+    // work immediately regardless of whether items have finished loading.
+    useEffect(() => {
+        if (open) {
+            const raf = requestAnimationFrame(() => menuRef.current?.focus())
+            return () => cancelAnimationFrame(raf)
         }
-        navigate('/my-submissions')
-    }, [navigate])
+        return undefined
+    }, [open])
+
+    useEffect(() => () => {
+        clearTimeout(hoverTimerRef.current)
+        clearTimeout(flashTimerRef.current)
+    }, [])
+
+    useEffect(() => {
+        itemRefs.current = itemRefs.current.slice(0, flatItems.length)
+    }, [flatItems.length])
+
+    const focusItem = useCallback((index) => {
+        setActiveIndex(index)
+        itemRefs.current[index]?.focus()
+    }, [])
+
+    const handleMenuKeyDown = useCallback((e) => {
+        if (!flatItems.length) {
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                closeDropdown()
+                triggerRef.current?.focus()
+            }
+            return
+        }
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault()
+                focusItem(activeIndex >= flatItems.length - 1 ? 0 : activeIndex + 1)
+                break
+            case 'ArrowUp':
+                e.preventDefault()
+                focusItem(activeIndex <= 0 ? flatItems.length - 1 : activeIndex - 1)
+                break
+            case 'Home':
+                e.preventDefault()
+                focusItem(0)
+                break
+            case 'End':
+                e.preventDefault()
+                focusItem(flatItems.length - 1)
+                break
+            case 'Escape':
+                e.preventDefault()
+                closeDropdown()
+                triggerRef.current?.focus()
+                break
+            default:
+                break
+        }
+    }, [flatItems.length, activeIndex, focusItem, closeDropdown])
+
+    const handleItemClick = useCallback((n) => {
+        closeDropdown()
+        if (!n.is_read) markRead?.(n.id)
+        navigate(resolveNotificationVisual(n).route)
+    }, [navigate, markRead, closeDropdown])
 
     const handleMarkAllRead = useCallback(async (e) => {
         e.stopPropagation()
-        setItems((prev) => prev.map((x) => ({ ...x, is_read: true })))
-        setUnreadCount(0)
-        await markAllNotificationsRead(userId)
-    }, [userId])
+        // Set the flash flag BEFORE awaiting -- markAllRead's own optimistic
+        // state reset runs synchronously up to its first await, so
+        // this lands in the same React batch and the header transitions
+        // "Mark all read" -> "All caught up" in one render with no
+        // in-between frame where neither renders (which, with
+        // AnimatePresence mode="wait", stalled the flash behind a phantom
+        // exit transition).
+        setShowClearedFlash(true)
+        clearTimeout(flashTimerRef.current)
+        flashTimerRef.current = setTimeout(() => setShowClearedFlash(false), SUCCESS_FLASH_MS)
+        const ok = await markAllRead?.()
+        if (ok === false) {
+            clearTimeout(flashTimerRef.current)
+            setShowClearedFlash(false)
+        }
+    }, [markAllRead])
+
+    const startPreview = useCallback((id, immediate = false) => {
+        clearTimeout(hoverTimerRef.current)
+        if (immediate) {
+            setPreviewId(id)
+            return
+        }
+        hoverTimerRef.current = setTimeout(() => setPreviewId(id), HOVER_PREVIEW_DELAY_MS)
+    }, [])
+
+    const endPreview = useCallback(() => {
+        clearTimeout(hoverTimerRef.current)
+        setPreviewId(null)
+    }, [])
 
     if (!userId) return null
 
-    const muted = isDark ? '#64748b' : '#475569'
+    const unreadCount = items.reduce((acc, x) => acc + (x.is_read ? 0 : 1), 0)
+    const badgeCount = unseenCount > 9 ? '9+' : String(unseenCount)
+    // role="menu" is only valid ARIA when its content actually matches the
+    // required children (menuitem / group) -- during skeleton/error/empty
+    // states there are none, so the role is added only once real items
+    // exist (verified against axe's aria-required-children rule).
+    const hasMenuItems = itemsLoaded && !itemsError && items.length > 0
 
     return (
         <div className="relative shrink-0">
             <button
                 type="button"
-                onClick={openDropdown}
+                ref={triggerRef}
+                onClick={toggleDropdown}
                 className={`${className} relative`}
                 aria-haspopup="menu"
                 aria-expanded={open}
-                aria-label={unreadCount > 0 ? `Notifications — ${unreadCount} unread` : 'Notifications'}
+                aria-label={unseenCount > 0 ? `Notifications — ${unseenCount} new` : 'Notifications'}
             >
                 <Bell size={iconSize} />
-                {unreadCount > 0 && (
-                    <span
-                        className="absolute top-0.5 right-0.5 rounded-full"
-                        style={{
-                            width: 8,
-                            height: 8,
-                            background: '#f87171',
-                            boxShadow: `0 0 0 2px ${isDark ? '#0b1424' : '#ffffff'}`,
-                        }}
-                        aria-hidden="true"
-                    />
-                )}
+                <AnimatePresence>
+                    {unseenCount > 0 && (
+                        <motion.span
+                            key={badgeCount}
+                            className="sn-badge"
+                            initial={{ scale: 0.4, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.4, opacity: 0 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+                            style={{ boxShadow: `0 0 0 2px ${isDark ? '#0b1424' : '#ffffff'}` }}
+                            aria-hidden="true"
+                        >
+                            {badgeCount}
+                        </motion.span>
+                    )}
+                </AnimatePresence>
             </button>
 
             <AnimatePresence>
                 {open && (
                     <>
-                        <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setOpen(false)}
-                            aria-hidden="true"
-                        />
+                        <div className="fixed inset-0 z-40" onClick={closeDropdown} aria-hidden="true" />
                         <motion.div
-                            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                            initial={{ opacity: 0, y: -6, scale: 0.96 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                            transition={{ duration: 0.16, ease: [0.25, 0.1, 0.25, 1] }}
-                            className="snav-menu absolute right-0 top-[calc(100%+10px)] z-50 w-80 max-w-[92vw]"
-                            role="menu"
+                            exit={{ opacity: 0, y: -6, scale: 0.97, transition: { duration: 0.16, ease: [0.4, 0, 1, 1] } }}
+                            transition={{ type: 'spring', stiffness: 480, damping: 34, mass: 0.7 }}
+                            style={{ transformOrigin: 'top right' }}
+                            className="sn-panel absolute right-0 top-[calc(100%+10px)] z-50"
                         >
-                            <div className="flex items-center justify-between px-1 pb-2">
-                                <p className="text-xs font-bold" style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>
-                                    Notifications
-                                </p>
-                                {unreadCount > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={handleMarkAllRead}
-                                        className="text-[11px] font-semibold"
-                                        style={{ color: isDark ? '#4fc3f7' : '#0284c7' }}
-                                    >
-                                        Mark all read
-                                    </button>
-                                )}
-                            </div>
-                            <div className="max-h-80 overflow-y-auto flex flex-col gap-1">
-                                {!loaded && (
-                                    <p className="text-xs px-1 py-3" style={{ color: muted }}>Loading…</p>
-                                )}
-                                {loaded && items.length === 0 && (
-                                    <p className="text-xs px-1 py-3" style={{ color: muted }}>No notifications yet.</p>
-                                )}
-                                {items.map((n) => {
-                                    const isRejection = /rejected/i.test(n.message)
-                                    const Icon = isRejection ? XCircle : CheckCircle
-                                    return (
-                                        <button
-                                            key={n.id}
-                                            type="button"
-                                            role="menuitem"
-                                            onClick={() => handleItemClick(n)}
-                                            className="snav-menu__item items-start text-left"
-                                            style={{ opacity: n.is_read ? 0.62 : 1 }}
+                            <div className="sn-header">
+                                <div className="sn-header__title-row">
+                                    <p className="sn-header__title">
+                                        Notifications
+                                    </p>
+                                    {unreadCount > 0 && (
+                                        <span className="sn-count-pill" aria-hidden="true">{unreadCount > 99 ? '99+' : unreadCount}</span>
+                                    )}
+                                    {connectionState === 'disconnected' && (
+                                        <span className="sn-reconnect" title="Reconnecting — updates may be delayed">
+                                            <span className="sn-reconnect__dot" aria-hidden="true" />
+                                            Reconnecting
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* No mode="wait" here on purpose -- this swap is a snappy
+                                    micro-interaction (button -> success flash right after a
+                                    click), not a sequential page-style transition. mode="wait"
+                                    was verified to delay the flash by ~450-550ms behind the
+                                    outgoing button's exit animation, which read as unresponsive. */}
+                                <AnimatePresence>
+                                    {showClearedFlash ? (
+                                        <motion.span
+                                            key="flash"
+                                            className="sn-success-flash"
+                                            initial={{ opacity: 0, x: 6 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.2 }}
                                         >
-                                            <Icon size={15} className="shrink-0 mt-0.5" style={{ color: isRejection ? '#f87171' : '#34d399' }} aria-hidden />
-                                            <span className="flex flex-col gap-0.5 min-w-0">
-                                                <span className="text-xs leading-snug whitespace-normal" style={{ color: isDark ? '#e2e8f0' : '#1f2937' }}>
-                                                    {n.message}
+                                            <CheckCheck size={12} aria-hidden="true" />
+                                            All caught up
+                                        </motion.span>
+                                    ) : hasUnreadItems ? (
+                                        <motion.button
+                                            key="mark-all"
+                                            type="button"
+                                            onClick={handleMarkAllRead}
+                                            className="sn-mark-all"
+                                            whileTap={{ scale: 0.94 }}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.15 }}
+                                        >
+                                            Mark all read
+                                        </motion.button>
+                                    ) : null}
+                                </AnimatePresence>
+                            </div>
+
+                            <div
+                                className="sn-body"
+                                ref={menuRef}
+                                tabIndex={0}
+                                role={hasMenuItems ? 'menu' : undefined}
+                                aria-label={hasMenuItems ? 'Notifications' : undefined}
+                                onKeyDown={handleMenuKeyDown}
+                            >
+                                {!itemsLoaded && !itemsError && (
+                                    <div className="sn-skeleton-list" aria-hidden="true">
+                                        {[0, 1, 2, 3].map((i) => (
+                                            <div className="sn-skeleton-row" key={i}>
+                                                <span className="sn-skeleton sn-skeleton--icon" />
+                                                <span className="sn-skeleton-lines">
+                                                    <span className="sn-skeleton sn-skeleton--line" style={{ width: '85%' }} />
+                                                    <span className="sn-skeleton sn-skeleton--line" style={{ width: '45%' }} />
                                                 </span>
-                                                <span className="text-[10px]" style={{ color: muted }}>{relativeTime(n.created_at)}</span>
-                                            </span>
-                                            {!n.is_read && (
-                                                <span
-                                                    className="shrink-0 rounded-full mt-1.5"
-                                                    style={{ width: 6, height: 6, background: '#4fc3f7' }}
-                                                    aria-hidden="true"
-                                                />
-                                            )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {itemsLoaded && itemsError && (
+                                    <div className="sn-state sn-state--error">
+                                        <AlertCircle size={22} aria-hidden="true" />
+                                        <p>Couldn't load notifications.</p>
+                                        <button type="button" className="sn-retry" onClick={() => refreshItems?.({ preserveLimit: true })}>
+                                            <RefreshCw size={12} aria-hidden="true" />
+                                            Try again
                                         </button>
-                                    )
-                                })}
+                                    </div>
+                                )}
+
+                                {itemsLoaded && !itemsError && items.length === 0 && (
+                                    <div className="sn-state sn-state--empty">
+                                        <span className="sn-state__halo" aria-hidden="true">
+                                            <Inbox size={20} />
+                                        </span>
+                                        <p>You're all caught up</p>
+                                        <span className="sn-state__hint">New activity will show up here.</span>
+                                    </div>
+                                )}
+
+                                {itemsLoaded && !itemsError && items.length > 0 && (
+                                    <>
+                                        {grouped.map(([label, rows]) => {
+                                            const groupLabelId = `sn-group-label-${label.replace(/\s+/g, '-').toLowerCase()}`
+                                            return (
+                                            <div className="sn-group" role="group" aria-labelledby={groupLabelId} key={label}>
+                                                <p className="sn-group__label" id={groupLabelId}>{label}</p>
+                                                {rows.map((n) => {
+                                                    const flatIndex = flatItems.indexOf(n)
+                                                    const visual = resolveNotificationVisual(n)
+                                                    const { Icon } = visual
+                                                    const isPreviewing = previewId === n.id
+                                                    return (
+                                                        <motion.button
+                                                            key={n.id}
+                                                            ref={(el) => { itemRefs.current[flatIndex] = el }}
+                                                            type="button"
+                                                            role="menuitem"
+                                                            tabIndex={-1}
+                                                            whileTap={{ scale: 0.985 }}
+                                                            onFocus={() => { setActiveIndex(flatIndex); startPreview(n.id, true) }}
+                                                            onMouseEnter={() => startPreview(n.id)}
+                                                            onMouseLeave={endPreview}
+                                                            onBlur={endPreview}
+                                                            onClick={() => handleItemClick(n)}
+                                                            className={`sn-item${n.is_read ? ' sn-item--read' : ''}`}
+                                                            style={{ '--sn-accent': visual.accent, '--sn-glow': visual.glow }}
+                                                        >
+                                                            <span className={`sn-item__icon${visual.pulse && !n.is_read ? ' sn-item__icon--pulse' : ''}`}>
+                                                                <Icon size={15} strokeWidth={2.2} aria-hidden="true" />
+                                                            </span>
+                                                            <span className="sn-item__body">
+                                                                <span className="sn-item__top">
+                                                                    <span className="sn-item__kicker">{visual.label}</span>
+                                                                    <time
+                                                                        className="sn-item__time"
+                                                                        dateTime={n.created_at}
+                                                                        title={new Date(n.created_at).toLocaleString()}
+                                                                    >
+                                                                        {relativeTime(n.created_at)}
+                                                                    </time>
+                                                                </span>
+                                                                <span className={`sn-item__message${isPreviewing ? ' sn-item__message--expanded' : ''}`}>
+                                                                    {n.message}
+                                                                </span>
+                                                            </span>
+                                                            {!n.is_read && <span className="sn-item__dot" aria-hidden="true" />}
+                                                        </motion.button>
+                                                    )
+                                                })}
+                                            </div>
+                                            )
+                                        })}
+
+                                        {hasMoreItems && (
+                                            <button
+                                                type="button"
+                                                className="sn-load-more"
+                                                onClick={() => loadMoreItems?.()}
+                                                disabled={loadingMore}
+                                            >
+                                                {loadingMore ? 'Loading…' : 'Load more'}
+                                            </button>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         </motion.div>
                     </>

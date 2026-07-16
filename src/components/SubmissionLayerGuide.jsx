@@ -152,7 +152,14 @@ function renderBoldSegments(line) {
 function PreviewAttachmentsRow({ list, col, isDark }) {
     const visual = (list || []).filter((a) => {
         const u = a?.url || a?.href || ''
-        return typeof u === 'string' && (u.startsWith('data:image') || /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(u.split('?')[0]))
+        // Excludes image/svg+xml (an <img src="data:image/svg+xml,..."> won't
+        // execute embedded script, but this stays consistent with
+        // ArchiveGrid.jsx's SAFE_ATTACHMENT_URL_RE, which also gates the same
+        // attachment url when it's later rendered as a direct <a href
+        // target="_blank"> link on the published entry) -- see that file's
+        // comment for the full reasoning.
+        if (typeof u !== 'string' || u.startsWith('data:image/svg')) return false
+        return u.startsWith('data:image') || /\.(png|jpe?g|gif|webp)(\?|$)/i.test(u.split('?')[0])
     })
     if (!visual.length) return null
     return (

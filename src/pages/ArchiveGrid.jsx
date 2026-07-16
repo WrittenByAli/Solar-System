@@ -20,13 +20,14 @@ import {
   segmentText,
 } from '../utils/segmentDifficulty.js'
 import {
-  readGridDimensionsFromStorage,
-  ARCHIVE_INSTANCE_LS,
-  ARCHIVE_BY_HUB_LS,
   loadHubArchiveConfig,
-  ARCHIVE_HUB_LOCATIONS,
-  normalizeHubId,
 } from '../utils/archiveInstanceStorage.js'
+import {
+  getGridDimensions,
+  getHub,
+  getHubRegistry,
+  normalizeHubId,
+} from '../utils/hubRegistry.js'
 import { ARCHIVE_SOLAR_PUBLIC_URL } from '../config/archiveFrontend.js'
 import {
   TOTAL_LAYERS,
@@ -103,7 +104,7 @@ function clampedCenterViewXY(dims, layer, zoom, vpW, vpH) {
 }
 
 function initialArchiveViewXYForRoute(routePlanetId) {
-  const dims = readGridDimensionsFromStorage(normalizeHubId(routePlanetId))
+  const dims = getGridDimensions(normalizeHubId(routePlanetId))
   const vpW = typeof document !== 'undefined' ? Math.max(1, document.documentElement.clientWidth) : 1024
   const vpH = typeof document !== 'undefined' ? Math.max(1, window.innerHeight - 92) : 768
   return clampedCenterViewXY(dims, 1, 1.0, vpW, vpH)
@@ -398,17 +399,47 @@ function computeSegmentGridFill(layer, cellData, citationSlots) {
   return null
 }
 
+// Attachment URLs are user-submitted (archive_entries.attachments is an
+// unconstrained jsonb column — client-side validation in SubmitArchive.jsx
+// only checks http(s)/file-derived data: URLs, but that's UX only and is
+// bypassable by posting directly to the Supabase REST API). This is the
+// render-time trust boundary: only an explicit scheme allowlist is safe.
+// `javascript:`/`vbscript:` URLs are NOT caught by naive `data:|blob:|https?:`
+// prefix checks passing through `new URL()` unscathed (a colon-containing
+// string with a valid scheme is treated as absolute regardless of base) —
+// confirmed empirically. A crafted javascript: href, once an entry clears
+// review (reviewers never render attachments, so this wouldn't be
+// eyeballed) executes in the browser of every signed-in viewer who clicks
+// it. `data:` is restricted to images only — even though modern Chrome
+// blocks top-level navigation to data:text/html from a link, this must not
+// rely on that browser mitigation.
+// data: is scoped to raster image mime types SubmitArchive.jsx's upload
+// input accepts (png/jpeg/gif/webp) + application/pdf — never to arbitrary
+// data: mime types like text/html. image/svg+xml is deliberately EXCLUDED:
+// unlike raster formats, SVG is XML that can embed a live <script>, and this
+// attachment's url is also used as a direct <a href target="_blank"> link
+// (not just an <img> src) elsewhere in this file — navigating a browser tab
+// straight to a data:image/svg+xml URI executes any embedded script in that
+// tab (confirmed: <img>-embedding alone doesn't run SVG script, but this
+// direct-navigation path does). The corresponding upload input no longer
+// offers .svg/image/svg+xml as pickable types either.
+const SAFE_ATTACHMENT_URL_RE = /^(https?:|data:(image\/(?!svg)|application\/pdf)|blob:)/i
+
 function resolveAttachmentUrl(url) {
-  if (!url || typeof url !== 'string') return '#'
+  if (!url || typeof url !== 'string') return null
   const u = url.trim()
-  if (/^(https?:|data:|blob:)/i.test(u)) return u
+  if (SAFE_ATTACHMENT_URL_RE.test(u)) return u
+  if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return null // any other URL scheme (javascript:, vbscript:, file:, …) — reject outright
   const base = import.meta.env.BASE_URL || '/'
   const normalizedBase = base.endsWith('/') ? base : `${base}/`
   const path = u.startsWith('/') ? u.slice(1) : u
   try {
-    return new URL(path, normalizedBase).href
+    const resolved = new URL(path, normalizedBase)
+    return SAFE_ATTACHMENT_URL_RE.test(resolved.href) || resolved.origin === window.location.origin
+      ? resolved.href
+      : null
   } catch {
-    return u
+    return null
   }
 }
 
@@ -424,13 +455,19 @@ function isCrossOriginHttp(href) {
 function isRenderableImageUrl(url) {
   if (!url || typeof url !== 'string') return false
   const u = url.trim().toLowerCase()
+  if (u.startsWith('data:image/svg')) return false // see SAFE_ATTACHMENT_URL_RE above
   if (u.startsWith('data:image/') || u.startsWith('blob:')) return true
   const noQuery = u.split('?')[0]
-  return /\.(png|jpe?g|gif|webp|svg)$/i.test(noQuery)
+  return /\.(png|jpe?g|gif|webp)$/i.test(noQuery)
 }
 
 function AttachmentLinks({ attachments, col, isDark, title = 'Files', variant = 'default' }) {
-  const list = (attachments || []).filter((a) => a && (a.url || a.href))
+  // resolveAttachmentUrl returns null for unsafe schemes (javascript:, etc.)
+  // — drop those entirely rather than render a link with no safe href.
+  const list = (attachments || [])
+    .filter((a) => a && (a.url || a.href))
+    .map((a) => ({ ...a, resolvedHref: resolveAttachmentUrl(a.url || a.href) }))
+    .filter((a) => a.resolvedHref !== null)
   if (!list.length) return null
   const accent = isDark ? '#7dd3fc' : '#0369a1'
   const sizes = { compact: { title: 9, li: 9 }, default: { title: 10, li: 11 }, large: { title: 20, li: 18 } }
@@ -444,7 +481,7 @@ function AttachmentLinks({ attachments, col, isDark, title = 'Files', variant = 
       <ul style={{ margin: 0, paddingLeft: variant === 'large' ? 22 : 16, fontSize: s.li, lineHeight: 1.55 }}>
         {list.map((a, i) => {
           const raw = a.url || a.href
-          const href = resolveAttachmentUrl(raw)
+          const href = a.resolvedHref
           const kindTag = a.kind ? `[${String(a.kind)}] ` : ''
           const label = kindTag + (a.label || a.filename || (typeof raw === 'string' && !raw.startsWith('data:') ? raw.split('/').pop() : 'File'))
           const external = isCrossOriginHttp(href)
@@ -497,6 +534,7 @@ function AttachmentFigures({ attachments, col, isDark, variant = 'default' }) {
     >
       {visual.map((a, i) => {
         const href = resolveAttachmentUrl(a.url || a.href)
+        if (href === null) return null // unsafe scheme — isRenderableImageUrl should already exclude these, but never render a null src
         const cap = [a.kind, a.label || `Figure ${i + 1}`].filter(Boolean).join(' · ')
         return (
           <a
@@ -2428,23 +2466,22 @@ export default function ArchiveGrid() {
   const vpRef = useRef(null)
   const panClampSnapshotRef = useRef({ x: 0, y: 0 })
 
-  const [gridDims, setGridDims] = useState(() => readGridDimensionsFromStorage(hubId))
+  const [gridDims, setGridDims] = useState(() => getGridDimensions(hubId))
   const { gridW, gridH, halfW, halfH } = gridDims
+  const [hubsTick, setHubsTick] = useState(0)
 
   useEffect(() => {
-    setGridDims(readGridDimensionsFromStorage(hubId))
+    setGridDims(getGridDimensions(hubId))
   }, [hubId])
 
   useEffect(() => {
-    const sync = () => setGridDims(readGridDimensionsFromStorage(hubId))
-    window.addEventListener('solar-archive-instance-updated', sync)
-    const onStorage = (e) => {
-      if (e.key === ARCHIVE_INSTANCE_LS || e.key === ARCHIVE_BY_HUB_LS) sync()
+    const sync = () => {
+      setGridDims(getGridDimensions(hubId))
+      setHubsTick((t) => t + 1)
     }
-    window.addEventListener('storage', onStorage)
+    window.addEventListener('solar-hubs-updated', sync)
     return () => {
-      window.removeEventListener('solar-archive-instance-updated', sync)
-      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('solar-hubs-updated', sync)
     }
   }, [hubId])
 
@@ -2561,14 +2598,16 @@ export default function ArchiveGrid() {
     const sections = getHubResearchSections(id)
     const taxonomy = getHubTaxonomy(id)
     const copy = getHubDisciplineCopy(id)
-    const domain = taxonomy?.discipline || copy?.domain || base.domain
+    const hubRecord = getHub(id)
+    const domain = taxonomy?.discipline || hubRecord?.description || base.domain
     const intro = copy?.intro || base.intro
-    const shortDomain = copy?.shortDomain || base.shortDomain
+    const shortDomain = base.shortDomain
     if (sections?.length) {
       return { ...base, sections, domain, intro, shortDomain }
     }
     return { ...base, domain, intro, shortDomain }
-  }, [hubId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hubsTick re-syncs once late Supabase hydration lands
+  }, [hubId, hubsTick])
 
   // Supabase: approved entries for this hub fetched on mount / hub change
   const [dbEntries, setDbEntries] = useState({})
@@ -3679,8 +3718,8 @@ export default function ArchiveGrid() {
                     boxShadow: isDark ? `0 8px 24px ${col}18` : '0 8px 22px rgba(15,23,42,0.1)',
                   }}
                 >
-                  {ARCHIVE_HUB_LOCATIONS.map((h) => (
-                    <option key={h.id} value={h.id}>{h.label}</option>
+                  {getHubRegistry().map((h) => (
+                    <option key={h.id} value={h.id}>{h.name}</option>
                   ))}
                 </select>
               </span>

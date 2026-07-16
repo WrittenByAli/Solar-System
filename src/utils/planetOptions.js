@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js'
+import { getHubRegistryAsync } from './hubRegistry.js'
 
 /**
  * Accent color per hub — presentational only, not stored in the `planets`
@@ -23,16 +23,16 @@ const FALLBACK_COLOR = '#4fc3f7'
 /**
  * Live planet/hub options for the /submit dropdown, replacing the prior
  * hardcoded array built from researchData.json. Falls back to that same
- * static list if the query fails, so the form never hard-blocks on a
- * transient network error.
+ * static list if the hub registry never warms up, so the form never
+ * hard-blocks on a transient network error.
+ *
+ * Thin adapter over hubRegistry.js's getHubRegistry() (active hubs only) —
+ * no longer runs its own independent `planets` query.
  */
 export async function fetchPlanetOptions(fallbackPlanets) {
-    const { data, error } = await supabase
-        .from('planets')
-        .select('id, name, description')
-        .order('id')
+    const hubs = await getHubRegistryAsync()
 
-    if (error || !Array.isArray(data) || data.length === 0) {
+    if (!Array.isArray(hubs) || hubs.length === 0) {
         return (fallbackPlanets || []).map((p) => ({
             id: p.id,
             label: p.planet,
@@ -41,10 +41,10 @@ export async function fetchPlanetOptions(fallbackPlanets) {
         }))
     }
 
-    return data.map((row) => ({
-        id: row.id,
-        label: row.name,
-        domain: row.description,
-        color: PLANET_COLORS[row.id] || FALLBACK_COLOR,
+    return hubs.map((hub) => ({
+        id: hub.id,
+        label: hub.name,
+        domain: hub.description,
+        color: PLANET_COLORS[hub.id] || FALLBACK_COLOR,
     }))
 }

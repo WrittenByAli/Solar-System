@@ -11,43 +11,15 @@
  * update, event dispatch). This keeps the hot render paths in ArchiveGrid /
  * MapView unchanged while moving the source of truth off localStorage.
  */
-import { getHubDisciplineCopy } from '../constants/hubDisciplineCopy.js'
 import { supabase } from './supabaseClient.js'
+import { normalizeHubId } from './hubRegistry.js'
 
-// Legacy localStorage keys — retained as exports because ArchiveGrid still
-// references them in a `storage` event listener and CreateArchive clears one.
+// Legacy localStorage keys — retained as exports for backward compatibility.
 // Nothing writes to them anymore.
 export const ARCHIVE_INSTANCE_LS = 'solarArchiveInstanceConfig'
 export const ARCHIVE_BY_HUB_LS = 'solarArchiveByHub'
 export const ARCHIVE_REGISTRY_LS = 'solarArchivePublishedRegistry'
 export const ARCHIVE_LIBRARY_LS = 'solarArchiveLibrary'
-
-/** Map hubs — ids must match `/archive/:planetId` routes and MapView targets. */
-const HUB_LOCATION_DEFS = [
-    { id: 'star', label: 'North Star', fallbackSubtitle: 'Foundation archive · memoranda & canon' },
-    { id: 'sun', label: 'Sun' },
-    { id: 'mercury', label: 'Mercury' },
-    { id: 'venus', label: 'Venus' },
-    { id: 'earth', label: 'Earth' },
-    { id: 'mars', label: 'Mars' },
-    { id: 'jupiter', label: 'Jupiter' },
-    { id: 'saturn', label: 'Saturn' },
-    { id: 'uranus', label: 'Uranus' },
-    { id: 'neptune', label: 'Neptune' },
-]
-
-export const ARCHIVE_HUB_LOCATIONS = HUB_LOCATION_DEFS.map(({ id, label, fallbackSubtitle }) => ({
-    id,
-    label,
-    subtitle: getHubDisciplineCopy(id)?.domain || fallbackSubtitle || label,
-}))
-
-export function normalizeHubId(raw) {
-    let id = String(raw || 'earth').trim().toLowerCase()
-    if (id === 'beacon') id = 'star'
-    const known = ARCHIVE_HUB_LOCATIONS.some((h) => h.id === id)
-    return known ? id : 'earth'
-}
 
 export const GRID_SIDE_MIN = 8
 /** Hard cap so the canvas stays responsive in-browser; huge images are scaled down in the UI with a notice. */

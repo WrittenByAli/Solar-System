@@ -14,6 +14,8 @@ export default function FoundationArchiveStar() {
     return (
         <motion.div
             className="home-star-mark fixed z-40"
+            role="navigation"
+            aria-label="Home shortcut"
             style={{
                 bottom: 'max(20px, env(safe-area-inset-bottom, 0px))',
                 right: 'max(20px, env(safe-area-inset-right, 0px))',

@@ -7,10 +7,10 @@ import {
   addArchiveToLibrary,
   clampGridSide,
   loadHubArchiveConfig,
-  normalizeHubId,
   saveHubArchiveConfig,
   slugifyArchiveSlug,
 } from './archiveInstanceStorage.js'
+import { normalizeHubId } from './hubRegistry.js'
 
 export const ARCHIVE_PACK_KIND = 'solar-archive-pack'
 export const ARCHIVE_PACK_VERSION = 1

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The SOLAR Archive sitemap.
+  This is a HashRouter SPA: in-app routes (#/map, #/leaderboard, …) are URL
+  fragments, which search engines do NOT treat as separate crawlable URLs.
+  The origin root is therefore the only meaningful sitemap entry. If the app
+  is migrated to BrowserRouter (real path-based routes) later, add one <url>
+  per public route here.
+  ⚠️ Replace `https://your-domain.example` with the real production origin.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://your-domain.example/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

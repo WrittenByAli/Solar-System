@@ -1391,14 +1391,17 @@ export default function Join() {
                     {/* Terms + Privacy — signup only */}
                     {isSignup && (
                         <>
+                            {/* No standalone Terms/Privacy pages exist yet. href="#"
+                                must not fall through: under HashRouter it rewrites the
+                                hash and navigates away from /join mid-signup. */}
                             <label className="sj-terms">
                                 <input type="checkbox" checked={form.terms} onChange={(e) => set('terms', e.target.checked)} />
-                                <span>I agree to the <a href="#">Terms &amp; Conditions</a></span>
+                                <span>I agree to the <a href="#" onClick={(e) => e.preventDefault()}>Terms &amp; Conditions</a></span>
                             </label>
                             {fieldError('terms')}
                             <label className="sj-terms" style={{ marginTop: -6 }}>
                                 <input type="checkbox" checked={form.privacy} onChange={(e) => set('privacy', e.target.checked)} />
-                                <span>I agree to the <a href="#">Privacy Policy</a></span>
+                                <span>I agree to the <a href="#" onClick={(e) => e.preventDefault()}>Privacy Policy</a></span>
                             </label>
                             {fieldError('privacy')}
                         </>

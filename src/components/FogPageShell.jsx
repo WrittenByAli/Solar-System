@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import VantaFogBackground from './solar-archive/VantaFogBackground.jsx'
+import LazyVantaFogBackground from './solar-archive/LazyVantaFogBackground.jsx'
 import '../styles/solar-fog-page.css'
 
 /** Eased 0→1 reveal for fog page content (matches /reviews). */
@@ -26,7 +26,7 @@ export function useSceneReveal(duration = 900) {
 export default function FogPageShell({ isDark, sceneReveal, className = '', children }) {
   return (
     <div className={`sa-fog-page${isDark ? ' sa-fog-page--dark' : ' sa-fog-page--light'} ${className}`.trim()}>
-      <VantaFogBackground
+      <LazyVantaFogBackground
         isDark={isDark}
         entryReveal={sceneReveal}
         className="sa-fog-page__vanta"

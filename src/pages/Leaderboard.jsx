@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Search, X } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
-import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
+import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import AvatarCircle from '../components/AvatarCircle.jsx'
 import { supabase } from '../utils/supabaseClient.js'
-import { buildObservatoryModel } from '../utils/leaderboardObservatory.js'
+import { applyLeaderboardView, buildObservatoryModel } from '../utils/leaderboardObservatory.js'
 import fallbackData from '../data/researchData.json'
 import '../styles/solar-leaderboard.css'
 
@@ -33,7 +33,7 @@ const PODIUM_ORDER = [
 
 const PODIUM_TONE = { 1: 'gold-1', 2: 'gold-2', 3: 'gold-3' }
 
-function PodiumColumn({ contributor, place, isMe, avatarUrl }) {
+function PodiumColumn({ contributor, place, isMe, avatarUrl, displayValue, displaySuffix }) {
     if (!contributor) return <div className="obs-podium__col obs-podium__col--empty" aria-hidden />
 
     const tone = PODIUM_TONE[place]
@@ -56,7 +56,10 @@ function PodiumColumn({ contributor, place, isMe, avatarUrl }) {
                     <p className="obs-podium__name">{contributor.username}</p>
                     {isMe ? <span className="obs-podium__you">you</span> : null}
                 </div>
-                <p className="obs-podium__points">{contributor.points.toLocaleString()}</p>
+                <p className="obs-podium__points">
+                    {(displayValue ?? contributor.points).toLocaleString()}
+                    {displaySuffix ? <span className="obs-podium__points-suffix"> {displaySuffix}</span> : null}
+                </p>
             </div>
             <div className={`obs-podium__pedestal obs-podium__pedestal--${tone}`}>
                 <span className={`obs-podium__badge obs-podium__badge--${tone}`}>{place}</span>
@@ -65,7 +68,7 @@ function PodiumColumn({ contributor, place, isMe, avatarUrl }) {
     )
 }
 
-function LeaderboardTable({ rows, myUsername, resolveAvatar }) {
+function LeaderboardTable({ rows, myUserId, resolveAvatar, metricLabel, metricValue, rankKey = 'rank' }) {
     if (rows.length === 0) return null
 
     return (
@@ -74,14 +77,14 @@ function LeaderboardTable({ rows, myUsername, resolveAvatar }) {
                 <span className="obs-lb-th obs-lb-th--rank">#</span>
                 <span className="obs-lb-th obs-lb-th--player">Player</span>
                 <span className="obs-lb-th obs-lb-th--points">Points</span>
-                <span className="obs-lb-th obs-lb-th--entries">Entries</span>
+                <span className="obs-lb-th obs-lb-th--entries">{metricLabel}</span>
             </div>
             <ol className="obs-lb-table" aria-label="Rankings">
                 {rows.map((c) => {
-                    const isMe = myUsername && c.username === myUsername
+                    const isMe = myUserId && c.userId === myUserId
                     return (
-                        <li key={`${c.userId || c.username}-${c.rank}`} className={`obs-lb-row${isMe ? ' obs-lb-row--me' : ''}`}>
-                            <span className="obs-lb-row__rank">{c.rank}</span>
+                        <li key={`${c.userId || c.username}-${c[rankKey]}`} className={`obs-lb-row${isMe ? ' obs-lb-row--me' : ''}`}>
+                            <span className="obs-lb-row__rank">{c[rankKey]}</span>
                             <div className="obs-lb-row__player">
                                 <AvatarCircle username={c.username} avatarUrl={resolveAvatar(c)} size={36} />
                                 <div className="obs-lb-row__identity">
@@ -90,7 +93,7 @@ function LeaderboardTable({ rows, myUsername, resolveAvatar }) {
                                 </div>
                             </div>
                             <span className="obs-lb-row__points">{c.points.toLocaleString()}</span>
-                            <span className="obs-lb-row__entries">{c.approvedTotal || 0}</span>
+                            <span className="obs-lb-row__entries">{metricValue(c)}</span>
                         </li>
                     )
                 })}
@@ -102,11 +105,54 @@ function LeaderboardTable({ rows, myUsername, resolveAvatar }) {
 export default function Leaderboard() {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
-    const { username: myUsername, avatarUrl: myAvatarUrl } = useAuth()
+    // Matched by userId, not username: verified live against production data
+    // that users_profile.username has NO unique constraint (only clerk_id and
+    // the id PK do) -- 3 real accounts already share the name "Muhammad Ali".
+    // Comparing by username would tag ALL same-named accounts as "you" and
+    // show them each other's avatar.
+    const { avatarUrl: myAvatarUrl, profile: myProfile, isLoggedIn } = useAuth()
+    const myUserId = myProfile?.id ?? null
     const [sceneReveal, setSceneReveal] = useState(0)
     const [supaProfiles, setSupaProfiles] = useState([])
+    // 'loading' | 'error' | 'ready' -- previously any failure (network error,
+    // RLS denial, Supabase downtime) was indistinguishable from "no real
+    // profiles yet": both silently fell through to the same 10 fabricated
+    // DEMO_PROFILES with no indication anything had gone wrong. A real error
+    // now shows a real error state instead of fake leaderboard data.
+    const [loadState, setLoadState] = useState('loading')
     const [refreshing, setRefreshing] = useState(false)
     const [tick, setTick] = useState(0)
+    const [metric, setMetric] = useState('points') // 'points' | 'approvedTotal' | 'reviewsCompleted'
+    const [planetFilter, setPlanetFilter] = useState('') // '' = all planets/hubs
+    const [searchQuery, setSearchQuery] = useState('')
+    // 'all' | '7d' | '30d'. Only meaningful for approvedTotal/reviewsCompleted:
+    // users_profile.points is a flat lifetime total with no timestamped
+    // ledger (verified against the schema -- no approved_at column exists),
+    // so it cannot be time-sliced without either a schema change or a
+    // misleading proxy. reviewsCompleted CAN be sliced accurately
+    // (reviews.created_at IS the point-earning moment). approvedTotal uses
+    // archive_entries.created_at (submission time) as an honest proxy --
+    // labeled "submitted", not "earned", since approval can lag submission.
+    const [timeWindow, setTimeWindow] = useState('all')
+    const [timeScoped, setTimeScoped] = useState(null) // null = not using this path; else { rows, loadState, guestBlocked }
+    const [timeScopedRetryTick, setTimeScopedRetryTick] = useState(0)
+    // Pagination: DISPLAY_PAGE_SIZE governs how many already-fetched rows are
+    // shown at once (cheap, instant, no query); FETCH_PAGE_SIZE governs how
+    // many rows one server round-trip pulls from leaderboard_view. "Show
+    // more" only ever triggers a NEW server fetch on the plain unfiltered
+    // view (metric='points', no hub filter, no search, no time window) --
+    // that's the only mode where "the base fetch might be incomplete" is
+    // even meaningful; every other mode (tabs/hub/search/time-window)
+    // already operates over a fully-computed list for its own scope (either
+    // all of model.contributors fetched so far, or timeScoped's single
+    // un-paginated query), so "Show more" there just reveals more of what's
+    // already there.
+    const DISPLAY_PAGE_SIZE = 25
+    const FETCH_PAGE_SIZE = 100
+    const [visibleCount, setVisibleCount] = useState(DISPLAY_PAGE_SIZE)
+    const [fetchOffset, setFetchOffset] = useState(0)
+    const [hasMoreOnServer, setHasMoreOnServer] = useState(false)
+    const [loadingMore, setLoadingMore] = useState(false)
 
     useEffect(() => { window.scrollTo(0, 0) }, [])
 
@@ -133,12 +179,14 @@ export default function Leaderboard() {
         }
     }, [])
 
-    const loadLeaderboard = async () => {
-        const { data: rows } = await supabase
+    const loadLeaderboard = async (offset = 0, append = false) => {
+        const { data: rows, error } = await supabase
             .from('leaderboard_view')
             .select('*')
             .order('rank')
-            .limit(100)
+            .range(offset, offset + FETCH_PAGE_SIZE - 1)
+
+        if (error) throw error
 
         const userIds = [...new Set((rows || []).map((r) => r.user_id).filter(Boolean))]
         const avatarByUserId = {}
@@ -165,37 +213,192 @@ export default function Leaderboard() {
             approvedByLayer: r.approved_by_layer || {},
             reviewsByPlanet: r.reviews_by_planet || {},
         }))
-        setSupaProfiles(built)
+        setSupaProfiles((prev) => (append ? [...prev, ...built] : built))
+        setHasMoreOnServer(built.length === FETCH_PAGE_SIZE)
+        setFetchOffset(offset + built.length)
+        setLoadState('ready')
     }
 
     useEffect(() => {
         let active = true
-        loadLeaderboard().catch(() => { if (active) setSupaProfiles([]) })
+        setLoadState((s) => (s === 'ready' ? s : 'loading'))
+        setVisibleCount(DISPLAY_PAGE_SIZE)
+        loadLeaderboard(0, false).catch(() => { if (active) setLoadState('error') })
         return () => { active = false }
     }, [tick])
+
+    // Reset the reveal count whenever the active view changes -- switching
+    // tabs/hub/search/time-window should start each view fresh, not carry
+    // over however many rows were revealed in a different view.
+    useEffect(() => { setVisibleCount(DISPLAY_PAGE_SIZE) }, [metric, planetFilter, searchQuery, timeWindow])
+
+    const isBaseView = metric === 'points' && !planetFilter && !searchQuery.trim() && timeWindow === 'all'
+
+    const handleLoadMore = async () => {
+        if (isBaseView && visibleCount >= supaProfiles.length && hasMoreOnServer) {
+            setLoadingMore(true)
+            try {
+                await loadLeaderboard(fetchOffset, true)
+                setVisibleCount((c) => c + DISPLAY_PAGE_SIZE)
+            } catch {
+                // Leave visibleCount/rows untouched -- a failed "load more" shouldn't
+                // wipe out what's already successfully showing.
+            } finally {
+                setLoadingMore(false)
+            }
+            return
+        }
+        setVisibleCount((c) => c + DISPLAY_PAGE_SIZE)
+    }
+
+    // Time-scoped ranking bypasses leaderboard_view entirely (it has no time
+    // dimension -- confirmed via its definition, a full-history cumulative
+    // aggregate) and queries the raw tables directly. Deliberately does NOT
+    // combine with planetFilter -- that would need an embedded FK join
+    // (reviews -> archive_entries.planet_id) which adds real fragility for
+    // a feature this scoped; the hub selector is disabled while a time
+    // window is active instead (see the toolbar JSX).
+    useEffect(() => {
+        if (timeWindow === 'all' || metric === 'points') {
+            setTimeScoped(null)
+            return undefined
+        }
+        // Checked proactively via the REAL auth state, not inferred from the
+        // query result: verified live that RLS-denied SELECTs return 200 +
+        // an EMPTY array, not an error -- `reviews` has no anon SELECT
+        // policy at all (`reviews_read_authenticated` is `to authenticated`
+        // only), so a guest's query would silently look identical to "zero
+        // reviewers this week" with no error to detect. That would have
+        // shown guests a misleading "nobody reviewed anything" instead of
+        // "sign in to see this".
+        if (metric === 'reviewsCompleted' && !isLoggedIn) {
+            setTimeScoped({ rows: [], loadState: 'guest-blocked', guestBlocked: true })
+            return undefined
+        }
+        let active = true
+        setTimeScoped({ rows: [], loadState: 'loading', guestBlocked: false })
+
+        const days = timeWindow === '7d' ? 7 : 30
+        const cutoffIso = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+
+        async function run() {
+            const table = metric === 'reviewsCompleted' ? 'reviews' : 'archive_entries'
+            const idColumn = metric === 'reviewsCompleted' ? 'reviewer_id' : 'submitted_by'
+            let query = supabase.from(table).select(idColumn).gte('created_at', cutoffIso)
+            if (metric === 'approvedTotal') {
+                query = query.eq('status', 'approved').is('updates_entry_id', null)
+            }
+            const { data, error } = await query
+            if (!active) return
+
+            if (error) {
+                setTimeScoped({ rows: [], loadState: 'error', guestBlocked: false })
+                return
+            }
+
+            const counts = new Map()
+            for (const row of data || []) {
+                const uid = row[idColumn]
+                if (!uid) continue
+                counts.set(uid, (counts.get(uid) || 0) + 1)
+            }
+            const userIds = [...counts.keys()]
+            if (userIds.length === 0) {
+                setTimeScoped({ rows: [], loadState: 'ready', guestBlocked: false })
+                return
+            }
+
+            const { data: profiles } = await supabase
+                .from('users_profile')
+                .select('id, username, avatar_url, points')
+                .in('id', userIds)
+            if (!active) return
+
+            const rows = (profiles || [])
+                .map((p) => ({
+                    userId: p.id,
+                    username: p.username,
+                    avatarUrl: p.avatar_url || null,
+                    points: p.points || 0,
+                    viewMetricValue: counts.get(p.id) || 0,
+                }))
+                .sort((a, b) => b.viewMetricValue - a.viewMetricValue || a.username.localeCompare(b.username))
+                .map((r, i) => ({ ...r, viewRank: i + 1 }))
+
+            setTimeScoped({ rows, loadState: 'ready', guestBlocked: false })
+        }
+
+        run().catch(() => { if (active) setTimeScoped({ rows: [], loadState: 'error', guestBlocked: false }) })
+        return () => { active = false }
+    }, [metric, timeWindow, timeScopedRetryTick, isLoggedIn])
 
     const handleRefresh = async () => {
         setRefreshing(true)
         try {
             await supabase.rpc('refresh_leaderboard_view')
             await loadLeaderboard()
+        } catch {
+            setLoadState('error')
         } finally {
             setRefreshing(false)
         }
     }
 
-    const rawProfiles = supaProfiles.length > 0 ? supaProfiles : DEMO_PROFILES
+    // DEMO_PROFILES is a deliberate, clearly-labeled preview for a genuinely
+    // empty leaderboard (e.g. a brand-new deployment with zero real
+    // profiles) -- it must NEVER be the silent fallback for a fetch failure,
+    // which is what loadState now prevents.
+    const isPreview = loadState === 'ready' && supaProfiles.length === 0
+    const rawProfiles = isPreview ? DEMO_PROFILES : supaProfiles
 
     const model = useMemo(
         () => buildObservatoryModel(rawProfiles, researchData.planets),
         [rawProfiles],
     )
 
-    const topThree = model.contributors.slice(0, 3)
-    const rest = model.contributors.slice(3, 25)
+    // planets that actually have at least one contributor/reviewer, so the
+    // filter never offers a hub that would just show "no results"
+    const availablePlanets = useMemo(() => {
+        const ids = new Set()
+        for (const c of model.contributors) {
+            Object.keys(c.contributionsByPlanet || {}).forEach((id) => { if (c.contributionsByPlanet[id] > 0) ids.add(id) })
+            Object.keys(c.reviewsByPlanet || {}).forEach((id) => { if (c.reviewsByPlanet[id] > 0) ids.add(id) })
+        }
+        return researchData.planets.filter((p) => ids.has(String(p.id).toLowerCase()))
+    }, [model.contributors])
+
+    const view = useMemo(
+        () => applyLeaderboardView(model.contributors, { metric, planetId: planetFilter || null, searchQuery }),
+        [model.contributors, metric, planetFilter, searchQuery],
+    )
+    const usingTimeWindow = timeWindow !== 'all' && metric !== 'points'
+    // Time-scoped rows are pre-ranked server-round-trip; search still applies
+    // client-side on top of them, same as the all-time path.
+    const timeScopedVisible = useMemo(() => {
+        if (!timeScoped || timeScoped.loadState !== 'ready') return []
+        const q = searchQuery.trim().toLowerCase()
+        return q ? timeScoped.rows.filter((r) => r.username.toLowerCase().includes(q)) : timeScoped.rows
+    }, [timeScoped, searchQuery])
+
+    const visibleRows = usingTimeWindow ? timeScopedVisible : view.visible
+    const isFiltered = !!planetFilter || metric !== 'points'
+    const isSearching = searchQuery.trim().length > 0
+
+    const metricLabel = metric === 'reviewsCompleted' ? 'Reviews' : (usingTimeWindow ? 'Submitted' : 'Entries')
+    const metricValue = (c) => (isFiltered ? c.viewMetricValue : (c.approvedTotal || 0))
+
+    // Podium only makes sense for a ranked TOP, not an arbitrary search
+    // result set -- searching shows a flat table of matches instead, each
+    // still carrying its real rank within the current tab/planet view.
+    const podiumSource = isSearching ? [] : visibleRows
+    const topThree = podiumSource.slice(0, 3)
+    const rest = isSearching ? visibleRows : visibleRows.slice(3, visibleCount)
+    // "Show more" appears when there's more to reveal from what's already
+    // fetched, OR (base view only) the server might have additional pages.
+    const canLoadMore = !isSearching && (visibleCount < visibleRows.length || (isBaseView && hasMoreOnServer))
 
     const resolveAvatar = (contributor) => {
-        if (myUsername && contributor.username === myUsername && myAvatarUrl) {
+        if (myUserId && contributor.userId === myUserId && myAvatarUrl) {
             return myAvatarUrl
         }
         return contributor.avatarUrl || null
@@ -203,7 +406,7 @@ export default function Leaderboard() {
 
     return (
         <div className={`solar-page obs-page${isDark ? ' obs-page--dark' : ' obs-page--light'}`}>
-            <VantaFogBackground
+            <LazyVantaFogBackground
                 isDark={isDark}
                 entryReveal={sceneReveal}
                 className="obs-page__vanta"
@@ -226,30 +429,188 @@ export default function Leaderboard() {
                         type="button"
                         className="obs-refresh-btn"
                         onClick={handleRefresh}
-                        disabled={refreshing}
+                        disabled={refreshing || loadState === 'loading'}
                     >
                         <RefreshCw size={14} className={refreshing ? 'obs-spin' : ''} />
                         {refreshing ? 'Refreshing…' : 'Refresh'}
                     </button>
                 </header>
 
-                <section className="obs-podium" aria-label="Top three contributors">
-                    {PODIUM_ORDER.map(({ place, rankIndex }) => (
-                        <PodiumColumn
-                            key={place}
-                            place={place}
-                            contributor={topThree[rankIndex]}
-                            isMe={myUsername && topThree[rankIndex]?.username === myUsername}
-                            avatarUrl={topThree[rankIndex] ? resolveAvatar(topThree[rankIndex]) : null}
-                        />
-                    ))}
-                </section>
+                {loadState === 'loading' && (
+                    <p className="obs-podium-cta" role="status" aria-live="polite">Loading rankings…</p>
+                )}
 
-                <p className="obs-podium-cta">
-                    Ranked by knowledge points from approved archive contributions.
-                </p>
+                {loadState === 'error' && (
+                    <div className="obs-podium-cta" role="alert">
+                        <p>Couldn&apos;t load the leaderboard right now.</p>
+                        <button type="button" className="obs-refresh-btn" onClick={() => setTick((t) => t + 1)}>
+                            Try again
+                        </button>
+                    </div>
+                )}
 
-                <LeaderboardTable rows={rest} myUsername={myUsername} resolveAvatar={resolveAvatar} />
+                {loadState !== 'loading' && loadState !== 'error' && (
+                    <>
+                        {isPreview && (
+                            <p className="obs-podium-cta" role="status">
+                                Preview rankings — be the first real contributor to top the board!
+                            </p>
+                        )}
+
+                        {!isPreview && (
+                            <div className="obs-toolbar" role="toolbar" aria-label="Leaderboard filters">
+                                <div className="obs-toolbar__tabs" role="tablist" aria-label="Rank by">
+                                    {[
+                                        { key: 'points', label: 'Top Contributors' },
+                                        { key: 'approvedTotal', label: 'Contributors' },
+                                        { key: 'reviewsCompleted', label: 'Reviewers' },
+                                    ].map((t) => (
+                                        <button
+                                            key={t.key}
+                                            type="button"
+                                            role="tab"
+                                            aria-selected={metric === t.key}
+                                            className="obs-toolbar__tab"
+                                            data-active={metric === t.key}
+                                            onClick={() => {
+                                                setMetric(t.key)
+                                                // Time filtering has no meaning on the flat lifetime-points
+                                                // metric -- see the timeWindow state comment.
+                                                if (t.key === 'points') setTimeWindow('all')
+                                            }}
+                                        >
+                                            {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <label className="obs-toolbar__field" title={usingTimeWindow ? 'Not available with a time window active' : undefined}>
+                                    <span className="obs-toolbar__field-label">Hub</span>
+                                    <select
+                                        value={planetFilter}
+                                        onChange={(e) => setPlanetFilter(e.target.value)}
+                                        aria-label="Filter by research hub"
+                                        disabled={usingTimeWindow}
+                                    >
+                                        <option value="">All hubs</option>
+                                        {availablePlanets.map((p) => (
+                                            <option key={p.id} value={String(p.id).toLowerCase()}>{p.planet || p.id}</option>
+                                        ))}
+                                    </select>
+                                </label>
+
+                                <label
+                                    className="obs-toolbar__field"
+                                    title={metric === 'points' ? 'Not available on Top Contributors — lifetime points have no time history' : undefined}
+                                >
+                                    <span className="obs-toolbar__field-label">Since</span>
+                                    <select
+                                        value={timeWindow}
+                                        onChange={(e) => setTimeWindow(e.target.value)}
+                                        aria-label="Filter by time window"
+                                        disabled={metric === 'points'}
+                                    >
+                                        <option value="all">All time</option>
+                                        <option value="7d">Last 7 days</option>
+                                        <option value="30d">Last 30 days</option>
+                                    </select>
+                                </label>
+
+                                <div className="obs-toolbar__search">
+                                    <Search size={14} aria-hidden />
+                                    <input
+                                        type="search"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Search players…"
+                                        aria-label="Search players by username"
+                                    />
+                                    {searchQuery && (
+                                        <button type="button" aria-label="Clear search" onClick={() => setSearchQuery('')}>
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {usingTimeWindow && timeScoped?.loadState === 'loading' && (
+                            <p className="obs-podium-cta" role="status" aria-live="polite">Loading…</p>
+                        )}
+
+                        {usingTimeWindow && timeScoped?.loadState === 'guest-blocked' && (
+                            <p className="obs-podium-cta" role="status">Sign in to see reviewer activity.</p>
+                        )}
+
+                        {usingTimeWindow && timeScoped?.loadState === 'error' && (
+                            <div className="obs-podium-cta" role="alert">
+                                <p>Couldn&apos;t load this view right now.</p>
+                                <button type="button" className="obs-refresh-btn" onClick={() => setTimeScopedRetryTick((t) => t + 1)}>
+                                    Try again
+                                </button>
+                            </div>
+                        )}
+
+                        {(!usingTimeWindow || timeScoped?.loadState === 'ready') && (
+                            <>
+                                {!isSearching && (
+                                    <section className="obs-podium" aria-label="Top three">
+                                        {PODIUM_ORDER.map(({ place, rankIndex }) => (
+                                            <PodiumColumn
+                                                key={place}
+                                                place={place}
+                                                contributor={topThree[rankIndex]}
+                                                isMe={myUserId && topThree[rankIndex]?.userId === myUserId}
+                                                avatarUrl={topThree[rankIndex] ? resolveAvatar(topThree[rankIndex]) : null}
+                                                displayValue={topThree[rankIndex] && isFiltered ? topThree[rankIndex].viewMetricValue : undefined}
+                                                displaySuffix={topThree[rankIndex] && isFiltered ? metricLabel.toLowerCase() : undefined}
+                                            />
+                                        ))}
+                                    </section>
+                                )}
+
+                                {!isPreview && !isFiltered && !isSearching && (
+                                    <p className="obs-podium-cta">
+                                        Ranked by knowledge points from approved archive contributions.
+                                    </p>
+                                )}
+
+                                {usingTimeWindow && metric === 'approvedTotal' && !isSearching && (
+                                    <p className="obs-podium-cta">
+                                        Entries submitted in this window — approval can lag submission, so this
+                                        reflects activity, not necessarily points already earned.
+                                    </p>
+                                )}
+
+                                {isSearching && visibleRows.length === 0 && (
+                                    <p className="obs-podium-cta" role="status">No players match &quot;{searchQuery}&quot;.</p>
+                                )}
+
+                                <LeaderboardTable
+                                    rows={rest}
+                                    myUserId={myUserId}
+                                    resolveAvatar={resolveAvatar}
+                                    metricLabel={metricLabel}
+                                    metricValue={metricValue}
+                                    rankKey="viewRank"
+                                />
+
+                                {canLoadMore && (
+                                    <div className="obs-lb-loadmore">
+                                        <button
+                                            type="button"
+                                            className="obs-refresh-btn"
+                                            onClick={handleLoadMore}
+                                            disabled={loadingMore}
+                                        >
+                                            {loadingMore ? 'Loading…' : 'Show more'}
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     )

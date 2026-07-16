@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
+import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import { useTheme } from '../App.jsx'
 import { ClipboardCheck, Trophy } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -60,7 +60,17 @@ function ScrollIntroSection({ canReview }) {
               Reviewer Access
             </Link>
           )}
-          <a href="#sa-reviews-feed" className="rv-btn rv-btn--ghost" data-testid="reviews-cta-feed">
+          <a
+            href="#sa-reviews-feed"
+            className="rv-btn rv-btn--ghost"
+            data-testid="reviews-cta-feed"
+            // In-page scroll only: a raw hash change would be swallowed by
+            // HashRouter as an unknown route and redirect to home.
+            onClick={(e) => {
+              e.preventDefault()
+              document.getElementById('sa-reviews-feed')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+            }}
+          >
             Browse reviews
           </a>
         </motion.div>
@@ -136,7 +146,7 @@ export default function Reviews() {
 
   return (
     <div className={`rv-page${isDark ? ' rv-page--dark' : ' rv-page--light'}`} data-testid="reviews-page">
-      <VantaFogBackground
+      <LazyVantaFogBackground
         isDark={isDark}
         entryReveal={sceneReveal}
         className="rv-page__vanta"

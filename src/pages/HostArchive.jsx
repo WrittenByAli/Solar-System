@@ -1,7 +1,7 @@
 ﻿import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import VantaFogBackground from '../components/solar-archive/VantaFogBackground.jsx'
+import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import {
   ImagePlus,
   AlertCircle,
@@ -22,16 +22,15 @@ import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import '../styles/solar-host.css'
 import {
-  ARCHIVE_HUB_LOCATIONS,
   REGISTRY_CATEGORIES,
   clampGridSide,
   imageFileToCoverDataUrl,
-  normalizeHubId,
   slugifyArchiveSlug,
   GRID_SIDE_MAX,
   loadArchiveLibrary,
   loadArchiveRegistry,
 } from '../utils/archiveInstanceStorage.js'
+import { getHub, getHubRegistry, normalizeHubId } from '../utils/hubRegistry.js'
 import {
   applyArchivePackToBrowser,
   buildArchivePack,
@@ -96,11 +95,15 @@ export default function HostArchive() {
   const [deploying, setDeploying] = useState(false)
   const [library, setLibrary] = useState(() => loadArchiveLibrary(profile?.id || null))
   const [registryCount, setRegistryCount] = useState(() => loadArchiveRegistry().length)
+  const [hubsTick, setHubsTick] = useState(0)
+  useEffect(() => {
+    const bump = () => setHubsTick((t) => t + 1)
+    window.addEventListener('solar-hubs-updated', bump)
+    return () => window.removeEventListener('solar-hubs-updated', bump)
+  }, [])
 
-  const hubMeta = useMemo(
-    () => ARCHIVE_HUB_LOCATIONS.find((h) => h.id === hubPlanetId) || ARCHIVE_HUB_LOCATIONS.find((h) => h.id === 'earth'),
-    [hubPlanetId],
-  )
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- hubsTick re-syncs once late Supabase hydration lands
+  const hubMeta = useMemo(() => getHub(hubPlanetId), [hubPlanetId, hubsTick])
 
   useEffect(() => {
     const refresh = () => {
@@ -187,7 +190,7 @@ export default function HostArchive() {
   const buildDisabled = !jsonReady
 
   const hostedCount = library.length || registryCount
-  const hubsCount = ARCHIVE_HUB_LOCATIONS.length
+  const hubsCount = getHubRegistry().length
   const deployCount = Math.max(library.length, registryCount)
 
   const refreshCoverThumbFromFile = useCallback(async () => {
@@ -311,7 +314,7 @@ export default function HostArchive() {
 
   return (
     <div className={`solar-page sa-host-page${isDark ? ' sa-host-page--dark' : ' sa-host-page--light'}`}>
-      <VantaFogBackground
+      <LazyVantaFogBackground
         isDark={isDark}
         entryReveal={sceneReveal}
         className="sa-host-page__vanta"
@@ -475,7 +478,7 @@ export default function HostArchive() {
               <div className="host-step__body">
                 <h3 className="host-step__label">Choose Hub</h3>
                 <div className="host-hubs" role="radiogroup" aria-label="Target hub">
-                  {ARCHIVE_HUB_LOCATIONS.map((h) => {
+                  {getHubRegistry().map((h) => {
                     const selected = hubPlanetId === h.id
                     const color = HUB_COLORS[h.id] || '#f5a623'
                     return (
@@ -489,8 +492,8 @@ export default function HostArchive() {
                         onClick={() => setHubPlanetId(h.id)}
                       >
                         <span className="host-hub__glyph" aria-hidden><Orbit size={20} /></span>
-                        <span className="host-hub__name">{h.label}</span>
-                        <span className="host-hub__sub">{h.subtitle}</span>
+                        <span className="host-hub__name">{h.name}</span>
+                        <span className="host-hub__sub">{h.description}</span>
                       </button>
                     )
                   })}
@@ -557,7 +560,7 @@ export default function HostArchive() {
               </div>
               <div className="host-telem">
                 <span className="host-telem__label">Target</span>
-                <span className="host-telem__value">{hubMeta?.label || '—'}</span>
+                <span className="host-telem__value">{hubMeta?.name || '—'}</span>
               </div>
               <div className="host-telem">
                 <span className="host-telem__label">Pack Size</span>
@@ -686,7 +689,7 @@ export default function HostArchive() {
                   <span className="host-import__badge">Archive Detected</span>
                   <h3 className="host-import__name">{importPreview.title}</h3>
                   <p className="host-import__meta">
-                    {ARCHIVE_HUB_LOCATIONS.find((h) => h.id === importPreview.hub)?.label || importPreview.hub}
+                    {getHub(importPreview.hub)?.name || importPreview.hub}
                     {' · '}
                     {importPreview.w}×{importPreview.h}
                   </p>
@@ -747,7 +750,7 @@ export default function HostArchive() {
           ) : (
             <ul className="host-fleet">
               {library.map((item) => {
-                const hub = ARCHIVE_HUB_LOCATIONS.find((h) => h.id === item.hubPlanetId)
+                const hub = getHub(item.hubPlanetId)
                 const color = HUB_COLORS[item.hubPlanetId] || '#f5a623'
                 return (
                   <li key={item.id || item.slug} className="host-fleet__card" style={{ '--hub-accent': color }}>
@@ -761,11 +764,11 @@ export default function HostArchive() {
                       )}
                     </div>
                     <div className="host-fleet__body">
-                      <h3>{item.title || hub?.label || 'Untitled'}</h3>
+                      <h3>{item.title || hub?.name || 'Untitled'}</h3>
                       <p>
                         {item.gridWidth}×{item.gridHeight}
                         {' · '}
-                        {hub?.label || item.hubPlanetId}
+                        {hub?.name || item.hubPlanetId}
                         {' · '}
                         {timeAgo(item.savedAt)}
                       </p>

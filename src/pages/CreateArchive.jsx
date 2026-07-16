@@ -15,7 +15,6 @@ import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import '../styles/solar-create.css'
 import {
-    ARCHIVE_HUB_LOCATIONS,
     REGISTRY_CATEGORIES,
     addArchiveToLibrary,
     clampGridSide,
@@ -27,8 +26,8 @@ import {
     slugifyArchiveSlug,
     upsertArchiveRegistryEntry,
     GRID_SIDE_MAX,
-    normalizeHubId,
 } from '../utils/archiveInstanceStorage.js'
+import { getHub, getHubRegistry, normalizeHubId } from '../utils/hubRegistry.js'
 
 export default function CreateArchive() {
     const { theme } = useTheme()
@@ -49,11 +48,15 @@ export default function CreateArchive() {
     const [coverDataUrl, setCoverDataUrl] = useState('')
     const [dragActive, setDragActive] = useState(false)
     const [libraryTick, setLibraryTick] = useState(0)
+    const [hubsTick, setHubsTick] = useState(0)
+    useEffect(() => {
+        const bump = () => setHubsTick((t) => t + 1)
+        window.addEventListener('solar-hubs-updated', bump)
+        return () => window.removeEventListener('solar-hubs-updated', bump)
+    }, [])
 
-    const hubMeta = useMemo(
-        () => ARCHIVE_HUB_LOCATIONS.find((h) => h.id === hubPlanetId) || ARCHIVE_HUB_LOCATIONS.find((h) => h.id === 'earth'),
-        [hubPlanetId],
-    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hubsTick re-syncs once late Supabase hydration lands
+    const hubMeta = useMemo(() => getHub(hubPlanetId), [hubPlanetId, hubsTick])
 
     const [title, setTitle] = useState('')
     const [slug, setSlug] = useState('')
@@ -245,7 +248,7 @@ export default function CreateArchive() {
                     </h1>
                     <p className="text-sm mb-2 leading-relaxed" style={{ color: muted }}>
                         Grid <strong style={{ color: ink }}>{effectiveW} × {effectiveH}</strong> is live for{' '}
-                        <strong style={{ color: ink }}>{hubMeta?.label || hubPlanetId}</strong> — open it below or return to the Solar map to pick another hub. Layer 1 is the front page; zoom deeper for detail.
+                        <strong style={{ color: ink }}>{hubMeta?.name || hubPlanetId}</strong> — open it below or return to the Solar map to pick another hub. Layer 1 is the front page; zoom deeper for detail.
                     </p>
                     <p className="text-xs mb-10" style={{ color: isDark ? '#64748b' : '#475569' }}>
                         Saved to this browser and appended to your archive library when you return.
@@ -518,9 +521,9 @@ export default function CreateArchive() {
                                     color: ink,
                                 }}
                             >
-                                {ARCHIVE_HUB_LOCATIONS.map((h) => (
+                                {getHubRegistry().map((h) => (
                                     <option key={h.id} value={h.id}>
-                                        {h.label} — {h.subtitle}
+                                        {h.name} — {h.description}
                                     </option>
                                 ))}
                             </select>
@@ -677,7 +680,7 @@ export default function CreateArchive() {
                                     <div className="p-3">
                                         <div className="font-bold text-xs truncate" style={{ color: ink }}>{a.title}</div>
                                         <div className="text-[10px] font-mono mt-1 truncate" style={{ color: muted }}>
-                                            {(ARCHIVE_HUB_LOCATIONS.find((h) => h.id === a.hubPlanetId)?.label || a.hubPlanetId)}
+                                            {(getHub(a.hubPlanetId)?.name || a.hubPlanetId)}
                                             {' · '}{a.gridWidth}×{a.gridHeight}
                                         </div>
                                     </div>

@@ -1,0 +1,10 @@
+# The SOLAR Archive — robots policy
+# NOTE: this is a HashRouter SPA, so all in-app routes live under `/#/...`,
+# which crawlers treat as the single origin URL `/`. There are no distinct
+# server-addressable paths to allow/disallow beyond the root.
+
+User-agent: *
+Allow: /
+
+# ⚠️ Replace with the real production origin before go-live.
+Sitemap: https://your-domain.example/sitemap.xml
