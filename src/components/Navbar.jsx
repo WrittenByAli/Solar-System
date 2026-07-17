@@ -15,8 +15,7 @@ import {
     ClipboardCheck,
     LogOut,
     Eye,
-    Package,
-    Library,
+    Rocket,
     Award,
     ShieldCheck,
     Shield,
@@ -35,15 +34,14 @@ const baseNavLinks = [
     { label: 'Home', path: '/', icon: Home },
     { label: 'Map', path: '/map', icon: Map },
     { label: 'Leaderboard', path: '/leaderboard', icon: Trophy },
-    { label: 'Host', path: '/host-archive', icon: Package },
     { label: 'Submit', path: '/submit', icon: Upload },
-    { label: 'Directory', path: '/directory', icon: Library },
+    { label: 'Deploy', path: '/deploy', icon: Rocket },
     { label: 'Reviews', path: '/reviews', icon: Star },
 ]
 
 // Guests browse; they don't contribute. Contribution routes stay out of
 // their nav entirely — deep links to them land on the GuestGate prompt.
-const GUEST_PATHS = new Set(['/', '/map', '/leaderboard', '/directory'])
+const GUEST_PATHS = new Set(['/', '/map', '/leaderboard', '/deploy'])
 const guestNavLinks = baseNavLinks.filter((l) => GUEST_PATHS.has(l.path))
 
 const SHEET_EASE = [0.22, 1, 0.36, 1]

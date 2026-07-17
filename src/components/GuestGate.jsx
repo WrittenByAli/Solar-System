@@ -7,7 +7,7 @@ import { useTheme } from '../App.jsx'
 const GUEST_CAN = [
     'Explore all nine research hubs and every archive layer',
     'Navigate the coordinate map',
-    'Browse the leaderboard and archive directory',
+    'Browse the leaderboard and the deployment hub',
 ]
 
 const MEMBER_ONLY = [

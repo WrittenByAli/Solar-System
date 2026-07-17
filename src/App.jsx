@@ -22,8 +22,7 @@ const SubmitArchive = lazy(() => import('./pages/SubmitArchive.jsx'))
 const MySubmissions = lazy(() => import('./pages/MySubmissions.jsx'))
 const GradeSubmissions = lazy(() => import('./pages/GradeSubmissions.jsx'))
 const CreateArchive = lazy(() => import('./pages/CreateArchive.jsx'))
-const HostArchive = lazy(() => import('./pages/HostArchive.jsx'))
-const ArchiveDirectory = lazy(() => import('./pages/ArchiveDirectory.jsx'))
+const DeployHub = lazy(() => import('./pages/DeployHub.jsx'))
 const AccountSecurity = lazy(() => import('./pages/AccountSecurity.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
 const SsoCallback = lazy(() => import('./pages/SsoCallback.jsx'))
@@ -172,8 +171,10 @@ function AnimatedRoutes() {
                         <Route path="/submit" element={memberGuard(<PageWrap><SubmitArchive key={submitModeKey} /></PageWrap>)} />
                         <Route path="/my-submissions" element={memberGuard(<PageWrap><MySubmissions /></PageWrap>)} />
                         <Route path="/create-archive" element={memberGuard(<PageWrap><CreateArchive /></PageWrap>)} />
-                        <Route path="/host-archive" element={memberGuard(<PageWrap><HostArchive /></PageWrap>)} />
-                        <Route path="/directory" element={guard(<PageWrap><ArchiveDirectory /></PageWrap>)} />
+                        <Route path="/deploy" element={guard(<PageWrap><DeployHub /></PageWrap>)} />
+                        {/* Old bookmarks/deep links from before the Deployment Hub replaced both pages */}
+                        <Route path="/host-archive" element={<Navigate to="/deploy" replace />} />
+                        <Route path="/directory" element={<Navigate to="/deploy" replace />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                 </Suspense>
@@ -191,12 +192,11 @@ function AppShell() {
     const isHome = useMatch({ path: '/', end: true })
     const isMap = useMatch({ path: '/map', end: true })
     const isLeaderboard = useMatch({ path: '/leaderboard', end: true })
-    const isHostArchive = useMatch({ path: '/host-archive', end: true })
+    const isDeploy = useMatch({ path: '/deploy', end: true })
     const isSubmit = useMatch({ path: '/submit', end: true })
-    const isDirectory = useMatch({ path: '/directory', end: true })
     const isReviews = useMatch({ path: '/reviews', end: true })
     const isReviewQueue = useMatch({ path: '/review-queue', end: true })
-    const hideStarField = isHome || isMap || isLeaderboard || isHostArchive || isSubmit || isDirectory || isReviews || isReviewQueue
+    const hideStarField = isHome || isMap || isLeaderboard || isDeploy || isSubmit || isReviews || isReviewQueue
 
     return (
         <div className={`min-h-screen relative min-w-0 max-w-[100vw] overflow-x-hidden ${theme === 'dark' ? 'dark bg-[var(--sa-bg)] text-[var(--sa-text)]' : 'light bg-[var(--sa-bg)] text-[var(--sa-text)]'}`}>

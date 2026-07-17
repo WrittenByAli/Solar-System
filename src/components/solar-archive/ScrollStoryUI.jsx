@@ -167,8 +167,8 @@ function HeroContent({ isDark, navigate, local, snapChapter = false }) {
           <button type="button" className="scroll-story__btn scroll-story__btn--solid" onClick={() => navigate('/map')}>
             Enter the map <ArrowRight size={14} />
           </button>
-          <button type="button" className="scroll-story__btn scroll-story__btn--ghost" onClick={() => navigate('/directory')}>
-            Browse directory <ArrowUpRight size={14} />
+          <button type="button" className="scroll-story__btn scroll-story__btn--ghost" onClick={() => navigate('/deploy')}>
+            Deploy your own <ArrowUpRight size={14} />
           </button>
         </div>
       </div>

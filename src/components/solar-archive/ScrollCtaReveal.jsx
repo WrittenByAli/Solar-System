@@ -45,8 +45,8 @@ export default function ScrollCtaReveal({ activeIndex, enterLocal, sceneReveal =
         transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
         style={{ pointerEvents: showActions && enterLocal > 0.35 ? 'auto' : 'none' }}
       >
-        <button type="button" className="scroll-story__btn scroll-story__btn--solid" onClick={() => navigate('/directory')}>
-          Browse directory <ArrowRight size={14} />
+        <button type="button" className="scroll-story__btn scroll-story__btn--solid" onClick={() => navigate('/deploy')}>
+          Deploy your own <ArrowRight size={14} />
         </button>
         <button type="button" className="scroll-story__btn scroll-story__btn--ghost" onClick={() => navigate('/leaderboard')}>
           Leaderboard <ArrowUpRight size={14} />

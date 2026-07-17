@@ -12,13 +12,12 @@ const ROUTES = [
   ['/', 'home'],
   ['/map', 'map'],
   ['/leaderboard', 'leaderboard'],
-  ['/directory', 'directory'],
+  ['/deploy', 'deployment hub'],
   ['/reviews', 'reviews'],
   ['/review-queue', 'review queue'],
   ['/submit', 'submit'],
   ['/my-submissions', 'my submissions'],
   ['/create-archive', 'create archive'],
-  ['/host-archive', 'host archive'],
   ['/archive/earth', 'archive grid'],
 ]
 

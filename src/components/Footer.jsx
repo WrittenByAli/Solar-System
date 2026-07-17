@@ -10,9 +10,8 @@ const NAV_LINKS = [
     { label: 'Map', path: '/map' },
     { label: 'Leaderboard', path: '/leaderboard' },
     { label: 'Submit', path: '/submit' },
-    { label: 'Directory', path: '/directory' },
     { label: 'Reviews', path: '/reviews' },
-    { label: 'Host Archive', path: '/host-archive' },
+    { label: 'Deploy', path: '/deploy' },
 ]
 
 const TAGS = ['SOLAR', 'Peer Review', 'Open Data', 'Public Knowledge']
@@ -21,9 +20,8 @@ const TAGS = ['SOLAR', 'Peer Review', 'Open Data', 'Public Knowledge']
 const PAGE_FOG_PATHS = new Set([
     '/map',
     '/leaderboard',
-    '/host-archive',
+    '/deploy',
     '/submit',
-    '/directory',
     '/reviews',
     '/review-queue',
     '/profile',
