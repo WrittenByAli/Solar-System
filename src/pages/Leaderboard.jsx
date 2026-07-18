@@ -193,7 +193,7 @@ export default function Leaderboard() {
 
         if (userIds.length > 0) {
             const { data: profiles } = await supabase
-                .from('users_profile')
+                .from('public_profiles') // safe-columns view — never expose PII of other users
                 .select('id, avatar_url')
                 .in('id', userIds)
 
@@ -309,7 +309,7 @@ export default function Leaderboard() {
             }
 
             const { data: profiles } = await supabase
-                .from('users_profile')
+                .from('public_profiles') // safe-columns view — never expose PII of other users
                 .select('id, username, avatar_url, points')
                 .in('id', userIds)
             if (!active) return

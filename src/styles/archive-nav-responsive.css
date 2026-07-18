@@ -548,7 +548,10 @@
   font-size: 11px;
   font-family: var(--sa-font);
   border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--search-accent, #64748b) 42%, rgba(148, 163, 184, 0.38));
+  /* Solid, theme-correct surface + border (beats stale inline styles) */
+  background: rgba(15, 23, 42, 0.92) !important;
+  color: #f8fafc !important;
+  border: 1px solid color-mix(in srgb, var(--search-accent, #94a3b8) 55%, rgba(148, 163, 184, 0.5));
   outline: none;
   box-sizing: border-box;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -556,29 +559,33 @@
 }
 
 .archive-search-hud__input:focus {
-  border-color: color-mix(in srgb, var(--search-accent, #0ea5e9) 62%, rgba(148, 163, 184, 0.45));
+  border-color: color-mix(in srgb, var(--search-accent, #0ea5e9) 72%, rgba(203, 213, 225, 0.6));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 0 0 2px color-mix(in srgb, var(--search-accent, #0ea5e9) 22%, transparent);
+    0 0 0 2px color-mix(in srgb, var(--search-accent, #0ea5e9) 26%, transparent);
 }
 
 .archive-search-hud--light .archive-search-hud__input {
-  border-color: color-mix(in srgb, var(--search-accent, #0c4a6e) 32%, rgba(15, 23, 42, 0.16));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: color-mix(in srgb, var(--search-accent, #0c4a6e) 42%, rgba(15, 23, 42, 0.3));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 2px 10px rgba(15, 23, 42, 0.08);
 }
 
 .archive-search-hud--light .archive-search-hud__input:focus {
-  border-color: color-mix(in srgb, var(--search-accent, #0284c7) 48%, rgba(15, 23, 42, 0.22));
+  border-color: color-mix(in srgb, var(--search-accent, #0284c7) 58%, rgba(15, 23, 42, 0.32));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
-    0 0 0 2px color-mix(in srgb, var(--search-accent, #0284c7) 16%, transparent);
+    0 0 0 2px color-mix(in srgb, var(--search-accent, #0284c7) 18%, transparent);
 }
 
+/* Placeholder: readable muted tone per theme */
 .archive-search-hud__input::placeholder {
-  color: #64748b;
+  color: #94a3b8;
   opacity: 1;
 }
 
+.archive-search-hud--light .archive-search-hud__input::placeholder,
 .light .archive-search-hud__input::placeholder {
   color: #475569;
 }
@@ -621,7 +628,7 @@
 /* Bottom navigation controls: keep them inside narrow/short viewports. */
 .archive-controls-overlay {
   max-width: calc(100vw - 16px);
-  max-height: min(42dvh, 300px);
+  max-height: min(52dvh, 340px);
   overflow-x: auto;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -635,6 +642,15 @@
 .archive-controls-overlay__utility-row {
   max-width: 100%;
   justify-content: center;
+}
+
+/* Safety net: an empty pad row must never apply its scaled negative
+   margins — they drag the search bar above the scroll container's top
+   edge, where overflow is unreachable (clipped). */
+.archive-controls-overlay__pad-row:empty {
+  display: none !important;
+  margin: 0 !important;
+  transform: none !important;
 }
 
 .archive-controls-overlay__utility-row {
@@ -725,13 +741,13 @@
   }
 
   .archive-controls-overlay {
-    max-height: min(38dvh, 260px);
+    max-height: min(48dvh, 300px);
   }
 }
 
 @media (max-height: 620px) {
   .archive-controls-overlay {
-    max-height: 34dvh;
+    max-height: 44dvh;
   }
 
   .archive-controls-overlay__pad-row {

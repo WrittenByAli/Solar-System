@@ -1040,16 +1040,66 @@
 
 /* ── Light fog: enforce readable body/muted text on orange backdrop ── */
 
+.sa-submit-page--light,
 .light .sa-submit-page--light,
 .light .sa-submit-page {
+  color: #0f172a;
+  --sa-text: #0f172a;
   --sa-text-2: #1e293b;
   --sa-text-3: #334155;
+  --submit-title-shadow: none;
+  --submit-text-shadow: none;
 }
 
+.sa-submit-page--light .solar-page__inner--lg,
+.light .sa-submit-page .solar-page__inner--lg {
+  color: #0f172a;
+  text-shadow: none;
+}
+
+.sa-submit-page--light :is(
+  .sa-panel,
+  .sa-readiness-panel,
+  .sa-preview-card,
+  .sa-panel__label,
+  .sa-coord-status,
+  .sa-readiness__item,
+  label,
+  legend
+),
+.light .sa-submit-page :is(
+  .sa-panel,
+  .sa-readiness-panel,
+  .sa-preview-card,
+  .sa-panel__label,
+  .sa-coord-status,
+  .sa-readiness__item,
+  label,
+  legend
+) {
+  color: #0f172a;
+  text-shadow: none;
+}
+
+.sa-submit-page--light .sa-hero__sub,
+.light .sa-submit-page .sa-hero__sub {
+  color: #1e293b;
+}
+
+.sa-submit-page--light .sa-panel__desc,
+.sa-submit-page--light .sa-coord-status__value,
+.sa-submit-page--light .sa-readiness__status,
 .light .sa-submit-page .sa-panel__desc,
 .light .sa-submit-page .sa-coord-status__value,
 .light .sa-submit-page .sa-readiness__status {
-  color: var(--sa-text-muted, #475569);
+  color: #334155;
+}
+
+.sa-submit-page--light input::placeholder,
+.sa-submit-page--light textarea::placeholder,
+.light .sa-submit-page input::placeholder,
+.light .sa-submit-page textarea::placeholder {
+  color: #475569;
 }
 
 /* ── Reduced motion ── */

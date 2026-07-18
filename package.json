@@ -8,6 +8,7 @@
     "dev:e2e": "cross-env VITE_E2E=true vite --host 127.0.0.1 --port 5199 --strictPort",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "node --test src/utils/communityReviewHelpers.test.js",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "lint": "eslint src e2e"

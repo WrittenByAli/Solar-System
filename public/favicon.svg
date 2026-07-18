@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="0.45" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#020617"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.46" r="0.55">
+      <stop offset="0" stop-color="#93c5fd" stop-opacity="0.5"/>
+      <stop offset="0.55" stop-color="#3b82f6" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="star" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#bfdbfe"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="14.25" fill="none" stroke="#ffffff" stroke-opacity="0.10" stroke-width="1.5"/>
+
+  <!-- soft glow behind the sparkle -->
+  <rect width="64" height="64" rx="15" fill="url(#halo)"/>
+
+  <!-- brand four-point sparkle -->
+  <path fill="url(#star)" d="M32 11Q34.4 29.6 47 32Q34.4 34.4 32 53Q29.6 34.4 17 32Q29.6 29.6 32 11Z"/>
+
+  <!-- companion micro-stars -->
+  <path fill="#e0f2fe" opacity="0.9" d="M49 14.5Q49.7 18.4 52.5 19Q49.7 19.6 49 23.5Q48.3 19.6 45.5 19Q48.3 18.4 49 14.5Z"/>
+  <circle cx="15.5" cy="46.5" r="1.3" fill="#bae6fd" opacity="0.75"/>
+</svg>

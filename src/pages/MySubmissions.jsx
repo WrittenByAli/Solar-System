@@ -130,7 +130,7 @@ export default function MySubmissions() {
                 if (active && reviews) {
                     const reviewerIds = [...new Set(reviews.map((r) => r.reviewer_id))]
                     const { data: reviewers } = reviewerIds.length
-                        ? await supabase.from('users_profile').select('id, username').in('id', reviewerIds)
+                        ? await supabase.from('public_profiles').select('id, username').in('id', reviewerIds)
                         : { data: [] }
                     const nameMap = Object.fromEntries((reviewers || []).map((p) => [p.id, p.username]))
                     const byEntry = {}

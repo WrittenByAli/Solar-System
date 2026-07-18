@@ -391,10 +391,20 @@
   }
 }
 
+/* ── Responsive: tablet / small laptop (search + ORIGIN stack at bottom
+      until 1024px — reserve room so the compass never overlaps them) ── */
+@media (max-width: 1023px) {
+  .cv-viewport {
+    padding-bottom: max(158px, calc(142px + env(safe-area-inset-bottom, 0px)));
+    overflow-y: auto;
+  }
+}
+
 /* ── Responsive: mobile ── */
 @media (max-width: 640px) {
   .cv-viewport {
-    padding: 4px 8px max(84px, calc(72px + env(safe-area-inset-bottom, 0px)));
+    padding: 4px 8px max(158px, calc(142px + env(safe-area-inset-bottom, 0px)));
+    overflow-y: auto;
   }
 
   .cv-layer {
@@ -402,7 +412,7 @@
     border-radius: 14px;
     max-height: none;
     height: auto;
-    min-height: calc(100dvh - 104px);
+    min-height: calc(100dvh - 178px);
   }
 
   .cv-badge {

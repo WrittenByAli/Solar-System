@@ -46,36 +46,45 @@ const ArchiveHubGlobe = memo(function ArchiveHubGlobe({
 
   /* planet size (reacts to zoom prop) */
   const minDim  = Math.min(vpSize?.w ?? 640, vpSize?.h ?? 640)
-  const size    = Math.max(180, Math.min(minDim * 0.38 * zoom, minDim * 0.88))
-  const hs      = size / 2   // half-size
   const vpW     = vpSize?.w ?? 900
   const vpH     = vpSize?.h ?? 600
+  /* Reserve room for the top HUD and the bottom control pad so the resting
+     planet never hides underneath the buttons on short viewports: size it to
+     the free band between them and rest it at that band's centre. */
+  const topReserve    = 96
+  const bottomReserve = Math.min(vpH * 0.36, 250)
+  const availH  = Math.max(140, vpH - topReserve - bottomReserve)
+  const size    = Math.max(120, Math.min(Math.max(180, minDim * 0.38 * zoom), minDim * 0.88, availH))
+  const hs      = size / 2   // half-size
+  const liftY   = Math.max(0, (bottomReserve - topReserve) / 2)
 
   /* ── bounds: keep planet fully inside the stage ── */
   const clampXY = useCallback((x, y) => {
-    // motion.div is centred at (50%, 50%) of stage.
-    // x/y are offsets from that centre.
-    // Planet extends hs in each direction, so clamp to keep it on-screen.
+    // motion.div rests at (50%, calc(50% - liftY)) of the stage.
+    // x/y are offsets from that anchor; planet extends hs in each direction.
     const marginX = vpW / 2 - hs
-    const marginY = vpH / 2 - hs
+    const upMax   = vpH / 2 - liftY - hs   // distance from anchor to top edge
+    const downMax = vpH / 2 + liftY - hs   // distance from anchor to bottom edge
     return {
       x: Math.max(-marginX, Math.min(marginX, x)),
-      y: Math.max(-marginY, Math.min(marginY, y)),
+      y: Math.max(-upMax, Math.min(downMax, y)),
     }
-  }, [hs, vpW, vpH])
+  }, [hs, vpW, vpH, liftY])
 
   /* keep latest bounds in a ref so the stable moverRef callback is never stale */
-  const boundsRef = useRef({ hs, vpW, vpH })
-  useEffect(() => { boundsRef.current = { hs, vpW, vpH } }, [hs, vpW, vpH])
+  const boundsRef = useRef({ hs, vpW, vpH, liftY })
+  useEffect(() => { boundsRef.current = { hs, vpW, vpH, liftY } }, [hs, vpW, vpH, liftY])
 
   /* register a stable movement callback used by the D-pad buttons at L1 */
   useEffect(() => {
     if (!moverRef) return
     moverRef.current = (dx, dy) => {
-      const { hs: h, vpW: w, vpH: v } = boundsRef.current
-      const maxX = w / 2 - h, maxY = v / 2 - h
+      const { hs: h, vpW: w, vpH: v, liftY: lift } = boundsRef.current
+      const maxX = w / 2 - h
+      const upMax = v / 2 - lift - h
+      const downMax = v / 2 + lift - h
       mvX.set(Math.max(-maxX, Math.min(maxX, mvX.get() + dx)))
-      mvY.set(Math.max(-maxY, Math.min(maxY, mvY.get() + dy)))
+      mvY.set(Math.max(-upMax, Math.min(downMax, mvY.get() + dy)))
     }
     return () => { if (moverRef) moverRef.current = null }
   }, [moverRef, mvX, mvY]) // mvX/mvY are stable MotionValues; reads boundsRef for fresh bounds
@@ -126,7 +135,7 @@ const ArchiveHubGlobe = memo(function ArchiveHubGlobe({
       style={{
         position: 'absolute',
         left: '50%',
-        top:  '50%',
+        top:  `calc(50% - ${Math.round(liftY)}px)`,
         x: mvX,
         y: mvY,
         width: 0,

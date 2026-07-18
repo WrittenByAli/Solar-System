@@ -6,5 +6,4 @@
 User-agent: *
 Allow: /
 
-# ⚠️ Replace with the real production origin before go-live.
-Sitemap: https://your-domain.example/sitemap.xml
+Sitemap: https://archive.solar/sitemap.xml

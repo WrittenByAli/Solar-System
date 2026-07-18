@@ -152,7 +152,7 @@ export default function Profile() {
         let active = true
         async function load() {
             const [profilesQ, subsQ, revsQ, settingQ] = await Promise.all([
-                supabase.from('users_profile').select('id, username, points'),
+                supabase.from('public_profiles').select('id, username, points'), // safe-columns view: all users, for rank — no PII
                 supabase.from('archive_entries')
                     .select('id, title, short_summary, layer, planet_id, status, created_at, updated_at, updates_entry_id')
                     .eq('submitted_by', profile.id)
@@ -304,7 +304,7 @@ export default function Profile() {
         setNameBusy(true)
         setNameError('')
         const { data: taken } = await supabase
-            .from('users_profile')
+            .from('public_profiles') // username-uniqueness check across all users — view exposes username, no PII
             .select('id')
             .ilike('username', next)
             .neq('id', profile.id)

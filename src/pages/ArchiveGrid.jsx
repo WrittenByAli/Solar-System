@@ -56,6 +56,7 @@ import {
 import { getStaticLatticeTile, getStaticFocusHint } from '../utils/staticLayerMap.js'
 import ArchiveCompassView from '../components/ArchiveCompassView.jsx'
 import ArchiveL1Atmosphere from '../components/ArchiveL1Atmosphere.jsx'
+import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import ArchiveHubGlobe from '../components/ArchiveHubGlobe.jsx'
 import SuggestSubjectPopup from '../components/SuggestSubjectPopup.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -221,6 +222,14 @@ function pad4(n) {
   const abs = Math.abs(n)
   const sign = n < 0 ? '-' : ''
   return sign + String(abs).padStart(4, '0')
+}
+
+// Raw planet colors (e.g. pale gold) wash out as small text — blend toward
+// white in dark mode / near-black in light mode so accents stay readable.
+function readableAccent(col, isDark) {
+  return isDark
+    ? `color-mix(in srgb, ${col} 72%, #ffffff)`
+    : `color-mix(in srgb, ${col} 45%, #1e293b)`
 }
 
 /** L8 uses a 16384px canvas with ~16px body copy — needs higher zoom than the old 0.25 cap. */
@@ -811,7 +820,8 @@ const L4Content = memo(function L4Content({ lx, ly, data, col, isDark, compassSe
       <div style={{
         fontFamily: 'Inter, system-ui, sans-serif',
         fontSize: 6,
-        color: isDark ? `${col}99` : `${col}bb`,
+        fontWeight: 700,
+        color: readableAccent(col, isDark),
         flexShrink: 0,
         overflow: 'hidden',
         textOverflow: 'ellipsis',
@@ -829,7 +839,7 @@ const L5Content = memo(function L5Content({ lx, ly, data, col, isDark, planetId 
   const hasSummary = !!(data?.shortSummary && String(data.shortSummary).trim())
   return (
     <div style={{ padding: 12, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 10, color: col, marginBottom: 8, fontWeight: 800 }}>{pad4(lx)},{pad4(ly)} · SUMMARY</div>
+      <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 10, color: readableAccent(col, isDark), marginBottom: 8, fontWeight: 800 }}>{pad4(lx)},{pad4(ly)} · SUMMARY</div>
       <div style={{
         fontWeight: 800, fontSize: 13, color: isDark ? '#f8fafc' : '#0f172a',
         marginBottom: 6, lineHeight: 1.25, flexShrink: 0,
@@ -944,13 +954,13 @@ const L6Content = memo(function L6Content({ lx, ly, data, col, isDark, planetId 
     <div style={{ width: 1024, height: 1024, display: 'flex', flexDirection: 'column', border: `1px solid ${col}22`, background: isDark ? 'rgba(4,2,12,0.98)' : 'rgba(255,255,255,0.98)' }}>
       <div style={{ display: 'flex', height: 260, borderBottom: `1px solid ${col}22`, flexShrink: 0 }}>
         <div style={{ width: 220, padding: 22, borderRight: `1px solid ${col}22`, background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(240,248,255,0.5)' }}>
-          <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 10, color: col, marginBottom: 16 }}>STORAGE UNIT INF-6</div>
+          <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 10, color: readableAccent(col, isDark), marginBottom: 16 }}>STORAGE UNIT INF-6</div>
           <MetaPanel label="X COORD" value={pad4(lx)} color={col} isDark={isDark} />
           <div style={{ height: 8 }} />
           <MetaPanel label="Y COORD" value={pad4(ly)} color={col} isDark={isDark} />
         </div>
         <div style={{ flex: 1, padding: 26, overflow: 'auto' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: col, marginBottom: 12, letterSpacing: '0.1em' }}>ARCHIVE OVERVIEW</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: readableAccent(col, isDark), marginBottom: 12, letterSpacing: '0.1em' }}>ARCHIVE OVERVIEW</div>
           {data?.shortSummary && <div style={{ fontSize: 13, color: isDark ? '#94a3b8' : '#334155', lineHeight: 1.8 }}>{data.shortSummary}</div>}
           <AlternatePerspectivesLinks items={data?.alternatePerspectives} col={col} isDark={isDark} />
           <AttachmentFigures attachments={data?.attachments} col={col} isDark={isDark} variant="default" />
@@ -1061,7 +1071,7 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
           <ul style={{ margin: 0, paddingLeft: 16, fontSize: 10, lineHeight: 1.5, color: isDark ? '#94a3b8' : '#475569' }}>
             {catalog.map((row) => (
               <li key={row.key} style={{ marginBottom: 10 }}>
-                <span style={{ fontFamily: 'Inter, system-ui, sans-serif', color: col, fontWeight: 700 }}>
+                <span style={{ fontFamily: 'Inter, system-ui, sans-serif', color: readableAccent(col, isDark), fontWeight: 700 }}>
                   {pad4(row.lx)},{pad4(row.ly)}
                 </span>
                 {' · '}
@@ -1285,7 +1295,7 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
                           />
                         </div>
                       </div>
-                      <div style={{ fontSize: 10, fontFamily: 'Inter, system-ui, sans-serif', color: col, opacity: 0.95, marginTop: 6 }}>{slot.coordLabel}</div>
+                      <div style={{ fontSize: 10, fontFamily: 'Inter, system-ui, sans-serif', color: readableAccent(col, isDark), opacity: 0.95, marginTop: 6 }}>{slot.coordLabel}</div>
                       <div style={{ fontSize: 11, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', marginTop: 4, lineHeight: 1.25 }}>{slot.title}</div>
                       <p style={{
                         margin: '8px 0 0',
@@ -1547,7 +1557,7 @@ const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactS
                     <SegmentReportLink planetId={planetId} lx={lx} ly={ly} archiveLayer={8} segmentIndex={`cited-${citedIdx + 1}`} segmentLabel={`L8 cited fact ${citedIdx + 1}`} excerpt={[slot.title, slot.fact].filter(Boolean).join(' -- ')} col={col} isDark={isDark} compact />
                   </div>
                 </div>
-                <div style={{ fontSize: 13, fontFamily: 'Inter, system-ui, sans-serif', color: col, opacity: 0.95 }}>{slot.coordLabel}</div>
+                <div style={{ fontSize: 13, fontFamily: 'Inter, system-ui, sans-serif', color: readableAccent(col, isDark), opacity: 0.95 }}>{slot.coordLabel}</div>
                 <div style={{ fontSize: 15, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', lineHeight: 1.25 }}>{slot.title}</div>
                 <p style={{ margin: 0, fontSize: 13, color: isDark ? '#94a3b8' : '#475569', lineHeight: 1.65, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 8, overflow: 'hidden' }}>{slot.fact}</p>
                 <div style={{ fontSize: 12, fontWeight: 900, color: col, letterSpacing: '0.08em', marginTop: 'auto' }}>SOURCE</div>
@@ -1809,17 +1819,25 @@ function PlanetIntro({ planet, isDark, onEnter, gridDims, archiveCfg }) {
   const sectionCount = (planet.sections || []).length
 
   const titleGradient = `linear-gradient(135deg, ${col}, ${isDark ? '#fff' : '#0f172a'})`
+  /* Raw planet colors (e.g. Saturn's pale gold) can be near-invisible as text —
+     mix them toward white in dark mode and toward near-black in light mode so
+     labels stay on-brand but always readable. */
+  const accentText = isDark
+    ? `color-mix(in srgb, ${col} 72%, #ffffff)`
+    : `color-mix(in srgb, ${col} 48%, #1e293b)`
 
   return (
     <div
-      className={`planet-intro${out ? ' planet-intro--exiting' : ''}`}
+      className={`planet-intro planet-intro--${isDark ? 'dark' : 'light'}${out ? ' planet-intro--exiting' : ''}`}
       style={{
-        background: isDark
-          ? 'radial-gradient(ellipse at 50% 40%, #0a0819 0%, #020408 100%)'
-          : 'radial-gradient(ellipse at 50% 40%, #ffffff 0%, #f1f5f9 100%)',
+        background: isDark ? '#101828' : '#f6f1ea',
         pointerEvents: out ? 'none' : 'all',
       }}
     >
+      {/* Same animated fog backdrop as home and /map */}
+      <LazyVantaFogBackground isDark={isDark} className="planet-intro__vanta" />
+      <div className="planet-intro__veil" aria-hidden />
+      <div className="planet-intro__vignette" aria-hidden />
       <div
         className="planet-intro__glow"
         style={{ background: `radial-gradient(circle, ${col} 0%, transparent 70%)` }}
@@ -1829,7 +1847,11 @@ function PlanetIntro({ planet, isDark, onEnter, gridDims, archiveCfg }) {
       <div className="planet-intro__panel">
         <div
           className="planet-intro__badge"
-          style={{ border: `1px solid ${col}44`, background: `${col}14`, color: col }}
+          style={{
+            border: `1px solid ${isDark ? `${col}55` : `color-mix(in srgb, ${col} 45%, #94a3b8)`}`,
+            background: isDark ? `${col}14` : `color-mix(in srgb, ${col} 12%, #ffffff)`,
+            color: accentText,
+          }}
         >
           <BookOpen size={12} aria-hidden /> LAYER 1 &middot; ARCHIVE FRONT
         </div>
@@ -1863,7 +1885,7 @@ function PlanetIntro({ planet, isDark, onEnter, gridDims, archiveCfg }) {
         </h1>
 
         <div className="planet-intro__body">
-          <div className="planet-intro__domain" style={{ color: col }}>
+          <div className="planet-intro__domain" style={{ color: accentText }}>
             {planet.domain.toUpperCase()}
           </div>
           <p className="planet-intro__intro" style={{ color: isDark ? '#94a3b8' : '#334155' }}>
@@ -1877,7 +1899,7 @@ function PlanetIntro({ planet, isDark, onEnter, gridDims, archiveCfg }) {
           )}
           {focusAreas.length > 0 && (
             <div className="planet-intro__focus" style={{ '--planet-color': col }}>
-              <div className="planet-intro__focus-label" style={{ color: col }}>Focus areas</div>
+              <div className="planet-intro__focus-label" style={{ color: accentText }}>Focus areas</div>
               <div className="planet-intro__focus-list">
                 {focusAreas.map((area) => (
                   <span key={area} className="planet-intro__focus-pill">
@@ -1900,7 +1922,7 @@ function PlanetIntro({ planet, isDark, onEnter, gridDims, archiveCfg }) {
 
         <p className="planet-intro__federation" style={{ color: isDark ? '#64748b' : '#475569' }}>
           Public discovery at{' '}
-          <a href={ARCHIVE_SOLAR_PUBLIC_URL} target="_blank" rel="noopener noreferrer" style={{ color: col, fontWeight: 700 }}>
+          <a href={ARCHIVE_SOLAR_PUBLIC_URL} target="_blank" rel="noopener noreferrer" style={{ color: accentText, fontWeight: 700 }}>
             archive.solar
           </a>{' '}
           is planned as a federation directory (this build stays frontend-only).
@@ -1910,11 +1932,21 @@ function PlanetIntro({ planet, isDark, onEnter, gridDims, archiveCfg }) {
           type="button"
           onClick={enter}
           className="planet-intro__enter archive-enter-btn"
-          style={{
-            borderColor: col,
-            color: isDark ? '#fff' : '#0f172a',
-            boxShadow: `0 0 20px ${col}44`,
-          }}
+          style={
+            isDark
+              ? {
+                  borderColor: accentText,
+                  background: `color-mix(in srgb, ${col} 16%, rgba(255,255,255,0.04))`,
+                  color: '#ffffff',
+                  boxShadow: `0 0 20px ${col}44`,
+                }
+              : {
+                  borderColor: '#0f172a',
+                  background: '#0f172a',
+                  color: '#ffffff',
+                  boxShadow: `0 10px 24px -12px rgba(15,23,42,0.5), 0 0 20px ${col}33`,
+                }
+          }
         >
           ENTER ARCHIVE
         </button>
@@ -2196,7 +2228,7 @@ function SearchBar({
   return (
     <div
       className={`archive-search-hud${isDark ? '' : ' archive-search-hud--light'}`}
-      style={{ '--search-accent': col }}
+      style={{ '--search-accent': readableAccent(col, isDark) }}
     >
       <input
         className="archive-search-hud__input"
@@ -2206,17 +2238,13 @@ function SearchBar({
         onBlur={() => setTimeout(() => setIsOpen(false), 200)}
         placeholder="Search title, tags, coords…"
         title="Display coordinates lx,ly (e.g. 0,0 or 100,130). On L5-L8, search jumps at your current layer."
-        style={{
-          background: isDark ? 'rgba(15,23,42,0.55)' : 'rgba(255,255,255,0.92)',
-          color: isDark ? '#f8fafc' : '#0f172a',
-        }}
       />
       {isOpen && results.length > 0 && (
         <div
           className="archive-search-hud__dropdown"
           style={{
-            background: isDark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.95)',
-            border: `1px solid ${col}33`,
+            background: isDark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.98)',
+            border: `1px solid ${isDark ? `${col}55` : 'rgba(15,23,42,0.16)'}`,
           }}
           onMouseDown={(e) => e.preventDefault()}
         >
@@ -2233,7 +2261,17 @@ function SearchBar({
               onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
             >
-              <div style={{ fontSize: 10, fontFamily: 'Inter, system-ui, sans-serif', color: col, fontWeight: 800, marginBottom: 2 }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  color: isDark
+                    ? `color-mix(in srgb, ${col} 72%, #ffffff)`
+                    : `color-mix(in srgb, ${col} 45%, #1e293b)`,
+                  fontWeight: 800,
+                  marginBottom: 2,
+                }}
+              >
                 {pad4(r.lx)},{pad4(r.ly)}
               </div>
               <div style={{ fontSize: 11, color: isDark ? '#f8fafc' : '#0f172a', lineHeight: 1.4 }}>{r.title}</div>
@@ -3555,6 +3593,12 @@ export default function ArchiveGrid() {
     background: isDark ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)',
     boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.28)' : '0 2px 12px rgba(15,23,42,0.1)',
   }
+  /* Raw planet colors (e.g. Saturn's pale gold) wash out as HUD text — blend
+     toward white (dark mode) / near-black (light mode) so every hub's accent
+     stays readable on the chip backgrounds. */
+  const hudAccent = isDark
+    ? `color-mix(in srgb, ${col} 72%, #ffffff)`
+    : `color-mix(in srgb, ${col} 45%, #1e293b)`
   const controlButtonStyle = {
     width: 56,
     height: 56,
@@ -3563,7 +3607,7 @@ export default function ArchiveGrid() {
     background: isDark
       ? `linear-gradient(145deg, rgba(15,23,42,0.92), ${col}22)`
       : `linear-gradient(145deg, rgba(255,255,255,0.96), ${col}20)`,
-    border: 'none',
+    border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(15,23,42,0.14)',
     color: isDark ? '#f8fafc' : '#0f172a',
     textShadow: isDark ? '0 1px 10px rgba(0,0,0,0.45)' : '0 1px 0 rgba(255,255,255,0.85)',
     boxShadow: isDark
@@ -3610,19 +3654,19 @@ export default function ArchiveGrid() {
             >
               <div className="archive-hud-chip archive-hud-chip--coords" style={hudChipStyle}>
                 <span className="archive-hud-chip__pair">
-                  <span className="archive-hud-chip__label" style={{ color: col }} title="Display X">X</span>
+                  <span className="archive-hud-chip__label" style={{ color: hudAccent }} title="Display X">X</span>
                   <span className="archive-hud-chip__value">{pad4(hudDispX)}</span>
                 </span>
-                <span className="archive-hud-chip__divider" style={{ background: col }} />
+                <span className="archive-hud-chip__divider" style={{ background: hudAccent }} />
                 <span className="archive-hud-chip__pair">
-                  <span className="archive-hud-chip__label" style={{ color: col }} title="Display Y">Y</span>
+                  <span className="archive-hud-chip__label" style={{ color: hudAccent }} title="Display Y">Y</span>
                   <span className="archive-hud-chip__value">{pad4(hudDispY)}</span>
                 </span>
                 {segNavMode && (
                   <>
-                    <span className="archive-hud-chip__divider" style={{ background: col }} />
+                    <span className="archive-hud-chip__divider" style={{ background: hudAccent }} />
                     <span className="archive-hud-chip__pair" title="Segment tile in this cell">
-                      <span className="archive-hud-chip__label" style={{ color: col }}>SEG</span>
+                      <span className="archive-hud-chip__label" style={{ color: hudAccent }}>SEG</span>
                       <span className="archive-hud-chip__value">{segmentNavIndex + 1}/{segNavTotal}</span>
                     </span>
                   </>
@@ -3645,12 +3689,12 @@ export default function ArchiveGrid() {
                 style={{
                   ...hudChipStyle,
                   background: dragScheme === 'inverted' ? (isDark ? `${col}26` : `${col}18`) : hudChipStyle.background,
-                  color: col,
+                  color: hudAccent,
                 }}
               >
                 <ArrowUpDown size={20} aria-hidden />
               </button>
-              {isLarge && (
+              {isLarge && layer !== 1 && (
                 <SearchBar
                   col={col}
                   isDark={isDark}
@@ -3679,7 +3723,7 @@ export default function ArchiveGrid() {
                 style={{
                   ...hudChipStyle,
                   background: viewportInteractMode === 'select' ? (isDark ? `${col}26` : `${col}18`) : hudChipStyle.background,
-                  color: col,
+                  color: hudAccent,
                 }}
               >
                 {viewportInteractMode === 'pan' ? <Hand size={20} aria-hidden /> : <TextCursor size={20} aria-hidden />}
@@ -3689,7 +3733,7 @@ export default function ArchiveGrid() {
                 className="archive-hud-tool-btn"
                 aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
                 onClick={toggleTheme}
-                style={{ ...hudChipStyle, color: col }}
+                style={{ ...hudChipStyle, color: hudAccent }}
               >
                 {isDark ? <Sun size={20} /> : <Moon size={20} />}
               </button>
@@ -3702,7 +3746,7 @@ export default function ArchiveGrid() {
                 <div className="archive-hud-segment-panel" style={hudChipStyle}>
                   {segmentGridFillStats ? (
                     <div className="archive-hud-segment-stats" title={segmentGridHudTitle} style={{ color: isDark ? '#94a3b8' : '#475569' }}>
-                      <span style={{ color: col, fontWeight: 900 }}>SEG GRID</span>
+                      <span style={{ color: hudAccent, fontWeight: 900 }}>SEG GRID</span>
                       <span>{segmentGridFillStats.pct}%</span>
                       <span>· {segmentGridFillStats.empty} empty</span>
                       <span>· {segmentGridFillStats.used}/{segmentGridFillStats.total}</span>
@@ -3726,7 +3770,7 @@ export default function ArchiveGrid() {
                         borderRadius: 8,
                         border: `1px solid ${col}55`,
                         background: isDark ? `${col}16` : `${col}0e`,
-                        color: col,
+                        color: hudAccent,
                         fontSize: 9,
                         fontWeight: 900,
                         cursor: 'pointer',
@@ -3764,7 +3808,7 @@ export default function ArchiveGrid() {
             background: isDark ? 'rgba(2,4,8,0.4)' : 'rgba(255,255,255,0.4)',
           }}
         >
-          <button type="button" className="archive-back-btn" onClick={() => navigate('/map')} style={{ color: col }}>
+          <button type="button" className="archive-back-btn" onClick={() => navigate('/map')} style={{ color: hudAccent }}>
             <ArrowLeft size={16} aria-hidden />
             <span className="archive-back-btn__label">EXIT</span>
           </button>
@@ -3780,7 +3824,7 @@ export default function ArchiveGrid() {
                 <span className="archive-lens-picker__label-short">LENS</span>
               </span>
               <span className="archive-lens-picker__row">
-                <Globe size={14} className="archive-lens-picker__icon" style={{ color: col, opacity: 0.85 }} aria-hidden />
+                <Globe size={14} className="archive-lens-picker__icon" style={{ color: hudAccent, opacity: 0.85 }} aria-hidden />
                 <select
                   className="archive-lens-select"
                   value={hubId}
@@ -3817,7 +3861,7 @@ export default function ArchiveGrid() {
                     title={LAYER_LABELS[l]}
                     style={{
                       background: layer === l ? `${col}15` : 'transparent',
-                      color: layer === l ? (isDark ? '#4fc3f7' : '#0284c7') : (isDark ? '#475569' : '#475569'),
+                      color: layer === l ? (isDark ? '#4fc3f7' : '#0284c7') : (isDark ? '#94a3b8' : '#475569'),
                     }}
                   >
                     L{l}
@@ -3955,7 +3999,11 @@ export default function ArchiveGrid() {
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, zIndex: 1000
         }}>
           
-          {/* Navigation Controls: D-Pad & Zoom */}
+          {/* Navigation Controls: D-Pad & Zoom.
+              On L2/L3 compass every group inside is hidden — skip the row
+              entirely, since its responsive negative margins would otherwise
+              drag the search bar up out of the scroll container (clipped). */}
+          {!(hasCompassTaxonomy && (layer === 2 || layer === 3)) && (
           <div className="archive-controls-overlay__pad-row" style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             
             {/* Z-Axis (Layer) Controls -- hidden on L2/L3 compass */}
@@ -4114,10 +4162,11 @@ export default function ArchiveGrid() {
             )}
 
           </div>
+          )}
 
           {/* Search Bar & Reset Row */}
           <div className="archive-controls-overlay__utility-row">
-            {!isLarge && (
+            {!isLarge && layer !== 1 && (
               <SearchBar 
                 col={col} isDark={isDark}
                 sectionEntries={sectionEntries}
@@ -4129,27 +4178,30 @@ export default function ArchiveGrid() {
                 gridDims={gridDims}
               />
             )}
-            <button
-              className="archive-recenter-btn"
-              style={{ 
-                height: 46, padding: '0 24px', borderRadius: 23,
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: isDark ? 'rgba(30,41,59,0.9)' : 'rgba(255,255,255,0.9)',
-                border: 'none', color: col, backdropFilter: 'blur(10px)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.2)', cursor: 'pointer'
-              }}
-              onClick={() => {
-                setFocusedCell(null)
-                setZoom(1.0)
-                const { x: vx, y: vy } = clampedCenterViewXY({ gridW, gridH, halfW, halfH }, layer, 1.0, vpSize.w, vpSize.h)
-                viewXYRef.current = { x: vx, y: vy }
-                setViewX(vx)
-                setViewY(vy)
-                if (layer === 1) setPlanetResetTrigger(t => t + 1)
-              }}
-            >
-              <Target size={18} /> <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: '0.05em' }}>ORIGIN</span>
-            </button>
+            {layer === 1 && (
+              <button
+                className="archive-recenter-btn"
+                style={{
+                  height: 46, padding: '0 24px', borderRadius: 23,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: isDark ? 'rgba(30,41,59,0.9)' : 'rgba(255,255,255,0.94)',
+                  border: isDark ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(15,23,42,0.14)',
+                  color: hudAccent, backdropFilter: 'blur(10px)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.2)', cursor: 'pointer'
+                }}
+                onClick={() => {
+                  setFocusedCell(null)
+                  setZoom(1.0)
+                  const { x: vx, y: vy } = clampedCenterViewXY({ gridW, gridH, halfW, halfH }, layer, 1.0, vpSize.w, vpSize.h)
+                  viewXYRef.current = { x: vx, y: vy }
+                  setViewX(vx)
+                  setViewY(vy)
+                  setPlanetResetTrigger(t => t + 1)
+                }}
+              >
+                <Target size={18} /> <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: '0.05em' }}>ORIGIN</span>
+              </button>
+            )}
           </div>
 
         </div>

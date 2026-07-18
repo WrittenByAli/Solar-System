@@ -49,7 +49,7 @@ export default function SolarBrandA({
                 clipRule="evenodd"
                 d="
                   M 19 3 L 81 3 L 91 133 L 62 133 L 62 93 L 38 93 L 38 133 L 9 133 L 19 3 Z
-                  M 50 39 L 54.5 54 L 69 58 L 54.5 62 L 50 87 L 45.5 62 L 31 58 L 45.5 54 Z
+                  M 50 38 Q 52.5 57.5 66 60 Q 52.5 62.5 50 82 Q 47.5 62.5 34 60 Q 47.5 57.5 50 38 Z
                 "
             />
         </svg>

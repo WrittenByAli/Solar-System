@@ -462,6 +462,30 @@ html.sa-home-scroll body {
   margin: 0 -0.01em;
 }
 
+/* Impact-font A with the four-point SOLAR mark cut out, allowing the
+   animated backdrop to show through the center of the glyph. */
+.scroll-story__brand-a-impact {
+  display: inline-block;
+  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
+  padding: 0 0.015em;
+  -webkit-mask-image:
+    linear-gradient(#fff, #fff),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='34 38 32 44'%3E%3Cpath d='M50 38Q52.5 57.5 66 60Q52.5 62.5 50 82Q47.5 62.5 34 60Q47.5 57.5 50 38Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%, 0.3em 0.41em;
+  -webkit-mask-position: 0 0, 50% 52%;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-composite: xor;
+  mask-image:
+    linear-gradient(#fff, #fff),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='34 38 32 44'%3E%3Cpath d='M50 38Q52.5 57.5 66 60Q52.5 62.5 50 82Q47.5 62.5 34 60Q47.5 57.5 50 38Z'/%3E%3C/svg%3E");
+  mask-size: 100% 100%, 0.3em 0.41em;
+  mask-position: 0 0, 50% 52%;
+  mask-repeat: no-repeat;
+  mask-composite: exclude;
+}
+
 .scroll-story__brand-archive {
   font-family: var(--home-display);
   font-size: clamp(28px, 4.2vw, 44px);

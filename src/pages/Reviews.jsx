@@ -5,12 +5,7 @@ import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBack
 import { useTheme } from '../App.jsx'
 import { ClipboardCheck, Trophy } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
-import {
-  ReviewTestimonialCard,
-  StickyFilterBar,
-  FilterPill,
-} from '../components/reviews/SharedReviewUI.jsx'
-import { REVIEW_FEED, STATUS_FILTERS } from '../components/reviews/reviewsData.js'
+import CommunityReviewFeed from '../components/reviews/CommunityReviewFeed.jsx'
 import '../styles/solar-reviews.css'
 
 const INTRO_LINES = [
@@ -64,8 +59,6 @@ function ScrollIntroSection({ canReview }) {
             href="#sa-reviews-feed"
             className="rv-btn rv-btn--ghost"
             data-testid="reviews-cta-feed"
-            // In-page scroll only: a raw hash change would be swallowed by
-            // HashRouter as an unknown route and redirect to home.
             onClick={(e) => {
               e.preventDefault()
               document.getElementById('sa-reviews-feed')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
@@ -74,48 +67,6 @@ function ScrollIntroSection({ canReview }) {
             Browse reviews
           </a>
         </motion.div>
-      </div>
-    </section>
-  )
-}
-
-function ReviewFeedSection() {
-  const [statusFilter, setStatusFilter] = useState('All')
-  const reduce = useReducedMotion()
-
-  const filtered = REVIEW_FEED.filter(
-    (r) => statusFilter === 'All' || r.status === statusFilter.toLowerCase(),
-  )
-
-  return (
-    <section id="sa-reviews-feed" className="rv-feed" data-testid="reviews-feed">
-      <motion.header className="rv-feed__head" {...reveal(reduce, 0)}>
-        <p className="rv-eyebrow">Peer review</p>
-        <h2 className="rv-feed__title">What reviewers are saying</h2>
-        <p className="rv-feed__subtitle">
-          Independent grades from archive validators across every hub and layer.
-        </p>
-      </motion.header>
-
-      <StickyFilterBar className="rv-feed-filters">
-        <div className="rv-feed-filters__group" role="group" aria-label="Filter by status">
-          {STATUS_FILTERS.map((f) => (
-            <FilterPill
-              key={f}
-              active={statusFilter === f}
-              onClick={() => setStatusFilter(f)}
-              variant={f === 'All' ? 'gold' : 'default'}
-            >
-              {f}
-            </FilterPill>
-          ))}
-        </div>
-      </StickyFilterBar>
-
-      <div className="rv-feed__grid">
-        {filtered.map((rev) => (
-          <ReviewTestimonialCard key={rev.id} rev={rev} />
-        ))}
       </div>
     </section>
   )
@@ -163,7 +114,7 @@ export default function Reviews() {
       />
       <div className="rv-page__inner" style={{ opacity: sceneReveal }}>
         <ScrollIntroSection canReview={canAccessReviewerQueue} />
-        <ReviewFeedSection />
+        <CommunityReviewFeed />
       </div>
     </div>
   )

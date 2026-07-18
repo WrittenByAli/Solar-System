@@ -25,6 +25,9 @@ import {
  *   - review_requested                 <- notify_reviewers_new_submission trigger
  *                                         (fires for reviewers/admins the moment
  *                                         a review-eligible submission lands)
+ *   - review_completed                 <- notify_reviewers_on_consensus trigger
+ *                                         (fires to every reviewer who voted once
+ *                                         their entry reaches 3-vote consensus)
  *   - stale_review                     <- resurface-stale-reviews edge function
  *   - status                           <- legacy pre-migration rows (compat shim)
  * Every other entry below (reviewer_promotion, level_unlocked,
@@ -160,6 +163,7 @@ const DEFAULT_TYPE = {
 
 const ROUTES_BY_TYPE = {
     review_requested: '/review-queue',
+    review_completed: '/reviews',
     stale_review: '/review-queue',
     reviewer_promotion: '/profile',
     level_unlocked: '/profile',

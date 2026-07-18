@@ -27,12 +27,13 @@ function Card({ title, icon: Icon, isDark, children }) {
     )
 }
 
-function SectionError({ message }) {
+function SectionError({ message, isDark }) {
     if (!message) return null
     return (
         <p className="text-xs px-3 py-2 rounded-lg mb-3" role="alert" style={{
-            color: '#f87171', background: 'rgba(239,68,68,0.09)',
-            border: '1px solid rgba(239,68,68,0.22)',
+            color: isDark ? '#fca5a5' : '#991b1b',
+            background: isDark ? 'rgba(239,68,68,0.09)' : 'rgba(254,226,226,0.82)',
+            border: `1px solid ${isDark ? 'rgba(239,68,68,0.22)' : 'rgba(185,28,28,0.24)'}`,
         }}>
             {message}
         </p>
@@ -65,7 +66,9 @@ export default function AccountSecurity() {
     const isDark = theme === 'dark'
     const sceneReveal = useSceneReveal()
 
-    const { ink: strong, muted } = themeText(isDark)
+    const { ink: strong, body, muted } = themeText(isDark)
+    const success = isDark ? '#4ade80' : '#047857'
+    const warning = isDark ? '#fbbf24' : '#92400e'
 
     /* ── TOTP state ── */
     const [totpSetup, setTotpSetup] = useState(null) // { secret, uri }
@@ -224,11 +227,11 @@ export default function AccountSecurity() {
 
                 {/* ── Two-factor authentication ── */}
                 <Card title="Two-factor authentication" icon={Smartphone} isDark={isDark}>
-                    <SectionError message={totpError} />
+                    <SectionError message={totpError} isDark={isDark} />
 
                     {user.totpEnabled && !totpSetup ? (
                         <>
-                            <p className="flex items-center gap-2 text-xs mb-4" style={{ color: '#34d399' }}>
+                            <p className="flex items-center gap-2 text-xs mb-4" style={{ color: success }}>
                                 <ShieldCheck size={14} /> Enabled — your account requires an authenticator code at sign-in.
                             </p>
                             <div className="flex flex-wrap gap-2.5">
@@ -242,13 +245,13 @@ export default function AccountSecurity() {
                         </>
                     ) : totpSetup ? (
                         <div className="flex flex-col gap-3.5">
-                            <p className="text-xs leading-relaxed" style={{ color: muted }}>
+                            <p className="text-xs leading-relaxed" style={{ color: body }}>
                                 1. Add this key to your authenticator app (Google Authenticator, 1Password, Authy…):
                             </p>
                             <code className="sa-glass-inset text-xs px-3 py-2.5 rounded-lg break-all select-all" style={{ color: strong }}>
                                 {totpSetup.secret}
                             </code>
-                            <p className="text-xs" style={{ color: muted }}>
+                            <p className="text-xs" style={{ color: body }}>
                                 2. Enter the 6-digit code the app shows:
                             </p>
                             <OtpInput value={totpCode} onChange={setTotpCode} onComplete={confirmTotp}
@@ -266,7 +269,7 @@ export default function AccountSecurity() {
                         </div>
                     ) : (
                         <>
-                            <p className="text-xs leading-relaxed mb-4" style={{ color: muted }}>
+                            <p className="text-xs leading-relaxed mb-4" style={{ color: body }}>
                                 Add an extra layer of protection: after entering your password, you&apos;ll also
                                 need a 6-digit code from an authenticator app on your phone.
                             </p>
@@ -281,7 +284,7 @@ export default function AccountSecurity() {
                             background: isDark ? 'rgba(245,166,35,0.06)' : 'rgba(245,166,35,0.07)',
                             border: '1px solid rgba(245,166,35,0.3)',
                         }}>
-                            <p className="text-xs font-semibold mb-2" style={{ color: '#f5a623' }}>
+                            <p className="text-xs font-semibold mb-2" style={{ color: warning }}>
                                 Backup codes — store these somewhere safe. Each works once; they will not be shown again.
                             </p>
                             <div className="grid grid-cols-2 gap-1.5 mb-3">
@@ -298,8 +301,8 @@ export default function AccountSecurity() {
 
                 {/* ── Passkeys ── */}
                 <Card title="Passkeys" icon={Fingerprint} isDark={isDark}>
-                    <SectionError message={passkeyError} />
-                    <p className="text-xs leading-relaxed mb-4" style={{ color: muted }}>
+                    <SectionError message={passkeyError} isDark={isDark} />
+                    <p className="text-xs leading-relaxed mb-4" style={{ color: body }}>
                         Sign in with your fingerprint, face, or device PIN — no password needed.
                     </p>
                     {user.passkeys?.length > 0 && (
@@ -326,7 +329,7 @@ export default function AccountSecurity() {
 
                 {/* ── Active sessions ── */}
                 <Card title="Active sessions" icon={Monitor} isDark={isDark}>
-                    <SectionError message={sessionsError} />
+                    <SectionError message={sessionsError} isDark={isDark} />
                     <ul className="flex flex-col gap-2 mb-4">
                         {sessions.map((s) => {
                             const { device, browser, place } = describeSession(s)
@@ -341,12 +344,12 @@ export default function AccountSecurity() {
                                             {browser} · {device}
                                             {isCurrent && (
                                                 <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded"
-                                                    style={{ color: '#34d399', background: 'rgba(52,211,153,0.12)' }}>
+                                                    style={{ color: success, background: isDark ? 'rgba(52,211,153,0.12)' : 'rgba(5,150,105,0.12)' }}>
                                                     THIS DEVICE
                                                 </span>
                                             )}
                                         </p>
-                                        <p className="text-[11px] truncate" style={{ color: muted }}>
+                                        <p className="text-[11px] truncate" style={{ color: body }}>
                                             {place || 'Location unknown'} · last active{' '}
                                             {s.lastActiveAt ? new Date(s.lastActiveAt).toLocaleString() : 'recently'}
                                         </p>

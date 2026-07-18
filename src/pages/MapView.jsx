@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, Orbit, Search } from 'lucide-react'
+import { ArrowRight, Orbit, Search, SearchX } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import researchData from '../data/researchData.json'
@@ -149,6 +149,9 @@ export default function MapView() {
   const [hoveredPlanet, setHoveredPlanet] = useState(null)
   const [selectedHubId, setSelectedHubId] = useState('star')
   const [searchVal, setSearchVal] = useState('')
+  const [searchError, setSearchError] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(-1)
   const [sceneReveal, setSceneReveal] = useState(0)
   const animRef = useRef(null)
   const planetGroupsRef = useRef({})
@@ -189,6 +192,30 @@ export default function MapView() {
   const enrichedPlanets = useMemo(() => enrichedHubs.filter((h) => h.id !== 'star'), [enrichedHubs])
   const hubById = useMemo(() => Object.fromEntries(enrichedHubs.map((h) => [h.id, h])), [enrichedHubs])
   const activeHub = hoveredPlanet || hubById[selectedHubId] || hubById.star
+
+  // Typeahead: rank matches so a letter surfaces the most relevant hubs first —
+  // label prefix > domain/topic prefix > any substring — then alphabetical.
+  const suggestions = useMemo(() => {
+    const q = searchVal.trim().toLowerCase()
+    if (!q) return []
+    const scored = []
+    for (const hub of enrichedHubs) {
+      const label = hub.label.toLowerCase()
+      const domain = String(hub.domain || hub.subject || '').toLowerCase()
+      const topics = (hub.topics || []).map((t) => String(t).toLowerCase())
+      let tier = -1
+      if (label.startsWith(q)) tier = 0
+      else if (domain.startsWith(q) || topics.some((t) => t.startsWith(q))) tier = 1
+      // Substring matches only once the query is specific enough (3+ chars) —
+      // keeps short queries prefix-focused instead of pulling in loose hits.
+      else if (q.length >= 3 && (label.includes(q) || domain.includes(q) || topics.some((t) => t.includes(q)) || hub.id.includes(q))) tier = 2
+      if (tier >= 0) scored.push({ hub, tier })
+    }
+    scored.sort((a, b) => a.tier - b.tier || a.hub.label.localeCompare(b.hub.label))
+    return scored.slice(0, 6).map((s) => s.hub)
+  }, [searchVal, enrichedHubs])
+
+  const showSuggestions = searchFocused && suggestions.length > 0
 
   const animate = useCallback((now) => {
     const delta = Math.min(0.032, Math.max(0.001, (now - lastFrameRef.current) / 1000))
@@ -245,6 +272,8 @@ export default function MapView() {
     e.preventDefault()
     const q = searchVal.trim().toLowerCase()
     if (!q) return
+    // A keyboard-highlighted suggestion wins outright.
+    if (activeIdx >= 0 && suggestions[activeIdx]) { openHub(suggestions[activeIdx].id); return }
     const foundationTerms = ['star', 'beacon', 'foundation', 'north star', 'northstar', 'polaris', 'memoranda', 'canon']
     if (foundationTerms.some((t) => q === t || q.includes(t))) {
       openHub(FOUNDATION_ARCHIVE.id)
@@ -253,7 +282,23 @@ export default function MapView() {
     const planet = enrichedPlanets.find(
       (p) => p.id === q || p.label.toLowerCase() === q || p.domain.toLowerCase().includes(q),
     )
-    if (planet) openHub(planet.id)
+    if (planet) { openHub(planet.id); return }
+    // Nothing exact — fall back to the best-ranked suggestion, else tell the user.
+    if (suggestions.length) { openHub(suggestions[0].id); return }
+    setSearchError(`No hub matches “${searchVal.trim()}” — that planet isn’t in the archive.`)
+  }
+
+  const onSearchChange = (e) => {
+    setSearchVal(e.target.value)
+    setSearchError('')
+    setActiveIdx(-1)
+  }
+
+  const onSearchKeyDown = (e) => {
+    if (!suggestions.length) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx((i) => (i + 1) % suggestions.length) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx((i) => (i <= 0 ? suggestions.length - 1 : i - 1)) }
+    else if (e.key === 'Escape') { setActiveIdx(-1); setSearchFocused(false) }
   }
 
   return (
@@ -303,9 +348,41 @@ export default function MapView() {
                 className="solar-map__search"
                 placeholder="Search planet or domain…"
                 value={searchVal}
-                onChange={(e) => setSearchVal(e.target.value)}
+                onChange={onSearchChange}
+                onKeyDown={onSearchKeyDown}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                role="combobox"
+                aria-expanded={showSuggestions}
+                aria-controls="solar-map-suggest"
+                aria-autocomplete="list"
+                aria-activedescendant={activeIdx >= 0 ? `solar-map-suggest-${activeIdx}` : undefined}
                 aria-label="Search planet or domain"
               />
+              {showSuggestions && (
+                <ul className="solar-map__suggestions" id="solar-map-suggest" role="listbox">
+                  {suggestions.map((hub, i) => {
+                    const { color } = displayColors(hub, isDark)
+                    return (
+                      <li key={hub.id} role="option" id={`solar-map-suggest-${i}`} aria-selected={i === activeIdx}>
+                        <button
+                          type="button"
+                          className="solar-map__suggestion"
+                          data-active={i === activeIdx ? 'true' : 'false'}
+                          style={{ '--hub-color': color }}
+                          onMouseEnter={() => setActiveIdx(i)}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => openHub(hub.id)}
+                        >
+                          <span className="solar-map__suggestion-orb" />
+                          <span className="solar-map__suggestion-label">{hub.label}</span>
+                          <span className="solar-map__suggestion-domain">{hub.domain}</span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
             </div>
             <motion.button
               type="submit"
@@ -319,6 +396,12 @@ export default function MapView() {
             <span className="solar-map__stat-dot" />
             Live orbital telemetry
           </span>
+          {searchError && (
+            <p className="solar-map__search-error" role="alert">
+              <SearchX size={14} aria-hidden />
+              {searchError}
+            </p>
+          )}
         </motion.div>
 
         <motion.div

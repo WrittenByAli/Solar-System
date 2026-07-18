@@ -36,39 +36,97 @@ export function StarRating({ count = 5, className = '' }) {
 }
 
 export function ReviewTestimonialCard({ rev, className = '' }) {
+  return <CommunityReviewCard rev={rev} className={className} />
+}
+
+export function CommunityReviewCard({ rev, className = '' }) {
   const reduce = useReducedMotion()
-  const displayName = formatReviewerName(rev.reviewer)
-  const stars = scoreToStars(rev.citationScore, rev.clarityScore)
-  const hub = hubColor(rev.hub)
+  const displayName = formatReviewerName(rev.reviewerUsername || rev.reviewer)
+  const stars = rev.stars ?? qualityToStars(rev.qualityScore, rev.difficulty, rev.factCheckPass)
+  const hub = hubColor(rev.hub || rev.planet)
 
   return (
     <motion.article
-      className={`rv-testimonial-card sa-frost-card${className ? ` ${className}` : ''}`}
+      className={`rv-testimonial-card rv-community-card sa-frost-card${className ? ` ${className}` : ''}`}
       data-testid="review-feed-card"
       initial={reduce ? false : { opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
     >
+      <header className="rv-community-card__head">
+        <div className="rv-community-card__meta">
+          <HubPill hub={rev.hub || rev.planet} />
+          <LayerChip layer={rev.layer} />
+          <StatusBadge status={rev.status || 'approved'} />
+        </div>
+        <h3 className="rv-community-card__title">{rev.title}</h3>
+      </header>
+
       <StarRating count={stars} className="rv-testimonial-card__stars" />
 
       <blockquote className="rv-testimonial-card__quote">
         &ldquo;{rev.notes}&rdquo;
       </blockquote>
 
+      <div className="rv-community-card__metrics" aria-label="Review scores">
+        <div className="rv-community-card__metric">
+          <span className="rv-community-card__metric-label">Quality</span>
+          <span className="rv-community-card__metric-value">{Number(rev.qualityScore || 0).toFixed(1)}</span>
+        </div>
+        <div className="rv-community-card__metric">
+          <span className="rv-community-card__metric-label">Difficulty</span>
+          <span className="rv-community-card__metric-value">{rev.difficulty}/5</span>
+        </div>
+        <div className="rv-community-card__metric">
+          <span className="rv-community-card__metric-label">Confidence</span>
+          <span className="rv-community-card__metric-value">{rev.factCheckPass ? 'High' : 'Low'}</span>
+        </div>
+      </div>
+
+      <dl className="rv-community-card__facts">
+        <div><dt>Fact-check</dt><dd>{rev.factCheckPass ? 'Passed' : 'Needs work'}</dd></div>
+        <div><dt>Points earned</dt><dd>+{rev.pointsEarned ?? 85}</dd></div>
+        <div><dt>Reviewed</dt><dd>{rev.date ? new Date(rev.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</dd></div>
+        <div><dt>Coordinates</dt><dd><CoordLabel coord={rev.coord} /></dd></div>
+      </dl>
+
       <footer className="rv-testimonial-card__author">
         <AvatarCircle
-          username={rev.reviewer}
+          username={rev.reviewerUsername || rev.reviewer}
+          avatarUrl={rev.reviewerAvatarUrl}
           size={40}
           gradient={`linear-gradient(135deg, color-mix(in srgb, ${hub} 55%, #0f172a), color-mix(in srgb, ${hub} 28%, #020617))`}
           ringColor={`color-mix(in srgb, ${hub} 45%, transparent)`}
         />
         <div className="rv-testimonial-card__identity">
           <strong className="rv-testimonial-card__name">{displayName}</strong>
-          <span className="rv-testimonial-card__role">{rev.rank}</span>
+          <RankBadge rank={rev.rank} color={rev.rankColor} />
         </div>
       </footer>
     </motion.article>
+  )
+}
+
+function qualityToStars(qualityScore, difficulty, factCheckPass) {
+  const base = Number(qualityScore)
+  const score = Number.isFinite(base)
+    ? base
+    : (factCheckPass ? 10 : 4) + (Number(difficulty) || 3)
+  return Math.max(1, Math.min(5, Math.round((score / 15) * 5)))
+}
+
+export function CommunityReviewSkeleton() {
+  return (
+    <div className="rv-testimonial-card rv-community-card rv-community-card--skeleton sa-frost-card" aria-hidden="true">
+      <div className="rv-skeleton rv-skeleton--line rv-skeleton--short" />
+      <div className="rv-skeleton rv-skeleton--line rv-skeleton--title" />
+      <div className="rv-skeleton rv-skeleton--stars" />
+      <div className="rv-skeleton rv-skeleton--line" />
+      <div className="rv-skeleton rv-skeleton--line" />
+      <div className="rv-skeleton rv-skeleton--line rv-skeleton--medium" />
+      <div className="rv-skeleton rv-skeleton--author" />
+    </div>
   )
 }
 

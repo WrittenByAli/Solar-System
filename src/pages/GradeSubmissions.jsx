@@ -244,7 +244,7 @@ export default function GradeSubmissions() {
       const reviewerIds = [...new Set((reviewRows || []).map((r) => r.reviewer_id))]
       const allProfileIds = [...new Set([...authorIds, ...reviewerIds])]
       const { data: profiles } = allProfileIds.length
-        ? await supabase.from('users_profile').select('id, username').in('id', allProfileIds)
+        ? await supabase.from('public_profiles').select('id, username').in('id', allProfileIds)
         : { data: [] }
       const nameMap = Object.fromEntries((profiles || []).map((p) => [p.id, p.username]))
 

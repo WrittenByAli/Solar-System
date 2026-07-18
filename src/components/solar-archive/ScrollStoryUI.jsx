@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../../App.jsx'
-import SolarBrandA from '../SolarBrandA.jsx'
 import { WORD_SPRING } from './scrollRevealShared.jsx'
 import { ARCHIVE_MECHANICS } from './homeContent.js'
 import ScrollTextReveal from './ScrollTextReveal.jsx'
@@ -94,14 +93,8 @@ function BrandLetter({ children, index, reveal, reduceMotion, className = '' }) 
   )
 }
 
-function HeroBrandTitle({ isDark, local, reduceMotion }) {
-  const titleColor = isDark ? '#ffffff' : '#0a1628'
+function HeroBrandTitle({ local, reduceMotion }) {
   const letterReveal = Math.max(0, Math.min(1, (local - 0.1) / 0.9))
-  const gradientStops = [
-    { offset: '0%', color: titleColor },
-    { offset: '55%', color: titleColor },
-    { offset: '100%', color: titleColor },
-  ]
 
   return (
     <h1 className="scroll-story__brand" aria-label="The Solar Archive">
@@ -120,7 +113,7 @@ function HeroBrandTitle({ isDark, local, reduceMotion }) {
           reduceMotion={reduceMotion}
           className="scroll-story__brand-letter-a"
         >
-          <SolarBrandA gradientStops={gradientStops} className="-mx-[0.02em]" />
+          <span className="scroll-story__brand-a-impact">A</span>
         </BrandLetter>
         <BrandLetter index={7} reveal={letterReveal} reduceMotion={reduceMotion}>R</BrandLetter>
       </span>
@@ -135,7 +128,7 @@ function HeroBrandTitle({ isDark, local, reduceMotion }) {
   )
 }
 
-function HeroContent({ isDark, navigate, local, snapChapter = false }) {
+function HeroContent({ navigate, local, snapChapter = false }) {
   const reduceMotion = useReducedMotion()
   const exit = snapChapter ? 0 : Math.max(0, (local - 0.72) / 0.28)
 
@@ -155,7 +148,7 @@ function HeroContent({ isDark, navigate, local, snapChapter = false }) {
           <Kicker>Coordinate knowledge network</Kicker>
         </div>
 
-        <HeroBrandTitle isDark={isDark} local={local} reduceMotion={reduceMotion} />
+        <HeroBrandTitle local={local} reduceMotion={reduceMotion} />
 
         <div
           className="scroll-story__hero-actions"
@@ -266,7 +259,7 @@ export default function ScrollStoryUI({ scrollProgress, activeChapter, sceneReve
   const RevealComponent = onRevealChapter ? REVEAL_COMPONENTS[chapterMeta.group] : null
 
   const chapterById = {
-    hero: <HeroContent key="hero" isDark={isDark} navigate={navigate} local={local} snapChapter={discrete} />,
+    hero: <HeroContent key="hero" navigate={navigate} local={local} snapChapter={discrete} />,
     mechanics: <MechanicsContent key="mechanics" local={local} />,
   }
 
