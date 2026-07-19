@@ -30,8 +30,37 @@ function json(body: unknown, status = 200) {
   })
 }
 
-Deno.serve(async (_req: Request) => {
+// Constant-time string compare so a caller can't probe the secret one
+// character at a time via response-timing differences.
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder()
+  const ba = enc.encode(a)
+  const bb = enc.encode(b)
+  if (ba.length !== bb.length) return false
+  let diff = 0
+  for (let i = 0; i < ba.length; i++) diff |= ba[i] ^ bb[i]
+  return diff === 0
+}
+
+Deno.serve(async (req: Request) => {
   try {
+    // Caller verification. This function runs with the service-role key
+    // (bypasses ALL RLS), so it must never be openly invocable. It is called
+    // only by the pg_cron job, which sends a shared secret in x-cron-secret
+    // (sourced from Supabase Vault -- see supabase_schema.sql cron.schedule).
+    // Fail CLOSED: if CRON_SECRET isn't configured, refuse rather than run
+    // unauthenticated. Deploy order: set the CRON_SECRET function secret and
+    // the matching Vault secret BEFORE/with deploying this function, or the
+    // cron will start returning 401 until they agree.
+    const cronSecret = Deno.env.get('CRON_SECRET')
+    if (!cronSecret) {
+      return json({ error: 'CRON_SECRET is not configured' }, 500)
+    }
+    const provided = req.headers.get('x-cron-secret') ?? ''
+    if (!timingSafeEqual(provided, cronSecret)) {
+      return json({ error: 'Unauthorized' }, 401)
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !serviceRoleKey) {

@@ -1,0 +1,13 @@
+# Supabase CLI project config.
+# project_id is the project ref (already public — it is in the app's Supabase
+# URL). This file's job for security is to PIN edge-function JWT verification
+# in-repo so a deploy can't silently ship a function with auth turned off.
+project_id = "itobgwbxapbvpwmgcrda"
+
+# resurface-stale-reviews runs with the service-role key, so it must not be
+# openly invocable. verify_jwt = true makes the platform gateway require a
+# valid JWT (the cron sends the anon key); the function ALSO checks a shared
+# secret (x-cron-secret / CRON_SECRET) as defense-in-depth. See
+# supabase/functions/resurface-stale-reviews/index.ts.
+[functions.resurface-stale-reviews]
+verify_jwt = true

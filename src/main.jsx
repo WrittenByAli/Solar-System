@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { ClerkProvider } from '@clerk/clerk-react'
 import App from './App.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import E2eAuthProvider from './e2e/E2eAuthProvider.jsx'
 import './index.css'
 import './styles/glass-surfaces.css'
@@ -42,14 +43,16 @@ window.addEventListener('vite:preloadError', (event) => {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {E2E_MODE ? (
-      <E2eAuthProvider>
-        <App />
-      </E2eAuthProvider>
-    ) : (
-      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-        <App />
-      </ClerkProvider>
-    )}
+    <ErrorBoundary>
+      {E2E_MODE ? (
+        <E2eAuthProvider>
+          <App />
+        </E2eAuthProvider>
+      ) : (
+        <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+          <App />
+        </ClerkProvider>
+      )}
+    </ErrorBoundary>
   </React.StrictMode>,
 )
