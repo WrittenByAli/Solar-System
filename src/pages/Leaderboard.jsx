@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import AvatarCircle from '../components/AvatarCircle.jsx'
 import { supabase } from '../utils/supabaseClient.js'
+import { useAutoRefetch } from '../hooks/useAutoRefetch.js'
 import { applyLeaderboardView, buildObservatoryModel } from '../utils/leaderboardObservatory.js'
 import fallbackData from '../data/researchData.json'
 import '../styles/solar-leaderboard.css'
@@ -178,6 +179,10 @@ export default function Leaderboard() {
             window.removeEventListener('solar-archive-submissions-updated', bump)
         }
     }, [])
+
+    // Auto-recover: a failed initial load (offline, dropped fetch) retries
+    // without a manual refresh when the tab refocuses or connectivity returns.
+    useAutoRefetch(() => setTick((t) => t + 1))
 
     const loadLeaderboard = async (offset = 0, append = false) => {
         const { data: rows, error } = await supabase

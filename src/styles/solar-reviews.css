@@ -214,10 +214,13 @@
 /* ── Feed section ── */
 
 .rv-feed {
+  width: 100%;
   max-width: 76rem;
   margin: 0 auto;
   padding: 0 1.5rem 5rem;
   scroll-margin-top: calc(var(--solar-nav-offset) + 1rem);
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .rv-feed__head {
@@ -326,6 +329,10 @@
   border: 1px solid color-mix(in srgb, var(--hub-c) 35%, transparent);
   background: color-mix(in srgb, var(--hub-c) 12%, transparent);
   color: var(--hub-c);
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .rv-layer-chip {
@@ -430,9 +437,17 @@
   gap: 0.5rem;
   padding: 0 0 1.5rem;
   margin-bottom: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+}
+
+.rv-filter-bar > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .rv-feed-filters__group {
@@ -441,6 +456,10 @@
   overflow-x: auto;
   padding-bottom: 0.15rem;
   scrollbar-width: thin;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .rv-filter-pill {
@@ -507,6 +526,8 @@
 .rv-feed__grid > * {
   display: flex;
   min-height: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .rv-testimonial-card {
@@ -514,10 +535,13 @@
   flex-direction: column;
   flex: 1;
   width: 100%;
+  max-width: 100%;
   height: 100%;
   min-height: 100%;
+  min-width: 0;
   padding: 1.75rem 1.65rem 1.55rem;
   border-radius: 20px;
+  overflow: hidden;
 }
 
 .rv-star-rating {
@@ -551,7 +575,10 @@
   color: var(--rv-body);
   text-align: left;
   min-height: 0;
+  min-width: 0;
   text-shadow: none;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .rv-page--light .rv-testimonial-card__quote {
@@ -582,6 +609,8 @@
   font-weight: 700;
   color: var(--rv-ink);
   letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .rv-testimonial-card__role {
@@ -734,6 +763,172 @@
   text-shadow: 0 0 32px rgba(180, 83, 9, 0.12), var(--rv-title-shadow);
 }
 
+/* Hub/tag pills: raw planet accents (#fde68a, #67e8f9, #9ca3af…) are pale
+   pastels designed for dark surfaces — mixed toward slate-900 they stay
+   recognizable but become readable on light glass. */
+.rv-page--light .rv-hub-pill {
+  color: color-mix(in srgb, var(--hub-c) 45%, #1e293b);
+  border-color: color-mix(in srgb, var(--hub-c) 55%, rgba(15, 23, 42, 0.28));
+  background: color-mix(in srgb, var(--hub-c) 18%, rgba(255, 255, 255, 0.85));
+}
+
+.rv-page--dark .rv-hub-pill {
+  color: color-mix(in srgb, var(--hub-c) 80%, #ffffff);
+  border-color: color-mix(in srgb, var(--hub-c) 45%, transparent);
+  background: color-mix(in srgb, var(--hub-c) 16%, rgba(2, 4, 8, 0.4));
+}
+
+/* Rank badges: rank colors include #94a3b8 (slate-400) — unreadable on
+   white without darkening; slightly brightened on dark for parity. */
+.rv-page--light .rv-rank-badge {
+  color: color-mix(in srgb, var(--rank-c) 42%, #1e293b);
+  border-color: color-mix(in srgb, var(--rank-c) 50%, rgba(15, 23, 42, 0.25));
+  background: color-mix(in srgb, var(--rank-c) 14%, rgba(255, 255, 255, 0.85));
+}
+
+.rv-page--dark .rv-rank-badge {
+  color: color-mix(in srgb, var(--rank-c) 78%, #ffffff);
+  border-color: color-mix(in srgb, var(--rank-c) 42%, transparent);
+  background: color-mix(in srgb, var(--rank-c) 14%, rgba(2, 4, 8, 0.4));
+}
+
+/* Layer chip + coord: gold token already theme-flips, but the muted coord
+   needs a darker light-mode value to stay legible over the fog. */
+.rv-page--light .rv-coord {
+  color: #475569;
+}
+
+.rv-page--dark .rv-coord {
+  color: #94a3b8;
+}
+
+/* Filter pills: firmer surfaces so the label never sits on raw fog. */
+.rv-page--dark .rv-filter-pill {
+  color: #e2e8f0;
+  background: rgba(8, 12, 22, 0.66);
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.rv-page--dark .rv-filter-pill:hover {
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+.rv-page--light .rv-filter-pill {
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(15, 23, 42, 0.18);
+}
+
+.rv-page--light .rv-filter-pill:hover {
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.32);
+}
+
+.rv-page--dark .rv-filter-pill--active {
+  color: #f8fafc;
+  background: color-mix(in srgb, var(--sa-accent) 18%, rgba(8, 12, 22, 0.7));
+  border-color: color-mix(in srgb, var(--sa-accent) 55%, transparent);
+}
+
+.rv-page--light .rv-filter-pill--active {
+  color: #0f172a;
+  background: color-mix(in srgb, var(--sa-accent) 12%, #ffffff);
+  border-color: color-mix(in srgb, var(--sa-accent) 45%, rgba(15, 23, 42, 0.2));
+}
+
+.rv-page--dark .rv-filter-pill--gold.rv-filter-pill--active {
+  color: #ffd47e;
+  background: color-mix(in srgb, var(--sa-accent-gold) 20%, rgba(8, 12, 22, 0.7));
+  border-color: color-mix(in srgb, var(--sa-accent-gold) 60%, transparent);
+}
+
+.rv-page--light .rv-filter-pill--gold.rv-filter-pill--active {
+  color: #92400e;
+  background: color-mix(in srgb, var(--sa-accent-gold) 12%, #ffffff);
+  border-color: color-mix(in srgb, var(--sa-accent-gold) 55%, rgba(15, 23, 42, 0.15));
+}
+
+/* Native select: without color-scheme the OS dropdown list renders its
+   default white background with inherited light text in dark mode. */
+.rv-page--dark .rv-feed-sort__select {
+  color-scheme: dark;
+  color: #f8fafc;
+}
+
+.rv-page--light .rv-feed-sort__select {
+  color-scheme: light;
+  color: #0f172a;
+}
+
+.rv-page--dark .rv-feed-sort__select option {
+  background: #0b1220;
+  color: #f8fafc;
+}
+
+.rv-page--light .rv-feed-sort__select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+/* Search + reviewer inputs: explicit per-theme ink and placeholder. */
+.rv-page--dark .rv-feed-search__input,
+.rv-page--dark .rv-feed-reviewer__input {
+  color: #f8fafc;
+}
+
+.rv-page--light .rv-feed-search__input,
+.rv-page--light .rv-feed-reviewer__input {
+  color: #0f172a;
+}
+
+.rv-page--dark .rv-feed-search__input::placeholder,
+.rv-page--dark .rv-feed-reviewer__input::placeholder {
+  color: #94a3b8;
+}
+
+.rv-page--light .rv-feed-search__input::placeholder,
+.rv-page--light .rv-feed-reviewer__input::placeholder {
+  color: #64748b;
+}
+
+/* Toolbar labels above sort/reviewer controls. */
+.rv-page--dark .rv-feed-sort__label,
+.rv-page--dark .rv-feed-reviewer__label {
+  color: #94a3b8;
+}
+
+.rv-page--light .rv-feed-sort__label,
+.rv-page--light .rv-feed-reviewer__label {
+  color: #475569;
+}
+
+/* Card metric strip: gold value needs the darker light-mode gold token,
+   labels need real slate values per theme. */
+.rv-page--dark .rv-community-card__metric-label {
+  color: #94a3b8;
+}
+
+.rv-page--light .rv-community-card__metric-label {
+  color: #475569;
+}
+
+.rv-page--dark .rv-community-card__facts dt {
+  color: #94a3b8;
+}
+
+.rv-page--light .rv-community-card__facts dt {
+  color: #475569;
+}
+
+.rv-page--dark .rv-community-card__facts dd {
+  color: #e2e8f0;
+}
+
+.rv-page--light .rv-community-card__facts dd {
+  color: #1e293b;
+}
+
 /* ── Live feed toolbar ── */
 
 .rv-feed__live {
@@ -747,14 +942,17 @@
 
 .rv-feed-toolbar {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-bottom: 0.75rem;
 }
 
 @media (min-width: 768px) {
   .rv-feed-toolbar {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: end;
   }
 }
@@ -769,6 +967,8 @@
   background: var(--rv-glass-elevated);
   backdrop-filter: var(--rv-glass-blur);
   -webkit-backdrop-filter: var(--rv-glass-blur);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .rv-feed-search__icon {
@@ -778,6 +978,7 @@
 
 .rv-feed-search__input {
   width: 100%;
+  min-width: 0;
   border: none;
   background: transparent;
   color: var(--rv-ink);
@@ -809,6 +1010,9 @@
 .rv-feed-sort__select,
 .rv-feed-reviewer__input {
   min-height: 42px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 0.55rem 0.75rem;
   border-radius: 10px;
   border: 1px solid var(--sa-border-default);
@@ -841,6 +1045,8 @@
   font-weight: 700;
   line-height: 1.35;
   color: var(--rv-ink);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .rv-community-card__metrics {
@@ -889,6 +1095,12 @@
 .rv-community-card__facts dd {
   margin: 0.12rem 0 0;
   color: var(--rv-body);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.rv-community-card__facts > div {
+  min-width: 0;
 }
 
 /* ── Empty / error / skeleton ── */
@@ -962,5 +1174,101 @@
   .rv-spin,
   .rv-skeleton {
     animation: none;
+  }
+}
+
+/* ── Small-screen responsiveness ── */
+
+@media (max-width: 640px) {
+  .rv-page__inner {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .rv-scroll-intro {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .rv-scroll-intro__line {
+    font-size: clamp(1.45rem, 7.5vw, 2rem);
+    overflow-wrap: anywhere;
+  }
+
+  .rv-scroll-intro__actions {
+    width: 100%;
+  }
+
+  .rv-scroll-intro__actions .rv-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .rv-feed {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Sticky toolbar steals too much vertical space on phones */
+  .rv-filter-bar {
+    position: static;
+  }
+
+  .rv-feed-filters__group {
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    width: auto;
+    max-width: none;
+  }
+
+  .rv-filter-pill {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.78rem;
+  }
+
+  .rv-testimonial-card {
+    padding: 1.35rem 1.1rem 1.25rem;
+    border-radius: 16px;
+  }
+
+  .rv-community-card__metrics {
+    gap: 0.35rem;
+  }
+
+  .rv-community-card__metric-value {
+    font-size: 0.88rem;
+  }
+
+  .rv-community-card__facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .rv-testimonial-card__author {
+    gap: 0.65rem;
+  }
+
+  .rv-feed__more .rv-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 380px) {
+  .rv-community-card__metrics {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .rv-community-card__metric {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .rv-community-card__metric-label {
+    margin-bottom: 0;
   }
 }

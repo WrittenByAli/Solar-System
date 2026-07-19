@@ -10,6 +10,7 @@ import { themeText } from '../utils/themeText.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import FogPageShell, { useSceneReveal } from '../components/FogPageShell.jsx'
 import { supabase } from '../utils/supabaseClient.js'
+import { useAutoRefetch } from '../hooks/useAutoRefetch.js'
 import { REVIEWERS_REQUIRED } from '../constants/reviewWorkflow.js'
 import fallbackData from '../data/researchData.json'
 
@@ -99,6 +100,10 @@ export default function MySubmissions() {
     const [tick, setTick] = useState(0)
     const [pendingDelete, setPendingDelete] = useState(null)
     const [deleting, setDeleting] = useState(false)
+
+    // Auto-recover: refetch on tab refocus / connectivity return so a fetch
+    // that failed once doesn't leave the history empty until a manual refresh.
+    useAutoRefetch(() => setTick((t) => t + 1))
 
     const { ink, muted } = themeText(isDark)
     const divider = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)'

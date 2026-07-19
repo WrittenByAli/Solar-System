@@ -10,6 +10,7 @@ import { useUser } from '@clerk/clerk-react'
 import { useTheme } from '../App.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { supabase } from '../utils/supabaseClient.js'
+import { useAutoRefetch } from '../hooks/useAutoRefetch.js'
 import { imageFileToSquareBlob } from '../utils/archiveInstanceStorage.js'
 import { rankProfiles } from '../utils/rankProfiles.js'
 import {
@@ -137,7 +138,7 @@ export default function Profile() {
 
     const [uploading, setUploading] = useState(false)
     const [uploadError, setUploadError] = useState('')
-    const [data, setData] = useState({ profiles: [], submissions: [], reviews: [], threshold: 2500, loading: true })
+    const [data, setData] = useState({ profiles: [], submissions: [], reviews: [], threshold: 2500, loading: true, error: false })
 
     const [editingName, setEditingName] = useState(false)
     const [nameDraft, setNameDraft] = useState('')
@@ -146,6 +147,11 @@ export default function Profile() {
 
     const fileInputRef = useRef(null)
     const nameInputRef = useRef(null)
+    const [refetchTick, setRefetchTick] = useState(0)
+
+    // Auto-recover: refetch on tab refocus / connectivity return so a fetch
+    // that failed once (or went stale in a background tab) heals itself.
+    useAutoRefetch(() => setRefetchTick((t) => t + 1))
 
     useEffect(() => {
         if (!profile?.id) return undefined
@@ -167,17 +173,35 @@ export default function Profile() {
                 supabase.from('app_settings').select('value').eq('key', 'reviewer_points_threshold').maybeSingle(),
             ])
             if (!active) return
+            // Any failed core query means the stats below would silently
+            // render as zeros — surface it as a retryable error instead.
+            // (app_settings is excluded: it already has a sane default.)
+            if (profilesQ.error || subsQ.error || revsQ.error) {
+                setData((prev) => ({ ...prev, loading: false, error: true }))
+                return
+            }
             setData({
                 profiles: profilesQ.data || [],
                 submissions: subsQ.data || [],
                 reviews: revsQ.data || [],
                 threshold: parseInt(settingQ.data?.value, 10) || 2500,
                 loading: false,
+                error: false,
             })
         }
-        load()
+        // A thrown rejection (network failure after retries) must never
+        // strand the page on its skeleton — it becomes the same retryable
+        // error state.
+        load().catch(() => {
+            if (active) setData((prev) => ({ ...prev, loading: false, error: true }))
+        })
         return () => { active = false }
-    }, [profile?.id])
+    }, [profile?.id, refetchTick])
+
+    const retryLoad = () => {
+        setData((prev) => ({ ...prev, loading: true, error: false }))
+        setRefetchTick((t) => t + 1)
+    }
 
     useEffect(() => {
         if (editingName) nameInputRef.current?.focus()
@@ -571,6 +595,15 @@ export default function Profile() {
                         <div className="sp-skel h-56" />
                         <div className="sp-skel h-64" />
                     </div>
+                ) : data.error ? (
+                    <GlassCard className="p-8 text-center mt-12" role="alert">
+                        <p className="text-sm mb-5" style={{ color: secondary }}>
+                            Couldn&apos;t load your profile data right now. Check your connection and try again.
+                        </p>
+                        <button type="button" className="sp-chip" onClick={retryLoad} style={{ cursor: 'pointer' }}>
+                            Try again
+                        </button>
+                    </GlassCard>
                 ) : (
                     <>
                         {/* ══ 02 · Field record ═════════════════════ */}

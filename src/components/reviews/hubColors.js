@@ -25,6 +25,6 @@ export const HUB_LABELS = {
 }
 
 export function hubColor(hubLabel) {
-  const id = HUB_LABELS[hubLabel]
-  return (id && HUB_COLORS[id]) || 'var(--sa-accent)'
+  const id = HUB_LABELS[hubLabel] || String(hubLabel || '').trim().toLowerCase()
+  return HUB_COLORS[id] || 'var(--sa-accent)'
 }

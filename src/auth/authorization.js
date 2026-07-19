@@ -41,7 +41,11 @@ export const PERMISSIONS = Object.freeze({
     'archive:read': [ROLES.GUEST, ROLES.MEMBER, ROLES.REVIEWER],
     'archive:submit': [ROLES.MEMBER, ROLES.REVIEWER],
     'archive:host': [ROLES.MEMBER, ROLES.REVIEWER],
-    'review:grade': [ROLES.REVIEWER], // admin also holds REVIEWER via rolesFor's implication
+    // Every authenticated member may grade peer submissions (guests may not).
+    // Abuse protections live in the data layer, not this role check: authors
+    // can't review their own entry and the same reviewer can't grade an entry
+    // twice (unique reviewer+entry constraint) — both enforced by the DB.
+    'review:grade': [ROLES.MEMBER, ROLES.REVIEWER],
     'admin:access': [ROLES.ADMIN],
 })
 

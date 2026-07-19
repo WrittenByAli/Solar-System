@@ -34,7 +34,9 @@ test.describe('Hub registry', () => {
     await page.goto(hashUrl('/map'))
     await expect(page.locator('nav').first()).toBeVisible({ timeout: 15000 })
     // enrichHub() no longer throws sourcing gridLabel/discipline from hubRegistry.
-    await expect(page.locator('.solar-map__hub-select-btn').first()).toBeVisible()
+    // 15s like the other assertions in this file: the lazy MapView chunk can
+    // still be transforming on a cold dev server under parallel workers.
+    await expect(page.locator('.solar-map__hub-select-btn').first()).toBeVisible({ timeout: 15000 })
   })
 
   test('submit planet picker lists all 10 hubs from the live registry', async ({ page }) => {

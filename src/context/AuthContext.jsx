@@ -98,8 +98,23 @@ function ClerkAuthProvider({ children }) {
         }
 
         let cancelled = false
+        let retryTimer
 
-        async function syncProfile() {
+        // A transient Supabase failure here used to strand the session:
+        // profile stayed null forever, profileReady never flipped, and every
+        // guarded page sat on its loading screen until a manual refresh.
+        // Bounded backoff retries make the sync self-healing.
+        const RETRY_DELAYS_MS = [1_000, 3_000, 8_000]
+
+        async function syncProfile(attempt = 0) {
+            const scheduleRetry = () => {
+                if (cancelled || attempt >= RETRY_DELAYS_MS.length) return
+                clearTimeout(retryTimer)
+                retryTimer = setTimeout(() => {
+                    if (!cancelled) syncProfile(attempt + 1)
+                }, RETRY_DELAYS_MS[attempt])
+            }
+
             const { data: existing, error: selErr } = await supabase
                 .from('users_profile')
                 .select('*')
@@ -150,15 +165,23 @@ function ClerkAuthProvider({ children }) {
                     .select('*')
                     .eq('clerk_id', user.id)
                     .maybeSingle()
-                if (!cancelled && raced) {
+                if (cancelled) return
+                if (raced) {
                     setProfile(raced)
                     writeCachedRole(user.id, raced.role)
+                } else {
+                    // Nothing selected, nothing created, nothing raced —
+                    // every round-trip failed. Retry rather than strand.
+                    scheduleRetry()
                 }
             }
         }
 
         syncProfile()
-        return () => { cancelled = true }
+        return () => {
+            cancelled = true
+            clearTimeout(retryTimer)
+        }
     }, [isLoaded, isSignedIn, user])
 
     const logout = useCallback(async () => {

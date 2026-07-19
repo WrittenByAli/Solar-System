@@ -57,13 +57,26 @@ test.describe('Review queue page', () => {
 })
 
 test.describe('Review queue access control', () => {
-  test('member is redirected away from review queue', async ({ browser }) => {
+  test('regular member can open the review queue', async ({ browser }) => {
     const context = await browser.newContext()
     const page = await context.newPage()
     await installMemberAuth(page)
     await mockSupabaseQueue(page)
     await page.goto(hashUrl('/review-queue'))
-    await expect(page).toHaveURL(/#\/leaderboard/, { timeout: 10000 })
+    await expect(page.getByTestId('review-queue-page')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByTestId('rq-queue-card')).toHaveCount(1)
+    await context.close()
+  })
+
+  test('member can open the grade form on an entry', async ({ browser }) => {
+    const context = await browser.newContext()
+    const page = await context.newPage()
+    await installMemberAuth(page)
+    await mockSupabaseQueue(page)
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto(hashUrl('/review-queue'))
+    await page.getByTestId('rq-queue-card').click()
+    await expect(page.getByTestId('rq-grade-form')).toBeVisible()
     await context.close()
   })
 })
