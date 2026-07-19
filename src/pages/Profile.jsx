@@ -257,12 +257,19 @@ export default function Profile() {
                 return
             }
 
-            const { error: updateErr } = await supabase
+            // .select() forces PostgREST to return the affected row(s) so a
+            // 0-row RLS-blocked update (HTTP 204, error: null -- the same
+            // response shape as a real 1-row success) can be told apart from
+            // an actual write, instead of silently reporting success.
+            const { data: updatedRows, error: updateErr } = await supabase
                 .from('users_profile')
                 .update({ avatar_url: bustedUrl })
                 .eq('id', profile.id)
+                .select('id')
             if (updateErr) {
                 setUploadError(`Save failed: ${updateErr.message}`)
+            } else if (!updatedRows || updatedRows.length === 0) {
+                setUploadError('Save failed — your session may have expired. Try refreshing the page.')
             } else {
                 await refreshProfile()
             }
@@ -314,12 +321,19 @@ export default function Profile() {
             setNameBusy(false)
             return
         }
-        const { error } = await supabase
+        // .select() forces PostgREST to return the affected row(s) so a
+        // 0-row RLS-blocked update (HTTP 204, error: null -- the same
+        // response shape as a real 1-row success) can be told apart from
+        // an actual write, instead of silently reporting success.
+        const { data: updatedRows, error } = await supabase
             .from('users_profile')
             .update({ username: next })
             .eq('id', profile.id)
+            .select('id')
         if (error) {
             setNameError('Could not save the username — try again.')
+        } else if (!updatedRows || updatedRows.length === 0) {
+            setNameError('Could not save — your session may have expired. Try refreshing the page.')
         } else {
             await refreshProfile()
             setEditingName(false)

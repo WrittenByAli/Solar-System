@@ -11,6 +11,7 @@ export default function QueueRail({
   usernamesById,
   planetTitleById,
   onSelect,
+  disabled = false,
 }) {
   return (
     <nav className="rq-rail" aria-label="Pending submissions" data-testid="rq-list">
@@ -39,6 +40,8 @@ export default function QueueRail({
                 className="rq-mission__btn"
                 onClick={() => onSelect(entry.id, idx)}
                 aria-pressed={selected}
+                disabled={disabled && !selected}
+                title={disabled && !selected ? 'Finish transmitting the current review first' : undefined}
               >
                 <div className="rq-mission__top">
                   <span className="rq-mission__layer" title={layerName}>L{entry.layer}</span>

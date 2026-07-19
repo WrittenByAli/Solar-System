@@ -176,6 +176,7 @@ export function ReviewEntryPanel({
               className={`rq-fact-chip${factOk ? ' rq-fact-chip--pass' : ''}`}
               aria-pressed={factOk}
               onClick={() => setFactOk(true)}
+              disabled={submitting}
             >
               <ShieldCheck size={18} aria-hidden />
               Pass
@@ -185,6 +186,7 @@ export function ReviewEntryPanel({
               className={`rq-fact-chip${!factOk ? ' rq-fact-chip--fail' : ''}`}
               aria-pressed={!factOk}
               onClick={() => setFactOk(false)}
+              disabled={submitting}
             >
               <ShieldX size={18} aria-hidden />
               Fail
@@ -206,6 +208,7 @@ export function ReviewEntryPanel({
                 aria-label={`${d} · ${DIFFICULTY_WORDS[d]}`}
                 className={`rq-star${difficulty >= d ? ' rq-star--on' : ''}${difficulty === d ? ' rq-star--active' : ''}`}
                 onClick={() => setDifficulty(d)}
+                disabled={submitting}
               >
                 <Star size={22} fill={difficulty >= d ? 'currentColor' : 'none'} aria-hidden />
                 <span className="rq-star__num">{d}</span>
@@ -215,7 +218,7 @@ export function ReviewEntryPanel({
         </div>
 
         <div className="rq-notes-wrap">
-          <button type="button" className="rq-notes-toggle" onClick={() => setNotesOpen((o) => !o)}>
+          <button type="button" className="rq-notes-toggle" onClick={() => setNotesOpen((o) => !o)} disabled={submitting}>
             {notesOpen ? 'Hide notes' : 'Add notes (optional)'}
             <ChevronDown size={14} className={notesOpen ? 'rq-notes-toggle--open' : ''} aria-hidden />
           </button>
@@ -229,6 +232,7 @@ export function ReviewEntryPanel({
                 maxLength={REVIEW_RECOMMENDATION_MAX_CHARS}
                 className="rq-notes"
                 placeholder="Citations, clarity edits, or factual fixes for the author…"
+                disabled={submitting}
               />
               <div className="rq-notes__count">{notes.length}/{REVIEW_RECOMMENDATION_MAX_CHARS}</div>
             </>

@@ -976,6 +976,13 @@
   text-shadow: none;
 }
 
+/* Locked while a different entry's review is transmitting -- see the
+   selectEntry guard in GradeSubmissions.jsx. */
+.rq-mission__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .rq-mission__top {
   display: flex;
   align-items: center;

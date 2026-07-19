@@ -347,14 +347,23 @@ export default function GradeSubmissions() {
     }
   }, [visibleQueue, selectedId])
 
+  // Locked while a review is transmitting: `submitting` is a single flag for
+  // whichever entry is mid-submit, not per-entry. Without this guard, a
+  // reviewer could switch to a different entry while entry A's request is
+  // in flight -- entry B would inherit A's stale "Transmitting..." disabled
+  // state, and on A's success `setSelectedId(null)` would silently discard
+  // the user's navigation to B. Locking selection keeps the invariant that
+  // whatever is selected when a submission resolves IS the entry it was for.
   const selectEntry = useCallback((id, idx) => {
+    if (submitting) return
     setSelIdx(idx)
     setSelectedId(id)
-  }, [])
+  }, [submitting])
 
   const closeDetail = useCallback(() => {
+    if (submitting) return
     setSelectedId(null)
-  }, [])
+  }, [submitting])
 
   useEffect(() => {
     const onKey = (e) => {
@@ -363,7 +372,7 @@ export default function GradeSubmissions() {
       if (t && typeof t.closest === 'function' && t.closest('input, textarea, select, [contenteditable="true"]')) return
 
       const move = (delta) => {
-        if (visibleQueue.length === 0) return
+        if (visibleQueue.length === 0 || submitting) return
         e.preventDefault()
         setSelIdx((i) => {
           const next = Math.min(visibleQueue.length - 1, Math.max(0, (i < 0 ? (delta > 0 ? -1 : 0) : i) + delta))
@@ -386,7 +395,7 @@ export default function GradeSubmissions() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [visibleQueue, selIdx, selectEntry, closeDetail])
+  }, [visibleQueue, selIdx, selectEntry, closeDetail, submitting])
 
   const hasQueue = !loading && queue.length > 0
 
@@ -547,6 +556,7 @@ export default function GradeSubmissions() {
               usernamesById={usernamesById}
               planetTitleById={planetTitleById}
               onSelect={selectEntry}
+              disabled={submitting}
             />
 
             {isDesktop && (
