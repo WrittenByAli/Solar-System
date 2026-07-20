@@ -1,43 +1,20 @@
 -- ============================================================
--- APPLIED — see supabase/migrations/20260721010000_fix_deepen_base_entry_additive_merge.sql
--- RECOMMENDED FIX — promoted to migration 2026-07-21.
+-- SECURITY FIX 3a (Medium) — deepen-entry base overwrite
 --
--- AUDIT FINDING 3a (Medium, CVSS ~6.4, Broken Access Control / integrity):
--- `process_review_consensus()` merges a deepen-entry's content into its
--- BASE entry (`updates_entry_id`) with NO check that the deepen author owns
--- (or may edit) the base entry. Because the "deepen / add missing depth"
--- links in ArchiveGrid are shown on EVERY approved entry, any member can
--- submit a pending deepen-entry targeting ANOTHER user's approved entry;
--- once it clears 3-reviewer consensus (reachable with sockpuppet reviewer
--- accounts — submitter != reviewers, so the self-review rule doesn't trip),
--- the victim's approved `content`/`short_summary` is OVERWRITTEN and `layer`
--- is bumped. Points/notification go to the base author, so the payoff is
--- content vandalism, not point gain.
+-- CONFIRMED VULNERABILITY (audit 2026-07-21, live pg_get_functiondef):
+--   process_review_consensus() merged a deepen-entry's content into its
+--   base (updates_entry_id) unconditionally. Any member could submit a
+--   deepen targeting another user's approved entry; after 3-reviewer
+--   consensus the victim's content/short_summary was overwritten.
 --
--- Live body confirmed via pg_get_functiondef on 2026-07-21 — the overwrite is:
---   update archive_entries
---     set short_summary = case when new-value non-empty then new else keep end,
---         content       = case when new-value non-empty then new else keep end,
---         layer = greatest(layer, v_entry.layer), difficulty = v_avg_difficulty
---   where id = v_base_id;   -- no ownership check
+-- FIX (option A — additive-only merge):
+--   Fill content/short_summary on the BASE row ONLY when that field is
+--   currently empty. Existing non-empty base content is never clobbered.
+--   Layer still deepens via greatest(); difficulty still updates.
 --
--- DECISION REQUIRED (pick one before applying):
---   (A) Deepening another user's entry is NOT intended to replace their
---       content  ->  only fill fields that are currently EMPTY on the base,
---       never overwrite non-empty base content (additive-only). Preserves
---       "add missing L5 summary/L6 detail" and layer-deepening. RECOMMENDED.
---   (B) Only the base-entry OWNER may cause a content overwrite; a deepen by
---       a different user is approved as its own standalone entry (or blocked).
---
--- Below implements (A): additive-only merge of content/short_summary
--- (existing non-empty base content is never clobbered), while still bumping
--- layer via greatest() and updating difficulty. This is the minimal change
--- to the confirmed live body — DIFF IS ONLY THE TWO `case` EXPRESSIONS.
---
--- TEST BEFORE APPLYING: create a base approved entry (user A) with non-empty
--- content, submit a deepen-entry (user B) with different content targeting
--- it, drive 3 passing reviews, and confirm A's content is UNCHANGED while a
--- deepen that only fills a previously-EMPTY field still works.
+-- SOURCE OF TRUTH: live pg_get_functiondef dump on 2026-07-21 — only the
+-- two CASE expressions in the deepen merge UPDATE differ from production.
+-- Idempotent. Safe to re-run.
 -- ============================================================
 
 create or replace function public.process_review_consensus()
@@ -76,9 +53,7 @@ begin
     if v_all_pass then
       if v_entry.updates_entry_id is not null then
         v_base_id := v_entry.updates_entry_id;
-        -- FIX 3a: additive-only merge. Fill content/short_summary ONLY when
-        -- the BASE field is currently empty; never overwrite existing base
-        -- content. Layer still deepens (greatest), difficulty still updates.
+        -- Additive-only merge: never overwrite non-empty base content.
         update archive_entries
           set short_summary = case
                 when trim(coalesce(short_summary, '')) = ''
@@ -133,3 +108,6 @@ begin
   return new;
 end;
 $function$;
+
+-- Re-assert trigger-only RPC revocation (CREATE OR REPLACE resets default grants).
+revoke execute on function public.process_review_consensus() from public, anon, authenticated;

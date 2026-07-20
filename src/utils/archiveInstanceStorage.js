@@ -104,7 +104,12 @@ export function loadHubArchiveConfig(hubId) {
 }
 
 /** Save grid + metadata for a specific hub (planet / Star foundation). Async. */
-export async function saveHubArchiveConfig(hubId, patch) {
+export async function saveHubArchiveConfig(hubId, patch, ownerId) {
+    if (!ownerId) {
+        const err = new Error('Could not save archive settings — sign in required.')
+        err.code = 'OWNER_REQUIRED'
+        throw err
+    }
     const id = normalizeHubId(hubId)
     const prev = hubConfigCache.get(id) || defaultArchiveInstance()
     const next = {
@@ -120,6 +125,7 @@ export async function saveHubArchiveConfig(hubId, patch) {
         .from('archive_instances')
         .upsert({
             hub_id: id,
+            owner_id: ownerId,
             grid_width: next.gridWidth,
             grid_height: next.gridHeight,
             cover_image_data_url: next.coverImageDataUrl || '',

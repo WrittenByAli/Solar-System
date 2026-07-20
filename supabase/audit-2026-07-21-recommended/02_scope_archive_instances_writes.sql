@@ -1,6 +1,6 @@
 -- ============================================================
--- RECOMMENDED FIX — NOT AUTO-APPLIED. Requires a schema change + backfill.
--- Placed OUTSIDE supabase/migrations/ so `supabase db push` won't run it.
+-- APPLIED — see supabase/migrations/20260721020000_scope_archive_instances_owner_rls.sql
+-- RECOMMENDED FIX — promoted to migration 2026-07-21.
 --
 -- AUDIT FINDING 2a (Medium/Low, Broken Access Control):
 -- `archive_instances` has RLS policies `instances_insert_authenticated`

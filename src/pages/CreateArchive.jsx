@@ -177,7 +177,7 @@ export default function CreateArchive() {
                 category,
                 contactUrl: contactUrl.trim(),
                 listedOnRegistry: listPublicly,
-            })
+            }, userId)
 
             await addArchiveToLibrary({
                 slug: sl,
@@ -626,7 +626,7 @@ export default function CreateArchive() {
                         style={{ color: muted }}
                         onClick={() => {
                             const blank = defaultArchiveInstance()
-                            saveHubArchiveConfig(normalizeHubId(hubPlanetId), blank).catch(() => {})
+                            if (userId) saveHubArchiveConfig(normalizeHubId(hubPlanetId), blank, userId).catch(() => {})
                             window.dispatchEvent(new Event('solar-archive-instance-updated'))
                             if (previewUrl && previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
                             lastFileRef.current = null
