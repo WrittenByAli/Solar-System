@@ -14,6 +14,11 @@ const NAV_LINKS = [
     { label: 'Deploy', path: '/deploy' },
 ]
 
+const LEGAL_LINKS = [
+    { label: 'Privacy Policy', path: '/privacy' },
+    { label: 'Terms of Service', path: '/terms' },
+]
+
 const TAGS = ['SOLAR', 'Peer Review', 'Open Data', 'Public Knowledge']
 
 /** Routes that already render a full-viewport fixed Vanta layer behind the footer. */
@@ -25,8 +30,9 @@ const PAGE_FOG_PATHS = new Set([
     '/reviews',
     '/review-queue',
     '/profile',
-    '/account',
     '/my-submissions',
+    '/privacy',
+    '/terms',
 ])
 
 export default function Footer() {
@@ -74,6 +80,22 @@ export default function Footer() {
                         <div className="sa-footer__col-label">Navigation</div>
                         <nav className="sa-footer__links" aria-label="Footer">
                             {NAV_LINKS.map(({ label, path }) => (
+                                <Link
+                                    key={path}
+                                    to={path}
+                                    className="sa-footer__link"
+                                >
+                                    <span className="sa-footer__link-arrow">›</span>
+                                    {label}
+                                </Link>
+                            ))}
+                        </nav>
+                    </div>
+
+                    <div className="sa-footer__links-col">
+                        <div className="sa-footer__col-label">Legal</div>
+                        <nav className="sa-footer__links" aria-label="Legal">
+                            {LEGAL_LINKS.map(({ label, path }) => (
                                 <Link
                                     key={path}
                                     to={path}

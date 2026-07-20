@@ -116,7 +116,7 @@ export function validateSignUp(form) {
     const pw = validatePassword(form.password)
     if (pw) errors.password = pw
     if (form.password !== form.confirmPassword) errors.confirmPassword = 'Passwords do not match.'
-    if (!form.terms) errors.terms = 'You must accept the Terms & Conditions.'
+    if (!form.terms) errors.terms = 'You must accept the Terms of Service.'
     if (!form.privacy) errors.privacy = 'You must accept the Privacy Policy.'
 
     return { errors, values }

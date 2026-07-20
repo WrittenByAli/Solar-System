@@ -1,0 +1,169 @@
+-- ============================================================
+-- VERIFY + (reference) HARDEN: replace_archive_entry_on_edit
+--
+-- ⚠️ DO NOT BLIND-APPLY THE CREATE BELOW. This file exists because the
+-- function `replace_archive_entry_on_edit` is called from the client
+-- (src/pages/SubmitArchive.jsx:1155) but its DEFINITION lives ONLY in the
+-- live database — it is in NO repo .sql file. That makes it unauditable from
+-- version control, which is itself the finding. This migration's job is to
+-- (1) let you DUMP the live body and eyeball it, and (2) give you a hardened
+-- reference to DIFF against, so you can reconcile the two deliberately.
+--
+-- ⚠️ CORRECTION (2026-07-19, verified against live DB): an EARLIER version of
+-- this header asserted the function is "necessarily SECURITY DEFINER". THAT
+-- WAS WRONG — it was an inference, not a checked fact. The live catalog says:
+--     select proname, prosecdef from pg_proc
+--     where proname='replace_archive_entry_on_edit';   ->  prosecdef = false
+-- prosecdef=false means SECURITY INVOKER. The privilege-escalation blocker
+-- built on the DEFINER assumption DOES NOT APPLY. See the corrected analysis
+-- below.
+--
+-- WHY THIS FUNCTION IS (NOW) MUCH LOWER RISK — it is SECURITY INVOKER
+--   The edit-and-resubmit flow soft-deletes the caller's OLD pending/rejected
+--   row and inserts a fresh pending copy (CLAUDE.md "Submission lifecycle").
+--   It takes TWO client-controlled inputs:
+--     p_old_entry_id  uuid   — which row to soft-delete
+--     p_new_entry     jsonb  — the replacement row's columns (INCLUDES a
+--                              client-set submitted_by and status)
+--   Because it runs as the CALLER (INVOKER), every statement inside it is
+--   subject to the caller's RLS — it does NOT bypass RLS. So the existing
+--   per-user policies already neutralize the spoof/IDOR concerns:
+--     • attribution forgery — the internal INSERT is gated by
+--       entries_insert_own_pending WITH CHECK (status='pending' AND
+--       submitted_by = caller). A spoofed submitted_by/status is REJECTED.
+--     • IDOR on the old row — the internal soft-delete UPDATE is gated by
+--       entries_update_own_pending_rejected USING (submitted_by = caller AND
+--       status in ('pending','rejected')). Another user's row matches 0 rows,
+--       so it is never touched.
+--   Net: an INVOKER function cannot grant more than the caller already has via
+--   direct table access — no privilege escalation. This is NO LONGER a
+--   release blocker.
+--
+-- WHAT REMAINS (not a security blocker):
+--   1. The function BODY is still not in version control — commit it (STEP 1
+--      output) so it is auditable and the DB is rebuildable from source.
+--   2. prosecdef only answers the privilege question, not correctness. When
+--      you paste the body, sanity-check it preserves updates_entry_id and is
+--      transactional — but these are correctness, not escalation, concerns.
+--   The STEP-2 reference below is now OPTIONAL belt-and-suspenders (in-body
+--   ownership checks on top of RLS), not a required fix.
+--
+-- ── STEP 1: DUMP THE LIVE BODY (run this SELECT alone, read-only) ──────────
+-- Paste the output back for review before touching anything:
+--
+--   select pg_get_functiondef(p.oid)
+--   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+--   where n.nspname = 'public' and p.proname = 'replace_archive_entry_on_edit';
+--
+-- Confirm the live body (checklist — mostly correctness now, since RLS
+-- already enforces the ownership/attribution properties for an INVOKER fn):
+--   [x] SECURITY INVOKER (prosecdef=false) — VERIFIED live 2026-07-19
+--   [ ] `set search_path = public` present (still good hygiene under INVOKER)
+--   [ ] soft-deletes the old row (sets deleted_at), does not hard-delete
+--   [ ] preserves updates_entry_id lineage as the app expects
+--   [ ] is transactional (old-row delete + new-row insert succeed/fail together)
+--   Optional defense-in-depth (RLS already covers these, so NOT required):
+--   [ ] in-body re-check that the caller owns p_old_entry_id
+--   [ ] in-body force of new submitted_by = caller / status = 'pending'
+--
+-- Whatever the body does, COMMIT IT into a migration so it stops being
+-- unauditable and the DB is rebuildable from source. Apply the STEP-2
+-- reference ONLY if you want the optional in-body guards on top of RLS.
+--
+-- ── STEP 2: HARDENED REFERENCE (adapt column list, then apply) ─────────────
+-- This is illustrative — your real p_new_entry has more columns (layer_data,
+-- coord_x/y, tags, attachments, alternate_perspectives, difficulty, hub_id…).
+-- Fill them ALL in from the live body; the security-relevant part is the
+-- guard block and the FORCED submitted_by/status, not the column list.
+--
+-- create or replace function public.replace_archive_entry_on_edit(
+--   p_old_entry_id uuid,
+--   p_new_entry    jsonb
+-- ) returns uuid
+--   language plpgsql
+--   security definer
+--   set search_path = public
+-- as $$
+-- declare
+--   v_caller uuid;
+--   v_old    archive_entries%rowtype;
+--   v_new_id uuid;
+-- begin
+--   -- 1. resolve caller from the verified Clerk JWT (never from p_new_entry)
+--   select id into v_caller
+--   from users_profile
+--   where clerk_id = (auth.jwt()->>'sub');
+--   if v_caller is null then
+--     raise exception 'no caller profile';
+--   end if;
+--
+--   -- 2. load + OWNERSHIP-CHECK the row being replaced (DEFINER bypasses RLS,
+--   --    so this check is the ONLY thing standing between a member and an
+--   --    arbitrary other user's entry)
+--   select * into v_old from archive_entries where id = p_old_entry_id;
+--   if v_old.id is null then
+--     raise exception 'old entry not found';
+--   end if;
+--   if v_old.submitted_by is distinct from v_caller then
+--     raise exception 'not your entry';           -- IDOR guard
+--   end if;
+--   if v_old.status not in ('pending','rejected') then
+--     raise exception 'only pending/rejected entries are editable';
+--   end if;
+--
+--   -- 3. insert the replacement with server-FORCED trust columns. Read
+--   --    presentational fields from p_new_entry, but submitted_by/status are
+--   --    NEVER taken from the client.
+--   insert into archive_entries (
+--     title, content, short_summary, layer, planet_id, hub_id,
+--     coord_x, coord_y, tags, attachments, alternate_perspectives,
+--     difficulty, layer_data, updates_entry_id,
+--     submitted_by, status, is_draft
+--   ) values (
+--     p_new_entry->>'title',
+--     coalesce(p_new_entry->>'content',''),
+--     coalesce(p_new_entry->>'short_summary',''),
+--     coalesce((p_new_entry->>'layer')::int, 4),
+--     p_new_entry->>'planet_id',
+--     coalesce(p_new_entry->>'hub_id',''),
+--     coalesce((p_new_entry->>'coord_x')::int, 0),
+--     coalesce((p_new_entry->>'coord_y')::int, 0),
+--     coalesce((p_new_entry->'tags')::text[], '{}'),
+--     coalesce(p_new_entry->'attachments', '[]'::jsonb),
+--     coalesce(p_new_entry->'alternate_perspectives', '[]'::jsonb),
+--     nullif(p_new_entry->>'difficulty','')::int,
+--     p_new_entry->'layer_data',
+--     v_old.updates_entry_id,      -- preserve lineage from the old row
+--     v_caller,                    -- FORCED: caller owns the new row
+--     'pending',                   -- FORCED: never trust client status
+--     false
+--   )
+--   returning id into v_new_id;
+--
+--   -- 4. soft-delete the old row (never hard-delete; keeps review history)
+--   update archive_entries set deleted_at = now() where id = p_old_entry_id;
+--
+--   return v_new_id;
+-- end;
+-- $$;
+--
+-- revoke all on function public.replace_archive_entry_on_edit(uuid, jsonb) from public;
+-- grant execute on function public.replace_archive_entry_on_edit(uuid, jsonb) to authenticated;
+--
+-- ── ROLLBACK NOTES ─────────────────────────────────────────────────────────
+-- `create or replace function` overwrites in place. Before applying, SAVE the
+-- STEP 1 dump — that IS your rollback (re-run the saved pg_get_functiondef
+-- output to restore the previous body). No data is migrated, so rollback is
+-- purely swapping the function definition back.
+--
+-- ── REGRESSION TEST (manual) ───────────────────────────────────────────────
+--   Positive: as user A, edit YOUR OWN pending entry via /submit?editEntryId=<id>
+--     → succeeds; old row hidden (deleted_at set), new pending row appears in
+--       /my-submissions; reviewers see only the new row.
+--   Negative (IDOR): as user A, call the RPC with p_old_entry_id = a pending
+--     entry owned by user B (use the network tab to replay with B's id)
+--     → MUST raise 'not your entry' / error, B's row untouched.
+--   Negative (attribution): call with p_new_entry.submitted_by = user B's id
+--     and status='approved' → new row MUST still be submitted_by = A,
+--     status='pending' (client values ignored).
+-- ============================================================

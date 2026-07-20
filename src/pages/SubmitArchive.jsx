@@ -12,8 +12,18 @@ import SubmissionLayerGuide, {
 import { useAuth } from '../context/AuthContext.jsx'
 import { supabase } from '../utils/supabaseClient.js'
 import FoundationLogo from '../components/FoundationLogo.jsx'
-import { appendPendingSubmission, getSubmissions, migrateSubmission, normalizeSubmissionTags, MAX_TAGS_PER_SUBMISSION } from '../utils/submissionStorage.js'
+import { appendPendingSubmission, getSubmissions, migrateSubmission, normalizeSubmissionTags, MAX_TAGS_PER_SUBMISSION, MAX_TAG_CHARS } from '../utils/submissionStorage.js'
 import { appendSegmentReport } from '../utils/segmentReports.js'
+import {
+    TITLE_MAX_CHARS,
+    SHORT_SUMMARY_MAX_CHARS,
+    CONTENT_MAX_CHARS,
+    ALTERNATE_PERSPECTIVE_MAX_CHARS,
+    validateTitle,
+    validateMaxLength,
+    validateRawTagsInput,
+    validateAlternatePerspectivesInput,
+} from '../utils/archiveEntryValidation.js'
 import {
   parseSubmissionArchiveLayer,
   parsePositiveInt,
@@ -125,6 +135,11 @@ function parseAlternatePerspectives(input) {
         .map((line) => line.trim())
         .filter(Boolean)
         .slice(0, MAX_ALTERNATE_PERSPECTIVES)
+        // Defense-in-depth truncation (validate() below is what actually
+        // blocks submission on an oversized line) -- keeps draft autosave,
+        // which bypasses validate(), from ever writing a row the DB's
+        // per-entry length CHECK constraint would reject.
+        .map((line) => line.slice(0, ALTERNATE_PERSPECTIVE_MAX_CHARS))
         .map((line) => {
             const parts = line.split('|').map((p) => p.trim()).filter(Boolean)
             const hubId = String(parts[0] || '').toLowerCase()
@@ -872,9 +887,13 @@ export default function SubmitArchive() {
         if (!snapshot?.form?.planet || !snapshot.form.subject.trim()) return
         setDraftSaveState('saving')
         const payload = {
-            title: snapshot.form.subject.trim(),
-            content: snapshot.form.detail.trim(),
-            short_summary: snapshot.form.summary.trim(),
+            // Defensive slicing: draft autosave bypasses validate() by design
+            // (a draft can be a partial, in-progress row), so it must clamp
+            // to the same bounds the DB now enforces, or a paste that beats
+            // the textarea's HTML maxLength would make autosave silently fail.
+            title: snapshot.form.subject.trim().slice(0, TITLE_MAX_CHARS),
+            content: snapshot.form.detail.trim().slice(0, CONTENT_MAX_CHARS),
+            short_summary: snapshot.form.summary.trim().slice(0, SHORT_SUMMARY_MAX_CHARS),
             layer: snapshot.previewLayer,
             planet_id: snapshot.form.planet,
             hub_id: snapshot.form.planet,
@@ -1012,12 +1031,14 @@ export default function SubmitArchive() {
                 errs.coordX = 'Coordinates are required'
                 errs.coordY = 'Coordinates are required'
             }
-            if (!form.subject.trim()) errs.subject = 'Subject is required'
+            const titleErr = validateTitle(form.subject)
+            if (titleErr) errs.subject = titleErr
             const sum = form.summary.trim()
             if (sum.length < 30 || sum.length > 800) errs.summary = 'Summary must be 30–800 characters (what is the issue?)'
             const det = form.detail.trim()
             if (det.length < 40 || det.length > 4000) errs.detail = 'Detail must be 40–4000 characters (keep the context block and explain).'
-            if (String(form.tags || '').length > 600) errs.tags = 'Tags field is too long'
+            const tagsErr = validateRawTagsInput(form.tags)
+            if (tagsErr) errs.tags = tagsErr
             return errs
         }
         const errs = {}
@@ -1026,7 +1047,8 @@ export default function SubmitArchive() {
             if (selectedTaxonomy && !form.domainId) errs.domainId = 'Select an L2 topic'
             if (selectedTaxonomy && form.domainId && !form.topicKey) errs.subfieldId = 'Select an L3 subtopic'
         }
-        if (!form.subject.trim()) errs.subject = 'Subject is required'
+        const titleErr = validateTitle(form.subject)
+        if (titleErr) errs.subject = titleErr
         if (!form.coordX || !form.coordY) {
             errs.coordX = 'Select an available grid coordinate (X,Y)'
             errs.coordY = 'Select an available grid coordinate (X,Y)'
@@ -1044,7 +1066,18 @@ export default function SubmitArchive() {
         }
         // Summary required at L5 always; at L6+ only if L5 doesn't already exist at the coordinate
         const needsSummary = previewLayer === 5 || (previewLayer >= 6 && !l5ExistsAtTarget)
-        if (needsSummary && (!form.summary.trim() || form.summary.length < 50 || form.summary.length > 400)) errs.summary = 'Summary must be 50–400 characters'
+        if (needsSummary && (!form.summary.trim() || form.summary.length < 50 || form.summary.length > 400)) {
+            errs.summary = 'Summary must be 50–400 characters'
+        } else if (previewLayer >= 5) {
+            // Only matters when the summary is actually part of what gets
+            // submitted (entryPayload sends it whenever previewLayer >= 5,
+            // even if the field itself is hidden because L5 content already
+            // exists at this coordinate) -- gating on previewLayer instead of
+            // needsSummary avoids blocking submission over stale textarea
+            // state left over from an earlier layer that was never shown.
+            const summaryMaxErr = validateMaxLength(form.summary, SHORT_SUMMARY_MAX_CHARS, 'Summary')
+            if (summaryMaxErr) errs.summary = summaryMaxErr
+        }
 
         const detailTrimmed = form.detail.trim()
         if (previewLayer >= 6 && (!detailTrimmed || detailTrimmed.length < 100 || detailTrimmed.length > 2500)) {
@@ -1056,14 +1089,27 @@ export default function SubmitArchive() {
                 errs.detail = `Segments (sentences) must be 20-250 chars. Found invalid length (${invalidSegment.length} chars): "${invalidSegment.substring(0, 30)}..."`
             }
         }
-        if (String(form.tags || '').length > 600) errs.tags = 'Tags field is too long (use shorter comma-separated labels)'
+        // (No unconditional detail-length check below previewLayer 6: the
+        // branch above already enforces <=2500 whenever detail is actually
+        // submitted -- entryPayload forces content to '' below L6 -- so an
+        // extra check here would only false-positive on stale hidden-field
+        // state, never catch anything the payload would actually send.)
+        if (showTagsField) {
+            const tagsErr = validateRawTagsInput(form.tags)
+            if (tagsErr) errs.tags = tagsErr
+        }
         if (showSourceLinksField) {
             const invalidSource = parseSourceLinks(form.sourceLinks).find((src) => !/^https?:\/\//i.test(src.url))
             if (invalidSource) errs.sourceLinks = 'Each source line must end with a valid http:// or https:// URL'
         }
         if (showAlternatePerspectivesField) {
-            const invalidPerspective = parseAlternatePerspectives(form.alternatePerspectives).find((ap) => ap.hubId && !planetIds.has(ap.hubId))
-            if (invalidPerspective) errs.alternatePerspectives = `Unknown hub "${invalidPerspective.hubId}". Use a planet id like earth, mars, jupiter, etc.`
+            const altErr = validateAlternatePerspectivesInput(form.alternatePerspectives)
+            if (altErr) {
+                errs.alternatePerspectives = altErr
+            } else {
+                const invalidPerspective = parseAlternatePerspectives(form.alternatePerspectives).find((ap) => ap.hubId && !planetIds.has(ap.hubId))
+                if (invalidPerspective) errs.alternatePerspectives = `Unknown hub "${invalidPerspective.hubId}". Use a planet id like earth, mars, jupiter, etc.`
+            }
         }
         if (layerRangeBlocksPreview) {
             errs.previewLayer = `This hub only accepts L${hubForForm.minLayer}–L${hubForForm.maxLayer} entries.`
@@ -1125,9 +1171,12 @@ export default function SubmitArchive() {
         // existing entry via updates_entry_id -- it merges into the base entry
         // once reviewed, rather than becoming an independent topic.
         const entryPayload = {
-            title: form.subject.trim(),
-            content: previewLayer >= 6 ? form.detail.trim() : '',
-            short_summary: previewLayer >= 5 ? form.summary.trim() : '',
+            // Same defensive slicing as performDraftSave -- validate() above
+            // already blocks submission on an oversized field, this is just
+            // the belt-and-suspenders backstop before the network call.
+            title: form.subject.trim().slice(0, TITLE_MAX_CHARS),
+            content: previewLayer >= 6 ? form.detail.trim().slice(0, CONTENT_MAX_CHARS) : '',
+            short_summary: previewLayer >= 5 ? form.summary.trim().slice(0, SHORT_SUMMARY_MAX_CHARS) : '',
             layer: previewLayer,
             planet_id: form.planet,
             hub_id: form.planet,
@@ -1822,7 +1871,7 @@ export default function SubmitArchive() {
                                 <Field label="Subject Title" required>
                                     <input type="text" placeholder="e.g. Solar Panel Efficiency Optimization"
                                         value={form.subject} onChange={e => set('subject', e.target.value)}
-                                        style={inputStyle} maxLength={80} />
+                                        style={inputStyle} maxLength={TITLE_MAX_CHARS} />
                                     {errors.subject && <p className="text-xs" style={{ color: errorColor }}>{errors.subject}</p>}
                                 </Field>
 
@@ -1831,7 +1880,7 @@ export default function SubmitArchive() {
                                         <input type="text" placeholder="e.g. fusion, materials-science, citation-needed"
                                             value={form.tags} onChange={e => set('tags', e.target.value)} style={inputStyle} />
                                         <p className="text-xs mt-1" style={{ color: isDark ? '#e2e8f0' : '#475569' }}>
-                                            Comma or hashtag separated. Normalized for search — reuse tags to cross-link subjects across hubs.
+                                            Comma or hashtag separated, up to {MAX_TAG_CHARS} characters each. Normalized for search — reuse tags to cross-link subjects across hubs.
                                         </p>
                                         {errors.tags && <p className="text-xs" style={{ color: errorColor }}>{errors.tags}</p>}
                                     </Field>
@@ -1943,13 +1992,13 @@ export default function SubmitArchive() {
                                 {showSummaryField && (
                                     <Field label="Short Summary" required>
                                         <textarea rows={3} placeholder="A concise overview of the research entry (50-400 characters)..."
-                                            value={form.summary} maxLength={400}
+                                            value={form.summary} maxLength={SHORT_SUMMARY_MAX_CHARS}
                                             onChange={e => set('summary', e.target.value)}
                                             style={{ ...inputStyle, resize: 'vertical' }} />
                                         <div className="flex justify-between">
                                             {errors.summary ? <p className="text-xs" style={{ color: errorColor }}>{errors.summary}</p> : <span />}
-                                            <span className="text-xs" style={{ color: form.summary.length < 50 || form.summary.length > 400 ? errorColor : '#34d399' }}>
-                                                {form.summary.length}/400
+                                            <span className="text-xs" style={{ color: form.summary.length < 50 || form.summary.length > SHORT_SUMMARY_MAX_CHARS ? errorColor : '#34d399' }}>
+                                                {form.summary.length}/{SHORT_SUMMARY_MAX_CHARS}
                                             </span>
                                         </div>
                                     </Field>
@@ -1958,13 +2007,13 @@ export default function SubmitArchive() {
                                 {showDetailField && (
                                     <Field label="Technical Deep Detail" required>
                                         <textarea rows={6} placeholder="In-depth technical analysis. Enter discrete sentences to be parsed as grid segments (20-250 characters each)..."
-                                            value={form.detail} maxLength={2500}
+                                            value={form.detail} maxLength={CONTENT_MAX_CHARS}
                                             onChange={e => set('detail', e.target.value)}
                                             style={{ ...inputStyle, resize: 'vertical' }} />
                                         <div className="flex justify-between">
                                             {errors.detail ? <p className="text-xs" style={{ color: errorColor }}>{errors.detail}</p> : <span />}
-                                            <span className="text-xs" style={{ color: form.detail.length < 100 || form.detail.length > 2500 ? errorColor : '#34d399' }}>
-                                                {form.detail.length}/2500
+                                            <span className="text-xs" style={{ color: form.detail.length < 100 || form.detail.length > CONTENT_MAX_CHARS ? errorColor : '#34d399' }}>
+                                                {form.detail.length}/{CONTENT_MAX_CHARS}
                                             </span>
                                         </div>
                                     </Field>
@@ -2079,10 +2128,11 @@ export default function SubmitArchive() {
                                         <textarea rows={3}
                                             placeholder={'One per line: hubId | Label shown in the map\ne.g. mars | Engineering view of the same topic'}
                                             value={form.alternatePerspectives}
+                                            maxLength={MAX_ALTERNATE_PERSPECTIVES * (ALTERNATE_PERSPECTIVE_MAX_CHARS + 1)}
                                             onChange={e => set('alternatePerspectives', e.target.value)}
                                             style={{ ...inputStyle, resize: 'vertical' }} />
                                         <p className="text-xs mt-1" style={{ color: isDark ? '#e2e8f0' : '#475569' }}>
-                                            Appears in L5/L6 as "same subject, other scientific view" links. Use planet ids such as earth, mars, venus, jupiter, saturn, neptune.
+                                            Appears in L5/L6 as "same subject, other scientific view" links. Use planet ids such as earth, mars, venus, jupiter, saturn, neptune. Up to {MAX_ALTERNATE_PERSPECTIVES} lines, {ALTERNATE_PERSPECTIVE_MAX_CHARS} characters each.
                                         </p>
                                         {errors.alternatePerspectives && <p className="text-xs" style={{ color: errorColor }}>{errors.alternatePerspectives}</p>}
                                     </Field>

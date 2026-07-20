@@ -23,8 +23,9 @@ const MySubmissions = lazy(() => import('./pages/MySubmissions.jsx'))
 const GradeSubmissions = lazy(() => import('./pages/GradeSubmissions.jsx'))
 const CreateArchive = lazy(() => import('./pages/CreateArchive.jsx'))
 const DeployHub = lazy(() => import('./pages/DeployHub.jsx'))
-const AccountSecurity = lazy(() => import('./pages/AccountSecurity.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy.jsx'))
+const TermsOfService = lazy(() => import('./pages/TermsOfService.jsx'))
 const SsoCallback = lazy(() => import('./pages/SsoCallback.jsx'))
 const EmailLinkVerified = lazy(() => import('./pages/EmailLinkVerified.jsx'))
 const AdminPanel = lazy(() => import('./pages/AdminPanel.jsx'))
@@ -160,7 +161,8 @@ function AnimatedRoutes() {
                         <Route path="/join" element={<PageWrap><Join /></PageWrap>} />
                         <Route path="/sso-callback" element={<SsoCallback />} />
                         <Route path="/email-link-verified" element={<PageWrap><EmailLinkVerified /></PageWrap>} />
-                        <Route path="/account" element={memberGuard(<PageWrap><AccountSecurity /></PageWrap>)} />
+                        <Route path="/privacy" element={<PageWrap><PrivacyPolicy /></PageWrap>} />
+                        <Route path="/terms" element={<PageWrap><TermsOfService /></PageWrap>} />
                         <Route path="/profile" element={memberGuard(<PageWrap><Profile /></PageWrap>)} />
                         <Route path="/archive/beacon" element={<Navigate to="/archive/star" replace />} />
                         <Route path="/archive/:planetId" element={guard(<PageWrap><ArchiveGrid /></PageWrap>)} />

@@ -424,6 +424,20 @@
 }
 .sj-terms a:hover { border-color: var(--sj-ink); }
 
+.sj-terms-notice {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--sj-ink-2);
+  margin: 0 0 10px;
+}
+.sj-terms-notice a {
+  color: var(--sj-ink);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.25);
+  transition: border-color 0.2s ease;
+}
+.sj-terms-notice a:hover { border-color: var(--sj-ink); }
+
 .sj-error {
   font-size: 12.5px;
   text-align: center;

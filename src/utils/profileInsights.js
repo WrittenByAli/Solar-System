@@ -102,13 +102,12 @@ export function weeklySeries(events, weekCount = 12) {
  * badges have no historical record, so their earnedAt stays null and the
  * UI shows "Unlocked" without inventing a date.
  */
-export function deriveAchievements({ submissions = [], reviews = [], points = 0, role = 'student', rank = 0, profile = null }) {
+export function deriveAchievements({ submissions = [], reviews = [], points = 0, rank = 0 }) {
     const subsAsc = [...submissions].sort(byCreatedAsc)
     const revsAsc = [...reviews].sort(byCreatedAsc)
     const apprAsc = submissions
         .filter((s) => s.status === 'approved')
         .sort((a, b) => new Date(a.updated_at || a.created_at) - new Date(b.updated_at || b.created_at))
-    const isReviewer = role === 'reviewer' || role === 'admin'
 
     return [
         { id: 'first-light', icon: 'sparkles', rarity: 'common', title: 'First Light', desc: 'Submit your first archive entry', target: 1, progress: Math.min(subsAsc.length, 1), earnedAt: nth(subsAsc, 1)?.created_at ?? null },
@@ -119,7 +118,7 @@ export function deriveAchievements({ submissions = [], reviews = [], points = 0,
         { id: 'archivist', icon: 'archive', rarity: 'epic', title: 'Archivist', desc: 'Submit 15 entries', target: 15, progress: Math.min(subsAsc.length, 15), earnedAt: nth(subsAsc, 15)?.created_at ?? null },
         { id: 'historian', icon: 'landmark', rarity: 'epic', title: 'Historian', desc: 'Have 5 entries approved', target: 5, progress: Math.min(apprAsc.length, 5), earnedAt: nth(apprAsc, 5)?.updated_at ?? null },
         { id: 'podium', icon: 'medal', rarity: 'epic', title: 'Podium', desc: 'Reach the leaderboard top 3', target: 1, progress: rank > 0 && rank <= 3 ? 1 : 0, earnedAt: null },
-        { id: 'constellation', icon: 'shield', rarity: 'legendary', title: 'Constellation', desc: 'Earn the Reviewer rank', target: 1, progress: isReviewer ? 1 : 0, earnedAt: profile?.reviewer_promoted_at ?? null },
+        { id: 'constellation', icon: 'shield', rarity: 'legendary', title: 'Constellation', desc: 'Complete 10 peer reviews', target: 10, progress: Math.min(revsAsc.length, 10), earnedAt: nth(revsAsc, 10)?.created_at ?? null },
         { id: 'top-reviewer', icon: 'trophy', rarity: 'legendary', title: 'Top Reviewer', desc: 'Complete 25 reviews', target: 25, progress: Math.min(revsAsc.length, 25), earnedAt: nth(revsAsc, 25)?.created_at ?? null },
     ]
 }

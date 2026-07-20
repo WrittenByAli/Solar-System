@@ -870,14 +870,6 @@ export default function Profile() {
                                             <span className="sp-switch__knob" />
                                         </button>
                                     </div>
-                                    <Link to="/account" className="sp-inforow">
-                                        <span className="sp-inforow__icon"><ShieldCheck size={15} aria-hidden /></span>
-                                        <div className="flex-1">
-                                            <p className="text-sm font-medium" style={{ color: strong }}>Account &amp; security</p>
-                                            <p className="text-[11px] mt-0.5" style={{ color: muted }}>Two-factor auth, passkeys, sessions</p>
-                                        </div>
-                                        <ChevronRight size={16} style={{ color: muted }} aria-hidden />
-                                    </Link>
                                     {canAccessReviewerQueue && (
                                         <Link to="/review-queue" className="sp-inforow">
                                             <span className="sp-inforow__icon"><ClipboardCheck size={15} aria-hidden /></span>
@@ -898,6 +890,29 @@ export default function Profile() {
                                     </Link>
                                 </GlassCard>
                             </div>
+                        </section>
+
+                        {/* ══ 08 · Legal ═════════════════════════════ */}
+                        <section className="mt-12">
+                            <SectionHeader index="08" eyebrow="Policies" title="Legal" />
+                            <GlassCard className="p-4 flex flex-col gap-1">
+                                <Link to="/privacy" className="sp-inforow">
+                                    <span className="sp-inforow__icon"><ShieldCheck size={15} aria-hidden /></span>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium" style={{ color: strong }}>Privacy Policy</p>
+                                        <p className="text-[11px] mt-0.5" style={{ color: muted }}>What data we collect and your rights under GDPR</p>
+                                    </div>
+                                    <ChevronRight size={16} style={{ color: muted }} aria-hidden />
+                                </Link>
+                                <Link to="/terms" className="sp-inforow">
+                                    <span className="sp-inforow__icon"><FileText size={15} aria-hidden /></span>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium" style={{ color: strong }}>Terms of Service</p>
+                                        <p className="text-[11px] mt-0.5" style={{ color: muted }}>The rules for using the archive</p>
+                                    </div>
+                                    <ChevronRight size={16} style={{ color: muted }} aria-hidden />
+                                </Link>
+                            </GlassCard>
                         </section>
                     </>
                 )}

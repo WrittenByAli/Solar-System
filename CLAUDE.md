@@ -32,7 +32,6 @@ All routes are defined in `src/App.jsx` inside `<AnimatedRoutes>`:
 | `/join` | `Join` (sign in / sign up / verify / MFA / password reset) — only public route |
 | `/sso-callback` | `SsoCallback` (OAuth completion, public) |
 | `/email-link-verified` | `EmailLinkVerified` (email verification link landing, public) |
-| `/account` | `AccountSecurity` (MFA enrollment, sessions) |
 | `/profile` | `Profile` (identity page, avatar upload, stats, submission history) |
 | `/archive/:planetId` | `ArchiveGrid` |
 | `/leaderboard` | `Leaderboard` |
@@ -46,7 +45,7 @@ All routes are defined in `src/App.jsx` inside `<AnimatedRoutes>`:
 
 All routes except `/join`, `/sso-callback`, and `/email-link-verified` are wrapped in `RequireAuth` (App.jsx) — signed-out users are redirected to `/join`. Auth is real (Clerk); see `AUTH_SETUP.md`.
 
-**Guest mode:** `/join` offers "Continue as guest" — a browse-only localStorage session (`AuthContext.isGuest`; no Clerk account, no Supabase row). Guests pass `RequireAuth` (Home, Map, Archive, Leaderboard, Deploy), but contribution routes (`/submit`, `/my-submissions`, `/reviews`, `/account`, `/profile`, `/create-archive`) use `RequireMember`, which shows guests an upgrade prompt (`src/components/GuestGate.jsx`). The authorization policy (`src/auth/authorization.js`) has a `GUEST` role holding only `archive:read`. A real sign-in permanently clears the guest flag.
+**Guest mode:** `/join` offers "Continue as guest" — a browse-only localStorage session (`AuthContext.isGuest`; no Clerk account, no Supabase row). Guests pass `RequireAuth` (Home, Map, Archive, Leaderboard, Deploy), but contribution routes (`/submit`, `/my-submissions`, `/reviews`, `/profile`, `/create-archive`) use `RequireMember`, which shows guests an upgrade prompt (`src/components/GuestGate.jsx`). The authorization policy (`src/auth/authorization.js`) has a `GUEST` role holding only `archive:read`. A real sign-in permanently clears the guest flag.
 
 **Submission lifecycle:** `archive_entries` rows move through `pending → approved/rejected` via the `process_review_consensus` trigger (3 reviewer consensus, see Backend state below). `is_draft`/`draft_saved_at` mark an in-progress, not-yet-submitted row (autosaved every 30s from `/submit`, one active draft per user, surfaced as a "continue where you left off" banner). `deleted_at` is a soft-delete marker settable only on `pending`/`rejected` rows (RLS-enforced — see Backend state) — approved entries can never be soft-deleted or mutated via the anon key. Editing a pending/rejected entry (`/submit?editEntryId=<id>` or from `/my-submissions`) soft-deletes the original row and inserts a fresh pending copy rather than mutating in place, so stale reviews never contaminate a new consensus count. Every read of `pending`/`draft` rows (the review queue, `/my-submissions`) must filter `.is('deleted_at', null)`; reads scoped to `status='approved'` are automatically safe since approved rows can never carry a `deleted_at`.
 

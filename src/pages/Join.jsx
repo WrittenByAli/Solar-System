@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, Navigate, useLocation } from 'react-router-dom'
+import { useNavigate, Navigate, useLocation, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     UserPlus, LogIn, Lock, Eye, EyeOff, ArrowRight,
@@ -1388,20 +1388,24 @@ export default function Join() {
                         </div>
                     )}
 
-                    {/* Terms + Privacy — signup only */}
+                    {/* Terms + Privacy — signup only. Links open in a new tab rather
+                        than navigating away, so a signup mid-fill isn't lost. */}
                     {isSignup && (
                         <>
-                            {/* No standalone Terms/Privacy pages exist yet. href="#"
-                                must not fall through: under HashRouter it rewrites the
-                                hash and navigates away from /join mid-signup. */}
+                            <p className="sj-terms-notice">
+                                By creating an account, you agree to our{' '}
+                                <Link to="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</Link>
+                                {' '}and acknowledge our{' '}
+                                <Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>.
+                            </p>
                             <label className="sj-terms">
                                 <input type="checkbox" checked={form.terms} onChange={(e) => set('terms', e.target.checked)} />
-                                <span>I agree to the <a href="#" onClick={(e) => e.preventDefault()}>Terms &amp; Conditions</a></span>
+                                <span>I agree to the <Link to="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</Link></span>
                             </label>
                             {fieldError('terms')}
                             <label className="sj-terms" style={{ marginTop: -6 }}>
                                 <input type="checkbox" checked={form.privacy} onChange={(e) => set('privacy', e.target.checked)} />
-                                <span>I agree to the <a href="#" onClick={(e) => e.preventDefault()}>Privacy Policy</a></span>
+                                <span>I agree to the <Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link></span>
                             </label>
                             {fieldError('privacy')}
                         </>

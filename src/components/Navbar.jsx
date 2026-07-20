@@ -17,7 +17,6 @@ import {
     Eye,
     Rocket,
     Award,
-    ShieldCheck,
     Shield,
     FileText,
 } from 'lucide-react'
@@ -153,11 +152,6 @@ export default function Navbar() {
                         <Link to="/my-submissions" role="menuitem" onClick={() => setAccountOpen(false)} className="snav-menu__item">
                             <FileText size={15} aria-hidden />
                             My submissions
-                        </Link>
-
-                        <Link to="/account" role="menuitem" onClick={() => setAccountOpen(false)} className="snav-menu__item">
-                            <ShieldCheck size={15} aria-hidden />
-                            Account &amp; security
                         </Link>
 
                         <button type="button" role="menuitem" onClick={handleLogout} className="snav-menu__item snav-menu__item--danger">
@@ -502,19 +496,6 @@ export default function Navbar() {
                             >
                                 <Trophy size={18} className="shrink-0" aria-hidden />
                                 View profile
-                            </Link>
-                            </motion.div>
-                        )}
-
-                        {isLoggedIn && (
-                            <motion.div variants={sheetItemVariants}>
-                            <Link
-                                to="/account"
-                                onClick={() => setMobileOpen(false)}
-                                className="snav-sheet__link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium min-h-[48px]"
-                            >
-                                <ShieldCheck size={18} className="shrink-0" aria-hidden />
-                                Account &amp; security
                             </Link>
                             </motion.div>
                         )}

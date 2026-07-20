@@ -290,9 +290,19 @@ export default function GradeSubmissions() {
           notes: notes.slice(0, 1200),
         })
         if (error) {
+          const msg = error.message || ''
           if (error.code === '23505') setSubmitErr('You already graded this entry.')
-          else if (/cannot review own/i.test(error.message || '')) setSubmitErr('You cannot grade your own submission.')
-          else setSubmitErr('Unable to save this grade.')
+          else if (/cannot review own/i.test(msg)) setSubmitErr('You cannot grade your own submission.')
+          // Server-side eligibility gate (enforce_review_eligibility). Reachable
+          // in normal use when another reviewer's vote closes consensus while
+          // this entry was open here -- the queue reloads and it disappears.
+          else if (/not open for review|is deleted|is a draft/i.test(msg)) {
+            setSubmitErr('This entry closed for review before your grade was saved. It has been removed from the queue.')
+            setSelectedId(null)
+            setListTick((t) => t + 1)
+          } else if (/rate limit/i.test(msg)) {
+            setSubmitErr('You are grading too quickly. Please wait a moment and try again.')
+          } else setSubmitErr('Unable to save this grade.')
           return
         }
         await refreshProfile()

@@ -1,0 +1,198 @@
+/* ── /privacy and /terms — shared legal-document layout ── */
+
+.sa-legal-page {
+  padding-top: 8px;
+  padding-bottom: 4rem;
+}
+
+.sa-legal-header {
+  margin-bottom: 28px;
+}
+
+.sa-legal-eyebrow {
+  font-family: var(--sa-font);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  margin: 0 0 10px;
+}
+
+.sa-legal-title {
+  font-family: var(--sa-font);
+  font-size: clamp(1.9rem, 5.5vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: var(--sa-heading-tracking);
+  line-height: 1.08;
+  margin: 0 0 10px;
+  text-wrap: balance;
+}
+
+.sa-legal-updated {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+
+.sa-legal-intro {
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 62ch;
+  margin: 0;
+}
+
+/* ── Jump-to index ── */
+
+.sa-legal-toc {
+  padding: 18px 20px;
+  border-radius: var(--sa-glass-radius-lg, 18px);
+  margin-bottom: 36px;
+}
+
+.sa-legal-toc__label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin: 0 0 12px;
+}
+
+.sa-legal-toc__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.sa-legal-toc__link {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: var(--sa-text-secondary);
+  background: var(--sa-accent-subtle);
+  border: 1px solid var(--sa-accent-border);
+  text-decoration: none;
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.sa-legal-toc__link:hover,
+.sa-legal-toc__link:focus-visible {
+  color: var(--sa-accent);
+  border-color: var(--sa-accent);
+}
+
+.sa-legal-toc__link:focus-visible {
+  outline: 2px solid var(--sa-accent);
+  outline-offset: 2px;
+}
+
+/* ── Sections ── */
+
+.sa-legal-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.sa-legal-section {
+  scroll-margin-top: calc(var(--solar-nav-offset) + 16px);
+  padding-top: 22px;
+  border-top: 1px solid var(--sa-section-divider);
+}
+
+.sa-legal-section:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+/* Brief highlight when a reader jumps here via the TOC or a deep link. */
+.sa-legal-section:target {
+  animation: sa-legal-target-flash 1.8s ease-out;
+}
+
+@keyframes sa-legal-target-flash {
+  0% { background: var(--sa-accent-subtle); border-radius: 12px; }
+  100% { background: transparent; }
+}
+
+.sa-legal-h2 {
+  font-family: var(--sa-font);
+  font-size: clamp(1.05rem, 2.6vw, 1.3rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+  text-wrap: balance;
+}
+
+.sa-legal-p {
+  font-size: 14.5px;
+  line-height: 1.75;
+  max-width: 68ch;
+  margin: 0 0 12px;
+}
+
+.sa-legal-p:last-child {
+  margin-bottom: 0;
+}
+
+.sa-legal-p a,
+.sa-legal-list a {
+  color: var(--sa-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+}
+
+.sa-legal-p a:hover,
+.sa-legal-list a:hover {
+  color: var(--sa-accent-hover);
+}
+
+.sa-legal-p a:focus-visible,
+.sa-legal-list a:focus-visible,
+.sa-legal-toc__link:focus-visible {
+  outline: 2px solid var(--sa-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.sa-legal-list {
+  font-size: 14.5px;
+  line-height: 1.75;
+  max-width: 68ch;
+  margin: 0 0 12px;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sa-legal-list:last-child {
+  margin-bottom: 0;
+}
+
+.sa-legal-list--ordered {
+  padding-left: 24px;
+}
+
+@media (max-width: 640px) {
+  .sa-legal-toc {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sa-legal-section:target {
+    animation: none;
+    background: var(--sa-accent-subtle);
+  }
+}
+
+/* ── Light mode overrides ── */
+/* All colors above already resolve through --sa-* tokens, which are
+   redefined per-theme in theme-tokens.css — no separate .light block
+   needed for correct contrast in either mode. */

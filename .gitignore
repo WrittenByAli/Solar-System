@@ -144,4 +144,5 @@ supabase_*.sql
 qa-*.mjs
 test-*.mjs
 shot-*.mjs
+zz-*.mjs
 .vercel
