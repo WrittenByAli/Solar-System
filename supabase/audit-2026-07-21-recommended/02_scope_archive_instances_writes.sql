@@ -1,0 +1,73 @@
+-- ============================================================
+-- RECOMMENDED FIX — NOT AUTO-APPLIED. Requires a schema change + backfill.
+-- Placed OUTSIDE supabase/migrations/ so `supabase db push` won't run it.
+--
+-- AUDIT FINDING 2a (Medium/Low, Broken Access Control):
+-- `archive_instances` has RLS policies `instances_insert_authenticated`
+-- (WITH CHECK true) and `instances_update_authenticated` (USING true /
+-- WITH CHECK true). The table has NO owner column, so ANY authenticated
+-- member can INSERT or UPDATE ANY hosted-archive row (keyed by hub_id):
+-- overwrite another user's instance_title / cover_image_data_url / slug /
+-- category / contact_url, or flip listed_on_registry. contact_url could be
+-- repointed to a phishing target on someone else's listing. Confirmed live
+-- via pg_policies on 2026-07-21. DELETE was already correctly removed.
+--
+-- Also relevant: cover_image_data_url is unbounded text (data: URL) — a
+-- storage-bloat vector on top of the access-control gap.
+--
+-- WHY NOT AUTO-APPLIED: the table has no owner column today; ownership is
+-- tracked separately in archive_registry(owner=username, hub_id). Fixing
+-- properly needs (1) an owner column, (2) a backfill from archive_registry,
+-- and (3) coordination with the write path in
+-- src/utils/archiveInstanceStorage.js (which upserts these rows). Applying
+-- blind risks breaking the "host your own archive" create/publish flow.
+-- archive_registry.owner is itself a NON-UNIQUE username (Finding 2b), so a
+-- uuid owner column is preferable to reusing username.
+--
+-- RECOMMENDED APPROACH:
+--   1. Add owner_id uuid references users_profile(id).
+--   2. Backfill from archive_registry via hub_id -> users_profile by username
+--      (resolve the non-unique-username ambiguity manually for any collisions).
+--   3. Make the write path set owner_id = caller on create.
+--   4. Replace the always-true policies with owner-scoped ones (below).
+--   5. Add a length bound on cover_image_data_url (e.g. <= 512 KB) like the
+--      other bound_* migrations.
+--
+-- Sketch (adjust after steps 1-3):
+--
+--   alter table public.archive_instances
+--     add column if not exists owner_id uuid references public.users_profile(id);
+--
+--   -- backfill (review collisions first):
+--   update public.archive_instances ai
+--     set owner_id = up.id
+--     from public.archive_registry r
+--     join public.users_profile up on up.username = r.owner
+--    where r.hub_id = ai.hub_id and ai.owner_id is null;
+--
+--   drop policy if exists instances_insert_authenticated on public.archive_instances;
+--   drop policy if exists instances_update_authenticated on public.archive_instances;
+--
+--   create policy instances_insert_own on public.archive_instances
+--     for insert to authenticated
+--     with check (owner_id in (select id from public.users_profile
+--                              where clerk_id = (select auth.jwt()->>'sub')));
+--
+--   create policy instances_update_own on public.archive_instances
+--     for update to authenticated
+--     using (owner_id in (select id from public.users_profile
+--                         where clerk_id = (select auth.jwt()->>'sub')))
+--     with check (owner_id in (select id from public.users_profile
+--                              where clerk_id = (select auth.jwt()->>'sub')));
+--
+--   alter table public.archive_instances
+--     add constraint archive_instances_cover_bound_check
+--     check (cover_image_data_url is null or length(cover_image_data_url) <= 524288) not valid;
+--
+-- INTERIM (if a full fix can't ship before launch): if the hosted-archive
+-- feature is not part of the initial launch surface, the lowest-risk option
+-- is to REVOKE INSERT/UPDATE on archive_instances from authenticated until
+-- the owner column ships (fails closed; the feature is disabled rather than
+-- exploitable):
+--   -- revoke insert, update on public.archive_instances from anon, authenticated;
+-- ============================================================
