@@ -31,6 +31,11 @@ const BACKOFF_BASE_MS = 1_000
 const BACKOFF_MAX_MS = 30_000
 const DEBOUNCE_MS = 400
 
+// Playwright's page.route() intercepts HTTP only, not WebSocket transport --
+// a real subscribe() here would open a live channel against production
+// Supabase on every e2e run with no way to mock it. Treat e2e like disabled.
+const isE2eMode = import.meta.env.VITE_E2E === 'true'
+
 export function useReviewQueueRealtime(enabled, onChange) {
     const [connectionState, setConnectionState] = useState('connecting')
 
@@ -44,7 +49,7 @@ export function useReviewQueueRealtime(enabled, onChange) {
     const debounceTimerRef = useRef(null)
 
     useEffect(() => {
-        if (!enabled) {
+        if (!enabled || isE2eMode) {
             setConnectionState('disconnected')
             return undefined
         }

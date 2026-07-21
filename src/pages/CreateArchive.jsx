@@ -381,7 +381,7 @@ export default function CreateArchive() {
                         <label className="block cursor-pointer group">
                             <input
                                 type="file"
-                                accept="image/*"
+                                accept="image/png,image/jpeg,image/webp,image/gif"
                                 className="hidden"
                                 onChange={(e) => {
                                     const f = e.target.files?.[0]

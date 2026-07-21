@@ -241,6 +241,40 @@ export async function mockSupabaseQueue(page, entries = [MOCK_QUEUE_ENTRY]) {
       return
     }
 
+    // public_profiles (safe-columns view) and notifications are read by
+    // components mounted globally (Navbar/NotificationBell, GradeSubmissions'
+    // reviewer-name lookups) on nearly every authenticated page. Without
+    // these two branches, requests carrying the mock 'e2e-profile-uuid' fall
+    // through to route.continue() and hit the REAL production Supabase
+    // project, which rejects the non-UUID value with 22P02 -- harmless (no
+    // write occurs) but pollutes prod logs on every local/CI e2e run.
+    if (url.includes('/rest/v1/public_profiles')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          { id: 'e2e-profile-uuid', username: 'e2e_reviewer', avatar_url: null, points: 1200, role: 'reviewer', created_at: new Date().toISOString() },
+        ]),
+      })
+      return
+    }
+
+    if (url.includes('/rest/v1/notifications')) {
+      if (method === 'GET' || method === 'HEAD') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          headers: { 'content-range': '0-0/0' },
+          body: method === 'HEAD' ? '' : '[]',
+        })
+        return
+      }
+      if (method === 'PATCH') {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+        return
+      }
+    }
+
     await route.continue()
   }
 

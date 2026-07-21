@@ -1,10 +1,15 @@
 import { test, expect } from '@playwright/test'
-import { hashUrl, installE2eAuth, mockCommunityReviews, MOCK_COMMUNITY_REVIEWS } from './helpers.js'
+import { hashUrl, installE2eAuth, mockCommunityReviews, mockNotifications, MOCK_COMMUNITY_REVIEWS } from './helpers.js'
 
 test.describe('Reviews page', () => {
   test.beforeEach(async ({ page }) => {
     await installE2eAuth(page)
     await mockCommunityReviews(page)
+    // NotificationBell mounts globally (Navbar) and queries by the mock
+    // profile id -- without this it leaks a real request to production
+    // Supabase (see helpers.js mockSupabaseQueue for the same gap on
+    // archive_entries-based specs).
+    await mockNotifications(page)
   })
 
   test('renders scroll intro and feed', async ({ page }) => {

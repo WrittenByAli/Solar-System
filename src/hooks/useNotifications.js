@@ -41,6 +41,12 @@ const BACKOFF_MAX_MS = 30_000
 const BROADCAST_CHANNEL_NAME = 'solar-archive-notifications'
 const STORAGE_FALLBACK_KEY = 'sa-notif-broadcast'
 
+// Playwright's page.route() intercepts HTTP only, not WebSocket transport --
+// a real subscribe() here would open a live channel against production
+// Supabase on every e2e run with no way to mock it. Skip it in e2e mode,
+// matching useReviewQueueRealtime.js's same gate.
+const isE2eMode = import.meta.env.VITE_E2E === 'true'
+
 function makeCrossTabBus() {
     // BroadcastChannel is unavailable on Safari < 15.4 and some webviews --
     // fall back to a storage-event ping (any write to a shared localStorage
@@ -177,7 +183,7 @@ export function useNotifications(userId) {
     // ---- Realtime subscription + exponential-backoff reconnect ---------
     useEffect(() => {
         mountedRef.current = true
-        if (!userId) {
+        if (!userId || isE2eMode) {
             setConnectionState('disconnected')
             return undefined
         }
