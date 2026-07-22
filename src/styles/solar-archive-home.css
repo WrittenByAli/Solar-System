@@ -415,14 +415,20 @@ html.sa-home-scroll body {
   /* The star-cut A is an inline SVG glyph (SolarBrandA), not a font
      character -- overflow stays visible so the reveal-slide isn't hard
      clipped against the SVG's own box. Height is driven by the SVG rule
-     below (matched to the surrounding cap-height), and the flex word centers
-     it against S/O/L/R, so it sits at the same level on every device. */
+     below (matched to the surrounding cap-height). align-self: flex-end
+     (overriding .scroll-story__brand-word's align-items: center, which
+     S/O/L/R still use) bottom-aligns this letter against the row instead of
+     centering it -- text letters fill the row's full cross-height so
+     center === flush-bottom for them; the SVG box doesn't necessarily match
+     that height exactly, so centering it left its bottom edge sitting above
+     R's. Bottom-aligning instead puts both baselines flush, letter-for-letter. */
   overflow: visible;
+  align-self: flex-end;
 }
 
 .scroll-story__brand-letter-a .scroll-story__brand-letter {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-end;
 }
 
 .scroll-story__brand-the {
