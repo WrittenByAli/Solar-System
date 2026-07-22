@@ -1390,12 +1390,12 @@ export default function Join() {
                                 <Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>.
                             </p>
                             <label className="sj-terms">
-                                <input type="checkbox" checked={form.terms} onChange={(e) => set('terms', e.target.checked)} />
+                                <input id="sj-terms-checkbox" name="terms" type="checkbox" checked={form.terms} onChange={(e) => set('terms', e.target.checked)} />
                                 <span>I agree to the <Link to="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</Link></span>
                             </label>
                             {fieldError('terms')}
                             <label className="sj-terms" style={{ marginTop: -6 }}>
-                                <input type="checkbox" checked={form.privacy} onChange={(e) => set('privacy', e.target.checked)} />
+                                <input id="sj-privacy-checkbox" name="privacy" type="checkbox" checked={form.privacy} onChange={(e) => set('privacy', e.target.checked)} />
                                 <span>I agree to the <Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link></span>
                             </label>
                             {fieldError('privacy')}

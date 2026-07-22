@@ -462,11 +462,19 @@ html.sa-home-scroll body {
   margin: 0 -0.01em;
 }
 
-/* Impact-font A with the four-point SOLAR mark cut out, allowing the
-   animated backdrop to show through the center of the glyph. */
+/* Impact-style A with the four-point SOLAR mark cut out, allowing the
+   animated backdrop to show through the center of the glyph. Anton (Google
+   Fonts, loaded in index.html) is a free, web-embeddable Impact-alike --
+   Impact/Haettenschweiler are Windows-only system fonts, absent on
+   Android/iOS/Linux, so without a web-delivered font every non-Windows
+   device fell back to a generic sans-serif "A" with different proportions,
+   landing this glyph's hand-tuned mask cutout in the wrong place (visible as
+   a dark, misplaced triangular artifact instead of the intended sunburst
+   cutout). Anton renders identically everywhere regardless of OS fonts,
+   which is why it's listed first. */
 .scroll-story__brand-a-impact {
   display: inline-block;
-  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+  font-family: Anton, Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
   font-weight: 400;
   letter-spacing: 0;
   padding: 0 0.015em;

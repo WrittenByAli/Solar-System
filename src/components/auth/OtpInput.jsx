@@ -77,6 +77,8 @@ export default function OtpInput({
                 <input
                     key={i}
                     ref={(el) => { refs.current[i] = el }}
+                    id={`sj-otp-digit-${i}`}
+                    name={`otp-digit-${i}`}
                     className="sj-otp__box"
                     type="text"
                     inputMode="numeric"
