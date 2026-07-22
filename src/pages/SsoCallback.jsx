@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import FoundationLogo from '../components/FoundationLogo.jsx'
 
 /**
- * OAuth landing route. Clerk redirects here after the Google/GitHub
+ * OAuth landing route. Clerk redirects here after the Google
  * handshake; <AuthenticateWithRedirectCallback> completes the flow
  * (including transferring an OAuth sign-in to a sign-up for brand-new
  * users) and then forwards to the URLs below.
