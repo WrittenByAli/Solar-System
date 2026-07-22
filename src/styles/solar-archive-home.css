@@ -413,11 +413,20 @@ html.sa-home-scroll body {
 
 .scroll-story__brand-letter-a.scroll-story__brand-letter-wrap {
   overflow: visible;
+  /* .scroll-story__brand-word centers every letter as a flex item based on
+     its own rendered box height. Every other letter uses overflow:hidden at
+     a height matching the shared line-height, so they align consistently;
+     this one needs overflow:visible so the star cutout below isn't clipped,
+     which otherwise leaves its layout height unconstrained -- pinning it to
+     the same 0.88 line-height ratio as its siblings keeps it vertically
+     level with S/O/L/R regardless of which font renders the glyph itself. */
+  height: 0.88em;
 }
 
 .scroll-story__brand-letter-a .scroll-story__brand-letter {
   display: inline-flex;
   align-items: center;
+  height: 100%;
 }
 
 .scroll-story__brand-the {
@@ -481,15 +490,18 @@ html.sa-home-scroll body {
   -webkit-mask-image:
     linear-gradient(#fff, #fff),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='34 38 32 44'%3E%3Cpath d='M50 38Q52.5 57.5 66 60Q52.5 62.5 50 82Q47.5 62.5 34 60Q47.5 57.5 50 38Z'/%3E%3C/svg%3E");
-  -webkit-mask-size: 100% 100%, 0.3em 0.41em;
-  -webkit-mask-position: 0 0, 50% 52%;
+  -webkit-mask-size: 100% 100%, 0.22em 0.32em;
+  -webkit-mask-position: 0 0, 50% 50%;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-composite: xor;
   mask-image:
     linear-gradient(#fff, #fff),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='34 38 32 44'%3E%3Cpath d='M50 38Q52.5 57.5 66 60Q52.5 62.5 50 82Q47.5 62.5 34 60Q47.5 57.5 50 38Z'/%3E%3C/svg%3E");
-  mask-size: 100% 100%, 0.3em 0.41em;
-  mask-position: 0 0, 50% 52%;
+  /* Sized/positioned for Anton specifically -- shrunk from the original
+     Impact-tuned 0.3em/0.41em (which overshot Anton's narrower, more
+     condensed "A" and read as clipped) and re-centered at 50%/50%. */
+  mask-size: 100% 100%, 0.22em 0.32em;
+  mask-position: 0 0, 50% 50%;
   mask-repeat: no-repeat;
   mask-composite: exclude;
 }
