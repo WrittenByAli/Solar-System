@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../../App.jsx'
 import { WORD_SPRING } from './scrollRevealShared.jsx'
 import { ARCHIVE_MECHANICS } from './homeContent.js'
+import SolarBrandA from '../SolarBrandA.jsx'
 import ScrollTextReveal from './ScrollTextReveal.jsx'
 import ScrollStatsReveal from './ScrollStatsReveal.jsx'
 import ScrollFeaturesReveal from './ScrollFeaturesReveal.jsx'
@@ -113,7 +114,12 @@ function HeroBrandTitle({ local, reduceMotion }) {
           reduceMotion={reduceMotion}
           className="scroll-story__brand-letter-a"
         >
-          <span className="scroll-story__brand-a-impact">A</span>
+          {/* Inline SVG glyph (star-cut A), NOT a font character: renders
+              pixel-identically on every device regardless of installed fonts.
+              The old font+CSS-mask approach depended on Impact (Windows-only)
+              and broke on Android/iOS/Linux. Same component as the navbar
+              logo's A, so the brand mark is now consistent everywhere. */}
+          <SolarBrandA />
         </BrandLetter>
         <BrandLetter index={7} reveal={letterReveal} reduceMotion={reduceMotion}>R</BrandLetter>
       </span>
