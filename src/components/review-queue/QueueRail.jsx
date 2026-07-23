@@ -51,7 +51,7 @@ export default function QueueRail({
                       Stale
                     </span>
                   )}
-                  <span className="rq-mission__age">{timeAgo(entry.created_at)}</span>
+                  <span className="rq-mission__age">{timeAgo(entry.submitted_at ?? entry.created_at)}</span>
                 </div>
 
                 <h3 className="rq-mission__title">{entry.title || 'Untitled'}</h3>

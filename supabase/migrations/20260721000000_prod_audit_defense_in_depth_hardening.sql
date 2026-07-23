@@ -20,11 +20,20 @@
 --     (0028/0029). These functions reference NEW/OLD and error out if
 --     called directly anyway; this makes that explicit.
 --
---  3. Revoke EXECUTE on enforce_rate_limit(text) from anon/authenticated.
---     It is invoked only from the rl_* wrapper trigger functions, which are
---     SECURITY DEFINER (owned by postgres) — a DEFINER function's calls are
---     authorized as its owner, not the original caller, so revoking the
---     caller's grant does not affect rate-limit enforcement.
+--  3. [SUPERSEDED — see 20260723000000_hotfix_restore_enforce_rate_limit_execute.sql]
+--     This originally revoked EXECUTE on enforce_rate_limit(text) from
+--     anon/authenticated, on the theory that the rl_* wrapper trigger
+--     functions that call it are SECURITY DEFINER. That premise was WRONG:
+--     rl_archive_entries_insert(), rl_reviews_insert(), and
+--     rl_segment_reports_insert() are all invoker-rights (prosecdef=false),
+--     so revoking the caller's own grant broke every insert into
+--     archive_entries/reviews/segment_reports in production ("permission
+--     denied for function enforce_rate_limit"). The 20260723 hotfix
+--     re-grants EXECUTE to anon/authenticated; enforce_rate_limit() is still
+--     SECURITY DEFINER and still resolves the caller from the JWT
+--     internally, so this does not reopen any meaningful surface — it only
+--     lets the invoker-rights wrappers complete the call they were always
+--     meant to make.
 --
 --  4. Revoke EXECUTE on refresh_leaderboard_view() from anon only.
 --     authenticated is KEPT (the /leaderboard manual-refresh button calls

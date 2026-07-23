@@ -5,7 +5,13 @@
 // non-draft, non-deleted archive_entries row crosses 48 hours with no
 // review activity -- the same "no review activity" definition
 // GradeSubmissions.jsx's client-side isStale flag already uses
-// (lastActivity = greatest(created_at, max(reviews.created_at))).
+// (lastActivity = greatest(submitted_at, max(reviews.created_at))).
+// submitted_at (not created_at) is the reference point deliberately: for a
+// row that spent time as an autosaved draft, created_at is when the DRAFT
+// was first saved, not when it actually became reviewable -- using it here
+// would flag entries as "48h stale" the moment they're submitted, if they
+// happened to sit in draft for that long first. submitted_at is set
+// server-side by trg_set_archive_entry_submitted_at.
 //
 // Atomicity/idempotency: candidate staleness is computed here in JS,
 // mirroring GradeSubmissions.jsx's own JS calculation exactly (there is no
@@ -76,11 +82,11 @@ Deno.serve(async (req: Request) => {
     const cutoffIso = new Date(Date.now() - STALE_MS).toISOString()
     const { data: candidates, error: candidatesErr } = await supabase
       .from('archive_entries')
-      .select('id, title, layer, created_at')
+      .select('id, title, layer, submitted_at')
       .eq('status', 'pending')
       .eq('is_draft', false)
       .is('deleted_at', null)
-      .lt('created_at', cutoffIso)
+      .lt('submitted_at', cutoffIso)
 
     if (candidatesErr) throw candidatesErr
     if (!candidates || candidates.length === 0) {
@@ -90,7 +96,7 @@ Deno.serve(async (req: Request) => {
     const candidateIds = candidates.map((c) => c.id)
 
     // Reviews for those candidates -- needed to compute the true
-    // lastActivity (greatest(created_at, max(reviews.created_at))),
+    // lastActivity (greatest(submitted_at, max(reviews.created_at))),
     // identical to GradeSubmissions.jsx's isStale calculation.
     const { data: reviewRows, error: reviewsErr } = await supabase
       .from('reviews')
@@ -100,7 +106,7 @@ Deno.serve(async (req: Request) => {
     if (reviewsErr) throw reviewsErr
 
     const lastActivityByEntry = new Map<string, number>(
-      candidates.map((c) => [c.id, new Date(c.created_at).getTime() || 0]),
+      candidates.map((c) => [c.id, new Date(c.submitted_at).getTime() || 0]),
     )
     for (const r of reviewRows || []) {
       const t = new Date(r.created_at).getTime() || 0

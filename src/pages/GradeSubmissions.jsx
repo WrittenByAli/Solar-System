@@ -216,7 +216,7 @@ export default function GradeSubmissions() {
         .eq('status', 'pending')
         .eq('is_draft', false)
         .is('deleted_at', null)
-        .order('created_at', { ascending: true })
+        .order('submitted_at', { ascending: true })
       if (!active) return
       if (error || !Array.isArray(pending)) {
         setQueue([])
@@ -322,7 +322,7 @@ export default function GradeSubmissions() {
       .filter((e) => planetFilter === 'all' || String(e.planet_id).toLowerCase() === planetFilter)
       .map((e, i) => {
         const reviews = reviewsByEntry[e.id] || []
-        const created = new Date(e.created_at).getTime() || 0
+        const created = new Date(e.submitted_at ?? e.created_at).getTime() || 0
         const lastActivity = reviews.reduce(
           (max, r) => Math.max(max, new Date(r.created_at).getTime() || 0),
           created,

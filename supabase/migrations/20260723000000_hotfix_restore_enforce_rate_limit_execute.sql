@@ -1,0 +1,27 @@
+-- ============================================================
+-- Hotfix (2026-07-23): restore EXECUTE on enforce_rate_limit(text) to
+-- anon/authenticated.
+--
+-- ROOT CAUSE: 20260721000000_prod_audit_defense_in_depth_hardening.sql
+-- revoked this grant on the theory that enforce_rate_limit() is "invoked
+-- only from the rl_* wrapper trigger functions, which are SECURITY DEFINER"
+-- -- that premise is false. Verified live via pg_proc.prosecdef:
+-- rl_archive_entries_insert(), rl_reviews_insert(), and
+-- rl_segment_reports_insert() are all prosecdef=false (invoker rights, not
+-- definer). A non-DEFINER function's internal calls run as the ORIGINAL
+-- caller (anon/authenticated), so the revoke broke every rate-limited
+-- insert: archive_entries (new submissions), reviews (grading), and
+-- segment_reports all started failing with "permission denied for function
+-- enforce_rate_limit" the moment that migration landed. Confirmed via the
+-- live console error on /submit and via has_function_privilege() showing
+-- anon_exec=false, auth_exec=false pre-fix.
+--
+-- This restores the pre-20260721 grant exactly (no other privilege change).
+-- enforce_rate_limit() itself is unaffected/unchanged -- it is still
+-- SECURITY DEFINER and still resolves the caller from the JWT internally,
+-- so this does not reopen any RPC-spoofing surface; it only lets the
+-- invoker-rights wrapper triggers complete the call they were always meant
+-- to make.
+-- ============================================================
+
+grant execute on function public.enforce_rate_limit(text) to anon, authenticated;
