@@ -1,6 +1,7 @@
 /** Compile compact hub taxonomy -> domains, subfields, leaves, sections, static map */
 
 import { SUBJECT_STRIDE_X, SUBJECT_STRIDE_Y } from './archiveLayerSpecs.js'
+import { buildTaxonomyDepthSeed } from '../data/archiveDepthSeeds.js'
 
 const QUADRANTS = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
 const DOMAIN_COLORS = ['#34d399', '#60a5fa', '#a78bfa', '#f97316']
@@ -97,11 +98,22 @@ export function buildHubResearchSections(taxonomy) {
   return taxonomy.leaves.map((leaf) => {
     const sub = subById[leaf.subfieldId]
     const dom = domById[sub?.domainId]
+    const seed = buildTaxonomyDepthSeed({
+      hubId: taxonomy.hubId,
+      discipline: taxonomy.discipline,
+      domain: dom?.label,
+      subfield: sub?.label,
+      title: leaf.title,
+    })
     return {
       title:        leaf.title,
       coordX:       String(leaf.lx),
       coordY:       String(leaf.ly),
       shortSummary: `${taxonomy.discipline} · ${dom?.label} · ${sub?.label} — ${leaf.title}.`,
+      content: seed.detail,
+      detailedSummary: seed.detail,
+      deepSections: seed.deepSections,
+      advancedSections: seed.advancedSections,
       tags:         [taxonomy.hubId, dom?.id, sub?.id].filter(Boolean),
       foundationMeta: {
         domainId:      dom?.id,

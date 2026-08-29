@@ -1,0 +1,552 @@
+.periodic-table {
+  --pt-cell: 64px;
+  --pt-gap: 0px;
+  --pt-ink: #ecfeff;
+  --pt-muted: #86a9b2;
+  --pt-panel: rgba(7, 18, 24, 0.94);
+  --pt-line: rgba(103, 232, 249, 0.17);
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: clamp(16px, 2vw, 28px) clamp(12px, 2vw, 30px) 14px;
+  color: var(--pt-ink);
+  background:
+    radial-gradient(circle at 18% 15%, rgba(8, 145, 178, 0.16), transparent 26%),
+    radial-gradient(circle at 72% 86%, rgba(34, 211, 238, 0.1), transparent 30%),
+    linear-gradient(135deg, #020609 0%, #061219 55%, #02070b 100%);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.periodic-table--light {
+  --pt-ink: #082f49;
+  --pt-muted: #4d7079;
+  --pt-panel: rgba(249, 254, 255, 0.96);
+  --pt-line: rgba(8, 145, 178, 0.2);
+  background:
+    radial-gradient(circle at 18% 15%, rgba(34, 211, 238, 0.22), transparent 28%),
+    radial-gradient(circle at 72% 86%, rgba(165, 243, 252, 0.32), transparent 32%),
+    linear-gradient(135deg, #f7fdfe 0%, #eaf7fa 58%, #f9feff 100%);
+}
+
+.periodic-table__atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.24;
+  background-image:
+    linear-gradient(var(--pt-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pt-line) 1px, transparent 1px);
+  background-size: var(--pt-cell) var(--pt-cell);
+  mask-image: linear-gradient(to bottom, black, transparent 90%);
+}
+
+.periodic-table__header {
+  width: 100%;
+  margin: 0 0 14px;
+  flex: none;
+}
+
+.periodic-table__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  color: #67e8f9;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+}
+
+.periodic-table--light .periodic-table__eyebrow { color: #087d94; }
+
+.periodic-table__title-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.periodic-table h1 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(24px, 2.6vw, 38px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.periodic-table__title-row p {
+  margin: 7px 0 0;
+  color: var(--pt-muted);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+.periodic-table__count {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px;
+  border-left: 1px solid var(--pt-line);
+}
+
+.periodic-table__count strong {
+  color: #67e8f9;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 27px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.periodic-table--light .periodic-table__count strong { color: #087d94; }
+.periodic-table__count span { color: var(--pt-muted); font-size: 7px; font-weight: 900; letter-spacing: 0.13em; line-height: 1.35; }
+
+.periodic-table__body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+}
+
+.periodic-table__scroll {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  cursor: grab;
+  touch-action: none;
+  overscroll-behavior: contain;
+  user-select: none;
+  scrollbar-color: rgba(103, 232, 249, 0.46) transparent;
+  scrollbar-width: thin;
+}
+
+.periodic-table__scroll--dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
+}
+
+.periodic-table__zoom-stage {
+  position: relative;
+  margin: 0 auto;
+  flex: none;
+}
+
+.periodic-table__canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1152px;
+  height: 640px;
+  transform-origin: top left;
+}
+
+.periodic-table__groups,
+.periodic-table__grid {
+  display: grid;
+  grid-template-columns: repeat(18, var(--pt-cell));
+  gap: var(--pt-gap);
+}
+
+.periodic-table__groups { height: 16px; }
+.periodic-table__groups span { color: var(--pt-muted); font-family: 'Courier New', monospace; font-size: 7px; text-align: center; }
+.periodic-table__grid {
+  grid-template-rows: repeat(9, var(--pt-cell));
+  width: 1152px;
+  height: 576px;
+  background-image:
+    linear-gradient(var(--pt-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pt-line) 1px, transparent 1px);
+  background-size: var(--pt-cell) var(--pt-cell);
+}
+
+.periodic-table__element {
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  box-sizing: border-box;
+  width: var(--pt-cell);
+  height: var(--pt-cell);
+  min-width: var(--pt-cell);
+  min-height: var(--pt-cell);
+  padding: 5px 4px 4px;
+  border: 1px solid color-mix(in srgb, var(--element-color) 52%, transparent);
+  border-radius: 3px;
+  color: var(--pt-ink);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--element-color) 19%, transparent), transparent 62%),
+    var(--pt-panel);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  overflow: hidden;
+  transform: translateZ(0);
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.periodic-table__element::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(115deg, transparent 22%, color-mix(in srgb, var(--element-color) 24%, transparent) 48%, transparent 72%);
+  transform: translateX(-100%);
+  transition: transform 350ms ease, opacity 200ms ease;
+}
+
+.periodic-table__element::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--element-color);
+  opacity: 0.72;
+}
+
+.periodic-table__element:hover,
+.periodic-table__element:focus-visible,
+.periodic-table__element--selected {
+  z-index: 4;
+  transform: translateY(-2px) scale(1.045);
+  outline: none;
+  border-color: var(--element-color);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--element-color) 19%, transparent), transparent 62%),
+    var(--pt-panel);
+  box-shadow: 0 0 0 1px var(--element-color), 0 12px 28px color-mix(in srgb, var(--element-color) 28%, transparent);
+}
+
+.periodic-table__element:active {
+  color: var(--pt-ink);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--element-color) 19%, transparent), transparent 62%),
+    var(--pt-panel);
+}
+
+.periodic-table__element:hover::before,
+.periodic-table__element:focus-visible::before { opacity: 1; transform: translateX(100%); }
+
+.periodic-table__number { position: absolute; top: 4px; left: 5px; color: var(--element-color); font-size: 7px; font-weight: 900; }
+.periodic-table__symbol { display: block; margin-top: 7px; font-family: Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 500; line-height: 1; }
+.periodic-table__name { display: block; margin-top: 3px; overflow: hidden; font-size: 6.5px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.periodic-table__mass { display: block; margin-top: 2px; color: var(--pt-muted); font-family: 'Courier New', monospace; font-size: 6px; }
+
+.periodic-table__series-marker,
+.periodic-table__series-label {
+  display: grid;
+  place-items: center;
+  width: var(--pt-cell);
+  height: var(--pt-cell);
+  border: 1px dashed var(--pt-line);
+  border-radius: 3px;
+  color: var(--pt-muted);
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.periodic-table__series-label {
+  width: calc(var(--pt-cell) * 2);
+  justify-content: end;
+  padding-right: 8px;
+  border: 0;
+}
+
+.periodic-table__zoom-readout {
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  z-index: 7;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 5px 7px;
+  border: 1px solid var(--pt-line);
+  color: var(--pt-muted);
+  background: color-mix(in srgb, var(--pt-panel) 82%, transparent);
+  font-family: 'Courier New', monospace;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
+.periodic-table__zoom-readout strong {
+  color: #67e8f9;
+  font-size: 9px;
+}
+
+.periodic-table__zoom-readout span {
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.periodic-table--light .periodic-table__zoom-readout strong { color: #087d94; }
+
+.periodic-table__inspector-shell {
+  --inspector-width: clamp(280px, 21vw, 340px);
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 8;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--pt-panel) 92%, transparent);
+  box-shadow: none;
+  transform: translateX(28px);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    visibility 0s linear 320ms;
+}
+
+.periodic-table__inspector-shell--active {
+  width: var(--inspector-width);
+  opacity: 1;
+  border-color: var(--pt-line);
+  box-shadow: -18px 0 50px rgba(0, 0, 0, 0.18);
+  transform: translateX(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.periodic-table__inspector {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(18px, 2vw, 28px);
+  opacity: 0;
+  background:
+    radial-gradient(circle at 78% 26%, color-mix(in srgb, var(--element-color) 13%, transparent), transparent 34%),
+    var(--pt-panel);
+  transform: translateX(34px);
+  pointer-events: none;
+}
+
+.periodic-table__inspector--active {
+  animation: pt-inspector-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.periodic-table__inspector-scan {
+  position: absolute;
+  top: -20%;
+  left: 0;
+  right: 0;
+  height: 22%;
+  opacity: 0.35;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--element-color) 28%, transparent), transparent);
+  animation: pt-scan 2.8s linear infinite;
+}
+
+.periodic-table__inspector-kicker { color: var(--element-color); font-family: 'Courier New', monospace; font-size: 8px; font-weight: 900; letter-spacing: 0.14em; }
+
+.periodic-table__inspector-heading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-top: 15px;
+}
+
+.periodic-table__inspector-symbol {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  flex: none;
+  border: 1px solid color-mix(in srgb, var(--element-color) 60%, transparent);
+  color: var(--element-color);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 28px;
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--element-color) 12%, transparent);
+}
+
+.periodic-table__inspector-heading h2 { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(25px, 2vw, 34px); font-weight: 500; letter-spacing: -0.03em; }
+.periodic-table__inspector-heading p { display: flex; align-items: center; gap: 6px; margin: 5px 0 0; color: var(--pt-muted); font-size: 9px; font-weight: 700; }
+.periodic-table__inspector-heading p i { width: 7px; height: 7px; border-radius: 50%; background: var(--element-color); box-shadow: 0 0 10px var(--element-color); }
+
+.periodic-table__atom {
+  position: relative;
+  width: 220px;
+  height: 158px;
+  margin: clamp(18px, 4vh, 42px) auto clamp(10px, 2vh, 22px);
+  perspective: 400px;
+}
+
+.periodic-table__atom-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--atom-color) 24%, transparent), transparent 68%);
+  transform: translate(-50%, -50%);
+  animation: pt-atom-pulse 2.2s ease-in-out infinite;
+}
+
+.periodic-table__nucleus {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: #fff;
+  background:
+    radial-gradient(circle at 34% 30%, #fff 0 3%, transparent 4%),
+    radial-gradient(circle at 40% 40%, var(--atom-color), color-mix(in srgb, var(--atom-color) 55%, #0f172a));
+  box-shadow: 0 0 22px color-mix(in srgb, var(--atom-color) 62%, transparent), inset -8px -8px 14px rgba(0, 0, 0, 0.28);
+  transform: translate(-50%, -50%);
+}
+
+.periodic-table__nucleus span { font-family: Georgia, 'Times New Roman', serif; font-size: 14px; font-weight: 700; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); }
+
+.periodic-table__orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  width: var(--orbit-width);
+  height: var(--orbit-height);
+  border: 1px solid color-mix(in srgb, var(--atom-color) 58%, transparent);
+  border-radius: 50%;
+  transform-style: preserve-3d;
+  animation: pt-orbit-shell var(--orbit-duration) linear infinite;
+  will-change: transform;
+}
+
+.periodic-table__electron {
+  position: absolute;
+  width: var(--electron-size);
+  height: var(--electron-size);
+  border-radius: 50%;
+  background: #ecfeff;
+  box-shadow: 0 0 6px 1px var(--atom-color);
+  transform: translate(-50%, -50%);
+}
+
+.periodic-table__electron-count {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  color: var(--pt-muted);
+  font-family: 'Courier New', monospace;
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.periodic-table__electron-count strong { color: var(--atom-color); font-size: 10px; }
+.periodic-table__electron-count i { color: var(--pt-muted); font-size: 6px; font-style: normal; letter-spacing: 0; }
+
+.periodic-table__inspector-summary { margin: 0; color: var(--pt-ink); font-size: 11px; line-height: 1.65; }
+
+.periodic-table__inspector-data { display: grid; gap: 0; margin: 14px 0 0; border-top: 1px solid var(--pt-line); }
+.periodic-table__inspector-data div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--pt-line); }
+.periodic-table__inspector-data dt { color: var(--pt-muted); font-size: 8px; text-transform: uppercase; letter-spacing: 0.09em; }
+.periodic-table__inspector-data dd { margin: 0; color: var(--pt-ink); font-family: 'Courier New', monospace; font-size: 9px; font-weight: 700; text-transform: capitalize; }
+
+.periodic-table__inspector-cta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 14px; color: var(--element-color); font-size: 8px; font-weight: 900; letter-spacing: 0.1em; }
+
+.periodic-table__legend {
+  display: flex;
+  width: 100%;
+  margin: 10px 0 0;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px 13px;
+  color: var(--pt-muted);
+  font-size: 7px;
+  font-weight: 700;
+}
+
+.periodic-table__legend span { display: inline-flex; align-items: center; gap: 5px; }
+.periodic-table__legend i { width: 6px; height: 6px; border-radius: 50%; }
+
+@keyframes pt-inspector-in {
+  from { opacity: 0; transform: translateX(34px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pt-scan {
+  from { transform: translateY(-20%); }
+  to { transform: translateY(560%); }
+}
+
+@keyframes pt-atom-pulse {
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.86); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.18); }
+}
+
+@keyframes pt-orbit-shell {
+  from { transform: translate(-50%, -50%) rotate(var(--orbit-start)); }
+  to { transform: translate(-50%, -50%) rotate(var(--orbit-end)); }
+}
+
+@media (max-width: 1100px) {
+  .periodic-table__inspector-shell { --inspector-width: 286px; }
+  .periodic-table__atom { transform: scale(0.86); margin-top: 12px; margin-bottom: 4px; }
+}
+
+@media (max-width: 820px) {
+  .periodic-table { padding: 14px 10px 10px; }
+  .periodic-table__title-row { align-items: start; }
+  .periodic-table__title-row p { max-width: 28rem; }
+  .periodic-table__count { display: none; }
+  .periodic-table__body { gap: 0; }
+  .periodic-table__scroll { margin-right: -10px; padding-right: 10px; }
+  .periodic-table__inspector-shell {
+    position: absolute;
+    top: 4px;
+    right: 0;
+    z-index: 8;
+    width: min(310px, calc(100vw - 24px));
+    min-width: 0;
+    height: min(570px, 82%);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(calc(100% + 18px));
+    pointer-events: none;
+    box-shadow: -20px 12px 60px rgba(0, 0, 0, 0.42);
+  }
+  .periodic-table__inspector-shell--active {
+    width: min(310px, calc(100vw - 24px));
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+  }
+  .periodic-table__legend { justify-content: flex-start; max-height: 28px; overflow: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .periodic-table__element { transition: none; }
+  .periodic-table__inspector-shell { transition: none; }
+  .periodic-table__inspector--active { animation: none; opacity: 1; transform: none; }
+  .periodic-table__inspector-scan,
+  .periodic-table__atom-glow,
+  .periodic-table__orbit { animation: none; }
+}

@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { useTheme } from '../App.jsx'
 import { buildMergedSectionEntries } from '../utils/archiveSectionEntries.js'
+import { dedupeAttachmentsByUrl } from '../utils/archiveAttachments.js'
+import { buildDeepArchiveDocument, buildDeepArchivePages } from '../utils/deepArchivePages.js'
 import { supabase } from '../utils/supabaseClient.js'
 import fallbackData from '../data/researchData.json'
 import SegmentHoverSurface from '../components/SegmentHoverSurface.jsx'
@@ -58,12 +60,14 @@ import ArchiveCompassView from '../components/ArchiveCompassView.jsx'
 import ArchiveL1Atmosphere from '../components/ArchiveL1Atmosphere.jsx'
 import LazyVantaFogBackground from '../components/solar-archive/LazyVantaFogBackground.jsx'
 import ArchiveHubGlobe from '../components/ArchiveHubGlobe.jsx'
+import PeriodicTableView from '../components/PeriodicTableView.jsx'
 import SuggestSubjectPopup from '../components/SuggestSubjectPopup.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import '../styles/archive-l1-atmosphere.css'
 import '../styles/archive-nav-responsive.css'
 import '../styles/planet-intro.css'
 import '../styles/archive-segment-gates.css'
+import '../styles/archive-deep-pager.css'
 import {
   getHubTaxonomy,
   getHubResearchSections,
@@ -71,6 +75,10 @@ import {
   mergeStaticLayerMapForHub,
 } from '../utils/hubTaxonomyRegistry.js'
 import { getHubDisciplineCopy } from '../constants/hubDisciplineCopy.js'
+import {
+  buildPeriodicElementEntries,
+  isUranusPeriodicTableBranch,
+} from '../data/periodicTable.js'
 
 const researchData = window.SOLAR_CONTENT_DATA || fallbackData;
 
@@ -232,15 +240,16 @@ function readableAccent(col, isDark) {
     : `color-mix(in srgb, ${col} 45%, #1e293b)`
 }
 
-/** L8 uses a 16384px canvas with ~16px body copy — needs higher zoom than the old 0.25 cap. */
-const L8_DEFAULT_ZOOM = 0.55
+/** Deep pages scale their typography with cell size and open fitted to the viewport. */
 const L8_MAX_ZOOM = 2.0
 
-/** Zoom that frames roughly one L8 narrative column for readable text. */
-function l8ReadableZoom(vpW) {
-  const tileFrac = 0.032
-  const fit = (vpW * 0.88) / (CELL_PX[8] * tileFrac)
-  return Math.max(L8_DEFAULT_ZOOM, Math.min(L8_MAX_ZOOM, fit))
+/** Zoom that frames one complete L6-L8 page. */
+function deepPageDefaultZoom(layer, vpW, vpH) {
+  if (layer < 6) return 1
+  const cp = CELL_PX[layer]
+  const fit = Math.min((Math.max(1, vpW) * 0.9) / cp, (Math.max(1, vpH) * 0.88) / cp)
+  const limits = getZoomLimits(layer)
+  return Math.max(limits.min, Math.min(limits.max, fit))
 }
 
 /** Per-layer zoom limits so text always stays readable on screen. */
@@ -317,7 +326,7 @@ function buildDeepFactSourceSlots(sectionEntries, dims) {
       ? segmentText(entry.segments[0])
       : ''
     const firstSentence = (easiest || fullText.split(/[.!?]\s+/)[0] || fullText).trim().slice(0, 440)
-    const atts = entry.attachments || []
+    const atts = dedupeAttachmentsByUrl(entry.attachments)
     const a0 = atts[0]
     push(
       `${pad4(row.lx)},${pad4(row.ly)}`,
@@ -332,7 +341,7 @@ function buildDeepFactSourceSlots(sectionEntries, dims) {
   while (slots.length < L8_FACT_SOURCE_SLOTS && ci < catalog.length) {
     const row = catalog[ci++]
     const entry = sectionEntries[row.key]
-    const atts = entry?.attachments || []
+    const atts = dedupeAttachmentsByUrl(entry?.attachments)
     for (let j = 1; j < atts.length && slots.length < L8_FACT_SOURCE_SLOTS; j++) {
       const a = atts[j]
       push(
@@ -475,10 +484,10 @@ function isRenderableImageUrl(url) {
 function AttachmentLinks({ attachments, col, isDark, title = 'Files', variant = 'default' }) {
   // resolveAttachmentUrl returns null for unsafe schemes (javascript:, etc.)
   // — drop those entirely rather than render a link with no safe href.
-  const list = (attachments || [])
+  const list = dedupeAttachmentsByUrl((attachments || [])
     .filter((a) => a && (a.url || a.href))
     .map((a) => ({ ...a, resolvedHref: resolveAttachmentUrl(a.url || a.href) }))
-    .filter((a) => a.resolvedHref !== null)
+    .filter((a) => a.resolvedHref !== null), (a) => a.resolvedHref)
   if (!list.length) return null
   const accent = isDark ? '#7dd3fc' : '#0369a1'
   const sizes = { compact: { title: 9, li: 9 }, default: { title: 10, li: 11 }, large: { title: 20, li: 18 } }
@@ -524,7 +533,7 @@ function AttachmentLinks({ attachments, col, isDark, title = 'Files', variant = 
 
 /** Inline thumbnails for image / sketch / graph URLs */
 function AttachmentFigures({ attachments, col, isDark, variant = 'default' }) {
-  const visual = (attachments || []).filter((a) => {
+  const visual = dedupeAttachmentsByUrl(attachments).filter((a) => {
     const raw = a?.url || a?.href
     return raw && isRenderableImageUrl(raw)
   })
@@ -932,7 +941,269 @@ function SegmentDifficultyBadge({ difficulty, isDark, fontSize = 9 }) {
 }
 
 // L6: 1024px -- segments ordered easiest → hardest, each with difficulty badge
-const L6Content = memo(function L6Content({ lx, ly, data, col, isDark, planetId }) {
+function DeepArchivePager({ pages, layer, lx, ly, col, isDark, planetId, onComplete }) {
+  const [pageIndex, setPageIndex] = useState(0)
+  const [turn, setTurn] = useState({ direction: 'next', token: 0 })
+  const page = pages[Math.min(pageIndex, pages.length - 1)]
+  const unit = CELL_PX[layer] / CELL_PX[6]
+
+  useEffect(() => {
+    setPageIndex(0)
+    setTurn({ direction: 'next', token: 0 })
+  }, [layer, lx, ly, pages.length])
+
+  if (!page) return null
+
+  const goToPage = (nextIndex, direction) => {
+    const bounded = Math.max(0, Math.min(pages.length - 1, nextIndex))
+    if (bounded === pageIndex) return
+    setTurn((current) => ({ direction, token: current.token + 1 }))
+    setPageIndex(bounded)
+  }
+
+  const advance = () => {
+    if (pageIndex === pages.length - 1) {
+      onComplete?.()
+      return
+    }
+    goToPage(pageIndex + 1, 'next')
+  }
+
+  const handlePageClick = (event) => {
+    event.stopPropagation()
+    if (event.target.closest('a, button')) return
+    advance()
+  }
+
+  const handleKeyDown = (event) => {
+    event.stopPropagation()
+    if (event.key === 'ArrowRight' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      advance()
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      goToPage(pageIndex - 1, 'previous')
+    }
+  }
+
+  const sourceHref = page.sourceHref ? resolveAttachmentUrl(page.sourceHref) : ''
+  const external = sourceHref && isCrossOriginHttp(sourceHref)
+  const progress = `${((pageIndex + 1) / pages.length) * 100}%`
+
+  return (
+    <article
+      className={`deep-archive-pager${isDark ? '' : ' deep-archive-pager--light'}`}
+      style={{
+        '--du': unit,
+        '--deep-accent': readableAccent(col, isDark),
+        '--deep-bg': isDark ? '#05040d' : '#f8fcfd',
+        '--deep-panel': isDark ? '#090814' : '#ffffff',
+        '--deep-ink': isDark ? '#f8fafc' : '#102a36',
+        '--deep-muted': isDark ? '#8da4af' : '#4b6974',
+        '--deep-progress': progress,
+      }}
+      tabIndex={0}
+      aria-label={`${page.title}, page ${pageIndex + 1} of ${pages.length}. ${pageIndex === pages.length - 1 ? 'Continue to L7.' : 'Click or press right arrow for the next fact.'}`}
+      onClick={handlePageClick}
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={handleKeyDown}
+    >
+      <div className="deep-archive-pager__book">
+        <div
+          key={`${page.id}-${turn.token}`}
+          className={`deep-archive-pager__page deep-archive-pager__page--${turn.direction}`}
+        >
+          <header className="deep-archive-pager__folio">
+            <span><strong>{page.eyebrow}</strong> / {page.note}</span>
+            <span>{page.planetId || String(planetId).toUpperCase()} / L{layer} / {pad4(lx)},{pad4(ly)}</span>
+          </header>
+
+          <div className="deep-archive-pager__content">
+            <section className="deep-archive-pager__primary">
+              <span className="deep-archive-pager__label">{page.label}</span>
+              <h2>{page.title}</h2>
+              <p className="deep-archive-pager__fact">{page.body}</p>
+            </section>
+            <aside className="deep-archive-pager__context">
+              <h3>ARCHIVE CONTEXT</h3>
+              <p>{page.context}</p>
+              <div className="deep-archive-pager__context-actions">
+                {sourceHref ? (
+                  <a
+                    className="deep-archive-pager__source"
+                    href={sourceHref}
+                    onClick={(event) => event.stopPropagation()}
+                    {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  >
+                    {page.sourceLabel || 'Open supporting source'}
+                  </a>
+                ) : null}
+                <SegmentReportLink
+                  planetId={planetId}
+                  lx={lx}
+                  ly={ly}
+                  archiveLayer={layer}
+                  segmentIndex={String(pageIndex + 1)}
+                  segmentLabel={`L${layer} page ${pageIndex + 1}`}
+                  excerpt={page.body}
+                  col={col}
+                  isDark={isDark}
+                  compact
+                />
+              </div>
+            </aside>
+          </div>
+
+          <footer className="deep-archive-pager__footer">
+            <button
+              type="button"
+              className="deep-archive-pager__control"
+              disabled={pageIndex === 0}
+              aria-label="Previous fact"
+              onClick={(event) => {
+                event.stopPropagation()
+                goToPage(pageIndex - 1, 'previous')
+              }}
+            >
+              <ChevronLeft size={Math.round(34 * unit)} aria-hidden />
+            </button>
+            <div className="deep-archive-pager__progress" aria-label={`Page ${pageIndex + 1} of ${pages.length}`}><i /></div>
+            <button
+              type="button"
+              className="deep-archive-pager__control"
+              disabled={pageIndex === pages.length - 1 && !onComplete}
+              aria-label={pageIndex === pages.length - 1 && onComplete ? 'Continue to L7' : 'Next fact'}
+              onClick={(event) => {
+                event.stopPropagation()
+                advance()
+              }}
+            >
+              <ChevronRight size={Math.round(34 * unit)} aria-hidden />
+            </button>
+          </footer>
+        </div>
+      </div>
+      <span className="deep-archive-pager__hint">
+        PAGE {pageIndex + 1} / {pages.length} · {pageIndex === pages.length - 1 && onComplete ? 'CLICK PAGE TO CONTINUE TO L7' : 'CLICK PAGE TO CONTINUE'}
+      </span>
+    </article>
+  )
+}
+
+function DeepArchiveDocument({ document, layer, lx, ly, col, isDark, planetId, onComplete }) {
+  const unit = CELL_PX[layer] / CELL_PX[6]
+  const canContinue = layer === 7 && Boolean(onComplete)
+
+  const handleClick = (event) => {
+    event.stopPropagation()
+    if (!canContinue || event.target.closest('a, button')) return
+    onComplete()
+  }
+
+  const handleKeyDown = (event) => {
+    event.stopPropagation()
+    if (!canContinue || !['Enter', ' ', 'ArrowRight'].includes(event.key)) return
+    event.preventDefault()
+    onComplete()
+  }
+
+  return (
+    <article
+      className={`deep-archive-document deep-archive-document--l${layer}${isDark ? '' : ' deep-archive-document--light'}${canContinue ? ' deep-archive-document--interactive' : ''}`}
+      style={{
+        '--du': unit,
+        '--deep-accent': readableAccent(col, isDark),
+        '--deep-bg': isDark ? '#05040d' : '#f8fcfd',
+        '--deep-panel': isDark ? '#090814' : '#ffffff',
+        '--deep-ink': isDark ? '#f8fafc' : '#102a36',
+        '--deep-muted': isDark ? '#8da4af' : '#4b6974',
+      }}
+      tabIndex={canContinue ? 0 : undefined}
+      aria-label={`${document.title}, ${document.eyebrow}${canContinue ? '. Click or press right arrow to continue to L8.' : ''}`}
+      onClick={handleClick}
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={handleKeyDown}
+    >
+      <header className="deep-archive-document__header">
+        <div>
+          <span className="deep-archive-document__eyebrow">{document.eyebrow}</span>
+          <h2>{document.title}</h2>
+        </div>
+        <span className="deep-archive-document__index">
+          {document.planetId || String(planetId).toUpperCase()} / L{layer} / {pad4(lx)},{pad4(ly)}
+        </span>
+      </header>
+
+      <div className="deep-archive-document__body">
+        <p className="deep-archive-document__lede">{document.lede}</p>
+        <div className="deep-archive-document__narrative" aria-label="Detailed archive narrative">
+          {document.sections.map((section, sectionIndex) => (
+            <section className="deep-archive-document__chapter" key={`${section.heading}-${sectionIndex}`}>
+              <h3><span>{String(sectionIndex + 1).padStart(2, '0')}</span>{section.heading}</h3>
+              {section.paragraphs.map((paragraph, paragraphIndex) => (
+                <p key={`${paragraphIndex}-${paragraph.slice(0, 32)}`}>{paragraph}</p>
+              ))}
+            </section>
+          ))}
+        </div>
+
+        {document.evidence.length > 0 ? (
+          <section className="deep-archive-document__evidence" aria-label="Evidence and advanced notes">
+            <h3><span>{String(document.sections.length + 1).padStart(2, '0')}</span>Evidence and advanced notes</h3>
+            {document.evidence.map((item, index) => {
+              const href = resolveAttachmentUrl(item.sourceHref)
+              return (
+                <div className="deep-archive-document__evidence-entry" key={`${item.coordLabel}-${item.title}-${index}`}>
+                  <h4>{item.title}</h4>
+                  <p>
+                    <strong>{item.coordLabel || `Record ${index + 1}`}.</strong> {item.fact}{' '}
+                    {href ? (
+                      <a href={href} {...(isCrossOriginHttp(href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+                        [{item.sourceLabel || 'supporting source'}]
+                      </a>
+                    ) : null}
+                  </p>
+                </div>
+              )
+            })}
+          </section>
+        ) : null}
+
+        {document.sources.length > 0 ? (
+          <footer className="deep-archive-document__sources">
+            <h3>Source index</h3>
+            <p>
+              {document.sources.map((source, index) => {
+                const href = resolveAttachmentUrl(source.href)
+                if (!href) return null
+                return (
+                  <React.Fragment key={`${href}-${index}`}>
+                    {index > 0 ? ' · ' : ''}
+                    <a href={href} {...(isCrossOriginHttp(href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+                      {String(index + 1).padStart(2, '0')} / {source.label}
+                    </a>
+                  </React.Fragment>
+                )
+              })}
+            </p>
+          </footer>
+        ) : null}
+      </div>
+
+      {canContinue ? (
+        <button type="button" className="deep-archive-document__continue" onClick={(event) => { event.stopPropagation(); onComplete() }}>
+          <span>CONTINUE TO DEEPEST RECORD</span>
+          <strong>L8</strong>
+          <ChevronRight size={Math.round(34 * unit)} aria-hidden />
+        </button>
+      ) : (
+        <div className="deep-archive-document__endmark">END OF ARCHIVE RECORD / VERIFIED DEPTH L8</div>
+      )}
+    </article>
+  )
+}
+
+const L6Content = memo(function L6Content({ lx, ly, data, col, isDark, planetId, onComplete }) {
   const coordLabel = `${pad4(lx)},${pad4(ly)}`
   const orderedSegments = useMemo(() => {
     const entryDiff = data?.consensusDifficulty ?? data?.difficulty ?? null
@@ -949,6 +1220,14 @@ const L6Content = memo(function L6Content({ lx, ly, data, col, isDark, planetId 
     }
     return normalizeSegmentsEasiestFirst(raw, entryDiff)
   }, [data?.segments, data?.content, data?.difficulty, data?.consensusDifficulty])
+  const pages = useMemo(
+    () => buildDeepArchivePages({ data, layer: 6, planetId }),
+    [data, planetId],
+  )
+
+  if (pages.length > 0) {
+    return <DeepArchivePager pages={pages} layer={6} lx={lx} ly={ly} col={col} isDark={isDark} planetId={planetId} onComplete={onComplete} />
+  }
 
   return (
     <div style={{ width: 1024, height: 1024, display: 'flex', flexDirection: 'column', border: `1px solid ${col}22`, background: isDark ? 'rgba(4,2,12,0.98)' : 'rgba(255,255,255,0.98)' }}>
@@ -1048,9 +1327,12 @@ const L6Content = memo(function L6Content({ lx, ly, data, col, isDark, planetId 
 // L7: 4096px - Intermediate
 const L7_CITED_PREVIEW_MAX = 8
 
-const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFactsCatalog, deepFactSources, planetId }) {
+const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFactsCatalog, deepFactSources, planetId, onComplete }) {
   const catalog = gridFactsCatalog || []
-  const citations = Array.isArray(deepFactSources) ? deepFactSources : []
+  const citations = useMemo(
+    () => (Array.isArray(deepFactSources) ? deepFactSources : []),
+    [deepFactSources],
+  )
   const citedPreview = citations.slice(0, L7_CITED_PREVIEW_MAX)
 
   const entryDiff = data?.consensusDifficulty ?? data?.difficulty ?? null
@@ -1058,6 +1340,14 @@ const L7Content = memo(function L7Content({ lx, ly, data, col, isDark, gridFacts
     () => normalizeSegmentsEasiestFirst(Array.isArray(data?.segments) ? data.segments : [], entryDiff),
     [data?.segments, entryDiff],
   )
+  const document = useMemo(
+    () => buildDeepArchiveDocument({ data, layer: 7, planetId, citations }),
+    [data, planetId, citations],
+  )
+
+  if (document) {
+    return <DeepArchiveDocument document={document} layer={7} lx={lx} ly={ly} col={col} isDark={isDark} planetId={planetId} onComplete={onComplete} />
+  }
 
   const renderGridReferences = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflow: 'hidden', minHeight: 0, flex: 1 }}>
@@ -1345,12 +1635,23 @@ function L8Tile({ children, style }) {
 
 // L8: 16384px - Deep Full
 const L8Content = memo(function L8Content({ lx, ly, data, col, isDark, deepFactSources, planetId, visYMin = 0, visYMax = Infinity }) {
-  const citations = deepFactSources || []
+  const citations = useMemo(
+    () => (Array.isArray(deepFactSources) ? deepFactSources : []),
+    [deepFactSources],
+  )
   const entryDiff = data?.consensusDifficulty ?? data?.difficulty ?? null
   const orderedNarrativeSegs = useMemo(
     () => normalizeSegmentsEasiestFirst(Array.isArray(data?.segments) ? data.segments : [], entryDiff),
     [data?.segments, entryDiff],
   )
+  const document = useMemo(
+    () => buildDeepArchiveDocument({ data, layer: 8, planetId, citations }),
+    [data, planetId, citations],
+  )
+
+  if (document) {
+    return <DeepArchiveDocument document={document} layer={8} lx={lx} ly={ly} col={col} isDark={isDark} planetId={planetId} />
+  }
   const narrativeSegCount = orderedNarrativeSegs.length
 
   // Row windowing constants for the narrative grid
@@ -1641,6 +1942,7 @@ const GridCell = memo(function GridCell({
   visYMin, visYMax, onDrillFilled,
 }) {
   const isEmpty = !data
+  const resolvedDeepFactSources = data?.deepFactSources?.length ? data.deepFactSources : deepFactSources
 
   const cellStyle = {
     position: 'absolute',
@@ -1681,9 +1983,9 @@ const GridCell = memo(function GridCell({
       )}
       {layer === 4 && <L4Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} compassSelected={compassSelected} />}
       {layer === 5 && <L5Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} planetId={planetId} />}
-      {layer === 6 && !isEmpty && <L6Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} planetId={planetId} />}
-      {layer === 7 && !isEmpty && <L7Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} gridFactsCatalog={gridFactsCatalog} deepFactSources={deepFactSources} planetId={planetId} />}
-      {layer === 8 && !isEmpty && <L8Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} deepFactSources={deepFactSources} planetId={planetId} visYMin={visYMin} visYMax={visYMax} />}
+      {layer === 6 && !isEmpty && <L6Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} planetId={planetId} onComplete={() => onDrillFilled?.(gx, gy, 7)} />}
+      {layer === 7 && !isEmpty && <L7Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} gridFactsCatalog={gridFactsCatalog} deepFactSources={resolvedDeepFactSources} planetId={planetId} onComplete={() => onDrillFilled?.(gx, gy, 8)} />}
+      {layer === 8 && !isEmpty && <L8Content lx={lx} ly={ly} data={data} col={col} isDark={isDark} deepFactSources={resolvedDeepFactSources} planetId={planetId} visYMin={visYMin} visYMax={visYMax} />}
     </div>
   )
 })
@@ -1750,16 +2052,6 @@ function InteractiveGrid({
 
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-      {/* Grid line background */}
-      <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        backgroundImage: isDark
-          ? `linear-gradient(rgba(79,195,247,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(79,195,247,0.08) 1px, transparent 1px)`
-          : `linear-gradient(rgba(2,132,199,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(2,132,199,0.06) 1px, transparent 1px)`,
-        backgroundSize: `${cp * zoom}px ${cp * zoom}px`,
-        backgroundPosition: `${-fx * cp * zoom}px ${-fy * cp * zoom}px`,
-      }} />
-
       {/* Cell transform group */}
       <div style={{
         position: 'absolute', top: 0, left: 0,
@@ -2122,12 +2414,8 @@ function StaticBg({ layer, viewX, viewY, isDark, color, zoom, planet, gridDims }
         position: 'absolute', left: trX, top: trY,
         width: gridDims.gridW * cp, height: gridDims.gridH * cp,
         background: layer === 1 ? 'transparent' : (isDark ? '#070512' : '#ffffff'),
-        backgroundImage: customImg
-          ? `url(${customImg})`
-          : (layer === 1 ? 'none' : (isDark
-            ? 'linear-gradient(rgba(79,195,247,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(79,195,247,0.2) 1px, transparent 1px)'
-            : 'linear-gradient(rgba(2,132,199,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(2,132,199,0.15) 1px, transparent 1px)')),
-        backgroundSize: customImg ? '100% 100%' : `${cp}px ${cp}px`,
+        backgroundImage: customImg ? `url(${customImg})` : 'none',
+        backgroundSize: customImg ? '100% 100%' : 'auto',
       }}>
         {!customImg && layer !== 1 && (
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', border: `${cp * 0.5}px solid ${color}2a`, boxSizing: 'border-box', boxShadow: `inset 0 0 60px ${color}14` }} />
@@ -2135,6 +2423,50 @@ function StaticBg({ layer, viewX, viewY, isDark, color, zoom, planet, gridDims }
         {/* planet sphere removed from L1 — no orb in the grid view */}
       </div>
     </div>
+  )
+}
+
+function ArchiveGridLines({ layer, viewX, viewY, zoom, isDark, color }) {
+  if (layer < 2) return null
+  const cp = CELL_PX[layer] * zoom
+  if (!Number.isFinite(cp) || cp <= 0) return null
+
+  const fineX = -(((viewX % 1) + 1) % 1) * cp
+  const fineY = -(((viewY % 1) + 1) % 1) * cp
+  const majorX = -(((viewX % 4) + 4) % 4) * cp
+  const majorY = -(((viewY % 4) + 4) % 4) * cp
+  const fineLine = isDark ? 'rgba(125,211,252,0.22)' : 'rgba(3,105,161,0.18)'
+  const majorLine = isDark ? `${color}66` : `${color}55`
+
+  return (
+    <div
+      className="archive-grid-lines"
+      aria-hidden
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 6,
+        pointerEvents: 'none',
+        backgroundImage: [
+          `linear-gradient(${fineLine} 1px, transparent 1px)`,
+          `linear-gradient(90deg, ${fineLine} 1px, transparent 1px)`,
+          `linear-gradient(${majorLine} 1px, transparent 1px)`,
+          `linear-gradient(90deg, ${majorLine} 1px, transparent 1px)`,
+        ].join(', '),
+        backgroundSize: [
+          `${cp}px ${cp}px`,
+          `${cp}px ${cp}px`,
+          `${cp * 4}px ${cp * 4}px`,
+          `${cp * 4}px ${cp * 4}px`,
+        ].join(', '),
+        backgroundPosition: [
+          `${fineX}px ${fineY}px`,
+          `${fineX}px ${fineY}px`,
+          `${majorX}px ${majorY}px`,
+          `${majorX}px ${majorY}px`,
+        ].join(', '),
+      }}
+    />
   )
 }
 
@@ -2208,9 +2540,9 @@ function SearchBar({
   const handleSelect = (r) => {
     const targetLayer = layer >= 5 && layer <= 8 ? layer : 6
     const cp = CELL_PX[targetLayer]
-    let fitZoom = Math.max(0.15, Math.min(1.0, (vpSize.w * 0.9) / cp))
-    if (targetLayer === 7) fitZoom = 0.60
-    if (targetLayer === 8) fitZoom = l8ReadableZoom(vpSize.w)
+    const fitZoom = targetLayer >= 6
+      ? deepPageDefaultZoom(targetLayer, vpSize.w, vpSize.h)
+      : Math.max(0.15, Math.min(1.0, (vpSize.w * 0.9) / cp))
 
     setLayer(targetLayer)
     setZoom(fitZoom)
@@ -2540,6 +2872,8 @@ export default function ArchiveGrid() {
   /** 4:4:4 compass -- active domain (L3) and subfield highlight */
   const [compassDomainId, setCompassDomainId] = useState(null)
   const [compassSubfieldId, setCompassSubfieldId] = useState(null)
+  const [compassTopicTitle, setCompassTopicTitle] = useState(null)
+  const [selectedElementAtomicNumber, setSelectedElementAtomicNumber] = useState(null)
   const panAnimRef = useRef(null)
   const [layerTrans, setLayerTrans] = useState(null) // { from, to }
 
@@ -2565,6 +2899,16 @@ export default function ArchiveGrid() {
 
   const hubTaxonomy = useMemo(() => getHubTaxonomy(hubId), [hubId])
   const hasCompassTaxonomy = !!hubTaxonomy
+  const periodicTableAnchor = useMemo(
+    () => hubTaxonomy?.leaves?.find((leaf) => leaf.title === "The Periodic Table's History & Organization") || null,
+    [hubTaxonomy],
+  )
+  const periodicTableBranchActive = isUranusPeriodicTableBranch({
+    hubId,
+    domainId: compassDomainId,
+    subfieldId: compassSubfieldId,
+    topicTitle: compassTopicTitle,
+  })
   /** pan = drag / touch moves grid; select = text selection & copy (no drag-pan on viewport) */
   const [viewportInteractMode, setViewportInteractMode] = useState('pan')
   /**
@@ -2694,12 +3038,19 @@ export default function ArchiveGrid() {
 
   // Build section lookup keyed by absolute grid index "gx,gy"
   // Supabase entries (dbEntries) are merged on top of the static data.
-  const sectionEntries = useMemo(
-    () => ({ ...buildMergedSectionEntries(planet, halfW, halfH), ...dbEntries }),
+  const sectionEntries = useMemo(() => {
+    const staticEntries = buildMergedSectionEntries(planet, halfW, halfH)
+    const periodicEntries = periodicTableBranchActive
+      ? buildPeriodicElementEntries(periodicTableAnchor, halfW, halfH)
+      : {}
+    return periodicTableBranchActive
+      ? { ...staticEntries, ...dbEntries, ...periodicEntries }
+      : { ...staticEntries, ...dbEntries }
+  },
     // submissionMergeTick is not read inside — it deliberately invalidates the
     // memo after a localStorage submission merge, which the inputs can't see.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [planet, submissionMergeTick, halfW, halfH, dbEntries],
+    [planet, submissionMergeTick, halfW, halfH, dbEntries, periodicTableBranchActive, periodicTableAnchor],
   )
 
   // On planet change or grid resize: reset to layer 1, zoom 1, center planet / grid origin on screen
@@ -2709,6 +3060,8 @@ export default function ArchiveGrid() {
     setFocusedCell(null)
     setCompassDomainId(null)
     setCompassSubfieldId(null)
+    setCompassTopicTitle(null)
+    setSelectedElementAtomicNumber(null)
     compassTopicCellRef.current = null
     const el = vpRef.current
     const r = el?.getBoundingClientRect?.()
@@ -2742,6 +3095,7 @@ export default function ArchiveGrid() {
   /** Invalidate cell cache on L7↔L8 so segment-0 snap runs (different pixel layout per layer). */
   const segmentNavLayerRef = useRef(null)
   const [segmentNavIndex, setSegmentNavIndex] = useState(0)
+  const pagedDeepMode = layer >= 6
 
   // Clamp viewX/viewY to valid range for the given layer/zoom
   const clamp = useCallback((x, y, l, z) => {
@@ -2871,7 +3225,7 @@ export default function ArchiveGrid() {
 
   /** When viewport centers on a different archive cell on L7/L8, snap to segment tile 0 there. */
   useEffect(() => {
-    if (layer !== 7 && layer !== 8) {
+    if ((layer !== 7 && layer !== 8) || pagedDeepMode) {
       segmentNavCellRef.current = ''
       segmentNavLayerRef.current = layer
       return
@@ -2891,10 +3245,10 @@ export default function ArchiveGrid() {
     const { x, y } = clampViewCenterOnCellPixel(gx, gy, cx, cy, layer, zoom, vpSize.w, vpSize.h, (vx, vy) => clamp(vx, vy, layer, zoom))
     setViewX(x)
     setViewY(y)
-  }, [layer, viewX, viewY, zoom, vpSize.w, vpSize.h, clamp])
+  }, [layer, viewX, viewY, zoom, vpSize.w, vpSize.h, clamp, pagedDeepMode])
 
   const applySegmentNav = useCallback((dir) => {
-    if (layer !== 7 && layer !== 8) return
+    if (pagedDeepMode || (layer !== 7 && layer !== 8)) return
     setFocusedCell(null)
     const cp = CELL_PX[layer] * zoom
     const vx = viewXYRef.current.x
@@ -2911,7 +3265,7 @@ export default function ArchiveGrid() {
       setViewY(y)
       return next
     })
-  }, [layer, zoom, vpSize.w, vpSize.h, clamp])
+  }, [layer, zoom, vpSize.w, vpSize.h, clamp, pagedDeepMode])
 
   const move = useCallback((dx, dy) => {
     setFocusedCell(null)
@@ -2933,7 +3287,7 @@ export default function ArchiveGrid() {
 
   const startMoving = useCallback((dx, dy) => {
     stopMoving()
-    if (layer === 7 || layer === 8) {
+    if ((layer === 7 || layer === 8) && !pagedDeepMode) {
       const dir = padDeltaToSegmentDir(dx, dy)
       if (!dir) return
       applySegmentNav(dir)
@@ -2961,7 +3315,7 @@ export default function ArchiveGrid() {
         move(dx * step, dy * step)
       }, 60) // 60ms for smooth continuous movement
     }, 300) // Wait 300ms before starting continuous movement
-  }, [layer, move, stopMoving, applySegmentNav, zoom, vpSize.w, vpSize.h])
+  }, [layer, move, stopMoving, applySegmentNav, zoom, vpSize.w, vpSize.h, pagedDeepMode])
 
   /** D-pad: reliable tap + hold-repeat on L7/L8 (pointerdown advances one segment per click). */
   const handlePadPointerDown = useCallback((e, dx, dy) => {
@@ -3014,9 +3368,7 @@ export default function ArchiveGrid() {
     const centerGX = viewX + (vpSize.w / 2) / oldCp
     const centerGY = viewY + (vpSize.h / 2) / oldCp
 
-    let defaultZoom = 1.0
-    if (nl === 7) defaultZoom = 0.60
-    if (nl === 8) defaultZoom = L8_DEFAULT_ZOOM
+    let defaultZoom = deepPageDefaultZoom(nl, vpSize.w, vpSize.h)
     // Arriving on L4 with a subfield picked: zoom in so the 2×2 topic block
     // is prominent in its quadrant instead of a 128px speck.
     if (nl === 4 && compassSubfieldId && hasCompassTaxonomy) defaultZoom = 1.8
@@ -3083,9 +3435,7 @@ export default function ArchiveGrid() {
     (gx, gy, nl) => {
       const fromLayer = layerRef.current
       let nl2 = Math.max(1, Math.min(TOTAL_LAYERS, nl))
-      let defaultZoom = 1.0
-      if (nl2 === 7) defaultZoom = 0.60
-      if (nl2 === 8) defaultZoom = L8_DEFAULT_ZOOM
+      const defaultZoom = deepPageDefaultZoom(nl2, vpSize.w, vpSize.h)
       setFocusedCell(null)
       setLayer(nl2)
       setZoom(defaultZoom)
@@ -3109,6 +3459,8 @@ export default function ArchiveGrid() {
     const fromLayer = layerRef.current
     const TOPIC_ZOOM = 1.8 // match switchLayer's subfield-selected L4 zoom
     compassTopicCellRef.current = { gx: leaf.lx + halfW, gy: halfH - leaf.ly }
+    setCompassTopicTitle(leaf.title)
+    setSelectedElementAtomicNumber(null)
     const q = compassAnchorViewXY(4, TOPIC_ZOOM, subfield.domainId, subfield.id)
     setFocusedCell(null)
     setLayer(4)
@@ -3125,6 +3477,17 @@ export default function ArchiveGrid() {
     }
     if (fromLayer !== 4) setLayerTrans({ from: fromLayer, to: 4 })
   }, [compassAnchorViewXY, clamp, halfW, halfH, vpSize])
+
+  const openPeriodicElement = useCallback((element) => {
+    if (!periodicTableAnchor) return
+    const lx = periodicTableAnchor.lx + element.displayColumn - 1
+    const ly = periodicTableAnchor.ly - element.displayRow + 1
+    const gx = lx + halfW
+    const gy = halfH - ly
+    compassTopicCellRef.current = { gx, gy }
+    setSelectedElementAtomicNumber(element.atomicNumber)
+    focusSubjectCell(gx, gy, 5)
+  }, [focusSubjectCell, periodicTableAnchor, halfW, halfH])
 
   /**
    * L2/L3 "suggest a subject": opens the inline SuggestSubjectPopup instead
@@ -3241,9 +3604,7 @@ export default function ArchiveGrid() {
       const centerGX = viewX + (col + 0.5) * cw
       const centerGY = viewY + (row + 0.5) * ch
       const nl = Math.min(TOTAL_LAYERS, layer + 1)
-      let defaultZoom = 1.0
-      if (nl === 7) defaultZoom = 0.60
-      if (nl === 8) defaultZoom = L8_DEFAULT_ZOOM
+      const defaultZoom = deepPageDefaultZoom(nl, vpSize.w, vpSize.h)
       setFocusedCell(null)
       setLayer(nl)
       setZoom(defaultZoom)
@@ -3498,7 +3859,7 @@ export default function ArchiveGrid() {
     const fn = (e) => {
       if (e.target?.tagName === 'INPUT') return
       if (viewportInteractMode === 'select' && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return
-      if (layer === 7 || layer === 8) {
+      if ((layer === 7 || layer === 8) && !pagedDeepMode) {
         switch (e.key) {
           case 'ArrowLeft': applySegmentNav('left'); break
           case 'ArrowRight': applySegmentNav('right'); break
@@ -3539,7 +3900,7 @@ export default function ArchiveGrid() {
     }
     window.addEventListener('keydown', fn)
     return () => window.removeEventListener('keydown', fn)
-  }, [layer, move, switchLayer, vpSize, zoom, applySegmentNav, viewportInteractMode, panScheme])
+  }, [layer, move, switchLayer, vpSize, zoom, applySegmentNav, viewportInteractMode, panScheme, pagedDeepMode])
 
   const col = planet.color
   // Display coords: viewport corner (L1-L6); L7/L8 use archive cell under crosshair (see hudCenterCell).
@@ -3547,10 +3908,8 @@ export default function ArchiveGrid() {
   const dispY = halfH - Math.floor(viewY)
 
   const isLarge = vpSize.w >= 1024
-  const segNavMode = layer === 7 || layer === 8
+  const segNavMode = (layer === 7 || layer === 8) && !pagedDeepMode
   const segNavTotal = layer === 7 ? L7_SEGMENT_NAV_TOTAL : L8_SEGMENT_COUNT
-
-  const deepFactSlotsForHud = useMemo(() => buildDeepFactSourceSlots(sectionEntries, gridDims), [sectionEntries, gridDims])
 
   const hudCenterCell = useMemo(() => {
     const cp = CELL_PX[layer] * zoom
@@ -3563,6 +3922,12 @@ export default function ArchiveGrid() {
       ly: halfH - gy,
     }
   }, [layer, viewX, viewY, zoom, vpSize.w, vpSize.h, gridW, gridH, halfW, halfH])
+
+  const deepFactSlotsForHud = useMemo(() => {
+    const key = `${hudCenterCell.gx},${hudCenterCell.gy}`
+    const cellSources = sectionEntries[key]?.deepFactSources
+    return cellSources?.length ? cellSources : buildDeepFactSourceSlots(sectionEntries, gridDims)
+  }, [hudCenterCell.gx, hudCenterCell.gy, sectionEntries, gridDims])
 
   const segmentGridFillStats = useMemo(() => {
     if (!segNavMode) return null
@@ -3621,6 +3986,7 @@ export default function ArchiveGrid() {
         segmentGridFillStats ? ` · ${segmentGridFillStats.pct}% full` : ''
       } · L${layer} — ${LAYER_LABELS[layer]}`
     : `${pad4(hudDispX)},${pad4(hudDispY)} · ${CELL_PX[layer]}×${CELL_PX[layer]} px · L${layer} — ${LAYER_LABELS[layer]}`
+  const isPeriodicTableLayer = layer === 4 && periodicTableBranchActive
 
   return (
     <div
@@ -3646,7 +4012,11 @@ export default function ArchiveGrid() {
       }}>
         
         {/* Responsive HUD: coords + tools; segment band on its own row when L7/L8 */}
-        <nav className="archive-nav-overlay" aria-label="Archive navigation">
+        <nav
+          className="archive-nav-overlay"
+          aria-label="Archive navigation"
+          style={isPeriodicTableLayer ? { display: 'none' } : undefined}
+        >
           <div className="archive-nav-overlay__row archive-nav-overlay__row--top">
             <div
               className="archive-nav-overlay__coords"
@@ -3871,8 +4241,8 @@ export default function ArchiveGrid() {
             </div>
           </div>
 
-          <div className="archive-nav-status" title={statusLine} style={{ color: isDark ? '#475569' : '#64748b' }}>
-            {statusLine}
+          <div className="archive-nav-status" title={isPeriodicTableLayer ? '118 elements in native L4 cells' : statusLine} style={{ color: isDark ? '#475569' : '#64748b' }}>
+            {isPeriodicTableLayer ? '118 ELEMENTS · 64×64 PX · L4' : statusLine}
           </div>
         </header>
 
@@ -3929,15 +4299,21 @@ export default function ArchiveGrid() {
                     compassTopicCellRef.current = null
                     setCompassDomainId(domainId)
                     setCompassSubfieldId(null)
+                    setCompassTopicTitle(null)
+                    setSelectedElementAtomicNumber(null)
                   }}
                   onSelectSubfield={(subfieldId) => {
                     compassTopicCellRef.current = null
                     setCompassSubfieldId(subfieldId)
+                    setCompassTopicTitle(null)
+                    setSelectedElementAtomicNumber(null)
                   }}
                   onDrillToL3={() => switchLayer(3)}
                   onBackToL2={() => {
                     setCompassDomainId(null)
                     setCompassSubfieldId(null)
+                    setCompassTopicTitle(null)
+                    setSelectedElementAtomicNumber(null)
                     setLayer(2)
                   }}
                   onExitToL1={() => switchLayer(1)}
@@ -3972,6 +4348,12 @@ export default function ArchiveGrid() {
                 onLatticeTileActivate={(subfieldId) => setCompassSubfieldId(subfieldId)}
               />
             </>
+          ) : isPeriodicTableLayer ? (
+            <PeriodicTableView
+              isDark={isDark}
+              selectedAtomicNumber={selectedElementAtomicNumber}
+              onSelectElement={openPeriodicElement}
+            />
           ) : (
             <InteractiveGrid
               layer={layer} viewX={viewX} viewY={viewY} vpW={vpSize.w} vpH={vpSize.h}
@@ -3981,7 +4363,17 @@ export default function ArchiveGrid() {
               onDrillFilled={focusSubjectCell}
             />
           )}
-          {!(hasCompassTaxonomy && (layer === 2 || layer === 3)) && (
+          {!isPeriodicTableLayer && (
+            <ArchiveGridLines
+              layer={layer}
+              viewX={viewX}
+              viewY={viewY}
+              zoom={zoom}
+              isDark={isDark}
+              color={col}
+            />
+          )}
+          {!(hasCompassTaxonomy && (layer === 2 || layer === 3)) && !isPeriodicTableLayer && (
             <div className="archive-crosshair" style={{
               position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
               pointerEvents: 'none', zIndex: 10
@@ -3996,7 +4388,7 @@ export default function ArchiveGrid() {
           position: 'absolute',
           bottom: layer === 1 ? 'max(6px, env(safe-area-inset-bottom))' : 'max(18px, env(safe-area-inset-bottom))',
           left: '50%', transform: 'translateX(-50%)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, zIndex: 1000
+          display: isPeriodicTableLayer ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, zIndex: 1000
         }}>
           
           {/* Navigation Controls: D-Pad & Zoom.

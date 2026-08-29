@@ -34,6 +34,8 @@ export function buildMergedSectionEntries(planet, halfW, halfH) {
       tags: s.tags || [],
       alternatePerspectives: Array.isArray(s.alternatePerspectives) ? s.alternatePerspectives : [],
       foundationMeta: s.foundationMeta || null,
+      deepSections: Array.isArray(s.deepSections) ? s.deepSections : [],
+      advancedSections: Array.isArray(s.advancedSections) ? s.advancedSections : [],
     }
   })
   const pid = String(planet.id || planet.planet || '').toLowerCase()

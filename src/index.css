@@ -186,15 +186,19 @@ textarea {
   width: 100%;
   min-height: 44px;
   padding: 0.7rem 0.9rem;
-  border: 0;
+  border: 1px solid var(--sa-input-border);
   border-radius: 12px;
   outline: none;
-  background-color: color-mix(in srgb, var(--sa-bg-card-solid) 76%, transparent);
+  background-color: var(--sa-input-bg);
   color: var(--sa-text);
   font: inherit;
   line-height: 1.35;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+:is(input, select, textarea):not(:disabled):hover {
+  border-color: var(--sa-input-border-hover);
 }
 
 textarea {
@@ -233,8 +237,8 @@ select {
 }
 
 :is(input, select, textarea):focus-visible {
-  border-color: var(--sa-accent) !important;
-  box-shadow: 0 0 0 3px var(--sa-accent-subtle) !important;
+  border-color: var(--sa-focus) !important;
+  box-shadow: 0 0 0 3px var(--sa-focus-ring) !important;
 }
 
 :is(input, select, textarea):disabled {
@@ -268,7 +272,7 @@ select {
   [class$='__panel'],
   [class*='__panel ']
 ) {
-  border: 0;
+  border: 1px solid var(--sa-border-subtle);
   border-radius: 16px;
   box-shadow: var(--sa-glass-shadow);
 }
@@ -283,7 +287,7 @@ select {
   [class$='__panel'],
   [class*='__panel ']
 ):not([class*='active']):not([class*='selected']):not([class*='--sel']) {
-  background-color: transparent;
+  background-color: var(--sa-bg-card);
 }
 
 :is(
@@ -294,8 +298,8 @@ select {
   border-color: var(--sa-accent) !important;
 }
 
-:is(.dark, .light) :is(section, article)[style*='border'],
-:is(.dark, .light) :is(
+.dark :is(section, article)[style*='border'],
+.dark :is(
   [class$='-section'],
   [class*='-section '],
   [class$='__section'],
@@ -305,13 +309,13 @@ select {
 }
 
 /* Borderless surfaces in both themes. */
-:is(.dark, .light) :is(section, article, header, footer, nav, form, fieldset, li, dl, div),
-:is(.dark, .light) :is(section, article, header, footer, nav, form, fieldset, li, dl, div)::before,
-:is(.dark, .light) :is(section, article, header, footer, nav, form, fieldset, li, dl, div)::after {
+.dark :is(section, article, header, footer, nav, form, fieldset, li, dl, div),
+.dark :is(section, article, header, footer, nav, form, fieldset, li, dl, div)::before,
+.dark :is(section, article, header, footer, nav, form, fieldset, li, dl, div)::after {
   border-color: transparent !important;
 }
 
-:is(.dark, .light) :is(
+.dark :is(
   button,
   [class*='card'],
   [class*='panel'],

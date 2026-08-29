@@ -36,6 +36,43 @@
   --sa-btn-solid-text: #160d02;
   --sa-btn-solid-hover: #ffb84d;
 
+  --sa-surface: #0a1220;
+  --sa-surface-raised: #101b2d;
+  --sa-input-bg: rgba(2, 6, 18, 0.72);
+  --sa-input-border: rgba(148, 163, 184, 0.26);
+  --sa-input-border-hover: rgba(148, 163, 184, 0.46);
+  --sa-focus: #38bdf8;
+  --sa-focus-ring: rgba(56, 189, 248, 0.28);
+  --sa-link: #7dd3fc;
+  --sa-link-hover: #bae6fd;
+  --sa-selection-bg: rgba(56, 189, 248, 0.3);
+  --sa-selection-text: #f8fafc;
+
+  --sa-btn-secondary-bg: #172033;
+  --sa-btn-secondary-text: #e2e8f0;
+  --sa-btn-secondary-hover: #222e45;
+  --sa-btn-outline-bg: transparent;
+  --sa-btn-outline-text: #e2e8f0;
+  --sa-btn-outline-border: #475569;
+  --sa-btn-outline-hover: #182237;
+  --sa-btn-ghost-text: #cbd5e1;
+  --sa-btn-ghost-hover: rgba(148, 163, 184, 0.12);
+  --sa-btn-disabled-bg: #1e293b;
+  --sa-btn-disabled-text: #94a3b8;
+
+  --sa-success: #34d399;
+  --sa-success-strong: #059669;
+  --sa-success-bg: rgba(52, 211, 153, 0.12);
+  --sa-warning: #fbbf24;
+  --sa-warning-strong: #d97706;
+  --sa-warning-bg: rgba(251, 191, 36, 0.12);
+  --sa-danger: #fb7185;
+  --sa-danger-strong: #e11d48;
+  --sa-danger-bg: rgba(251, 113, 133, 0.12);
+  --sa-info: #38bdf8;
+  --sa-info-strong: #0284c7;
+  --sa-info-bg: rgba(56, 189, 248, 0.12);
+
   --sa-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
   --sa-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32);
   --sa-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.4);
@@ -79,55 +116,89 @@
 }
 
 .light {
-  --sa-bg: #f4f8fc;
-  --sa-bg-elevated: #ffffff;
-  --sa-bg-subtle: #eaf1f8;
-  --sa-bg-card: rgba(255, 255, 255, 0.88);
-  --sa-bg-card-solid: #ffffff;
-  --sa-bg-input: #ffffff;
+  --sa-bg: #f1f4f6;
+  --sa-bg-elevated: #f8fafb;
+  --sa-bg-subtle: #e7ecef;
+  --sa-bg-card: rgba(248, 250, 251, 0.9);
+  --sa-bg-card-solid: #f8fafb;
+  --sa-bg-input: #f9fbfc;
+  --sa-surface: #f7f9fa;
+  --sa-surface-raised: #fbfcfc;
 
-  --sa-border-subtle: #000000;
-  --sa-border-default: #000000;
-  --sa-border-strong: #000000;
+  --sa-border-subtle: #d8e0e5;
+  --sa-border-default: #c7d1d8;
+  --sa-border-strong: #9eacb7;
+  --sa-input-border: #b8c4cc;
+  --sa-input-border-hover: #82939f;
 
-  --sa-text: #08111f;
-  --sa-text-secondary: #263244;
-  --sa-text-muted: #475569;
-  --sa-text-faint: #64748b;
-  --sa-title-color: #0f172a;
+  --sa-text: #17212b;
+  --sa-text-secondary: #3d4b57;
+  --sa-text-muted: #5f6f7c;
+  --sa-text-faint: #71808c;
+  --sa-title-color: #101923;
 
-  --sa-accent: #b45309;
-  --sa-accent-hover: #d97706;
-  --sa-accent-subtle: rgba(180, 83, 9, 0.1);
-  --sa-accent-border: rgba(180, 83, 9, 0.3);
-  --sa-accent-gold: #b45309;
+  --sa-accent: #9a4f0e;
+  --sa-accent-hover: #7c3f0c;
+  --sa-accent-subtle: rgba(154, 79, 14, 0.11);
+  --sa-accent-border: rgba(154, 79, 14, 0.34);
+  --sa-accent-gold: #9a4f0e;
 
-  --sa-btn-solid-bg: #b45309;
+  --sa-btn-solid-bg: #9a4f0e;
   --sa-btn-solid-text: #ffffff;
-  --sa-btn-solid-hover: #d97706;
+  --sa-btn-solid-hover: #7c3f0c;
+  --sa-btn-secondary-bg: #e0e6ea;
+  --sa-btn-secondary-text: #263540;
+  --sa-btn-secondary-hover: #d3dce2;
+  --sa-btn-outline-bg: transparent;
+  --sa-btn-outline-text: #75400f;
+  --sa-btn-outline-border: #aebbc4;
+  --sa-btn-outline-hover: #e9eef1;
+  --sa-btn-ghost-text: #334550;
+  --sa-btn-ghost-hover: #e2e8ec;
+  --sa-btn-disabled-bg: #e2e7ea;
+  --sa-btn-disabled-text: #687782;
+
+  --sa-success: #147d52;
+  --sa-success-strong: #0d6843;
+  --sa-success-bg: #e2f2ea;
+  --sa-warning: #94600f;
+  --sa-warning-strong: #754b0b;
+  --sa-warning-bg: #f7edd8;
+  --sa-danger: #b42318;
+  --sa-danger-strong: #8f1c13;
+  --sa-danger-bg: #f9e6e4;
+  --sa-info: #076b8c;
+  --sa-info-strong: #075670;
+  --sa-info-bg: #e0f0f5;
+  --sa-link: #075f82;
+  --sa-link-hover: #064964;
+  --sa-focus: #087591;
+  --sa-focus-ring: rgba(8, 117, 145, 0.24);
+  --sa-selection-bg: #c8e8f1;
+  --sa-selection-text: #102a35;
 
   --sa-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
   --sa-shadow-md: 0 14px 34px rgba(15, 23, 42, 0.09);
   --sa-shadow-lg: 0 26px 70px rgba(15, 23, 42, 0.12);
 
-  --sa-nav-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(248, 249, 251, 0.88));
-  --sa-nav-glass: rgba(255, 255, 255, 0.74);
-  --sa-nav-glass-border: rgba(15, 23, 42, 0.08);
-  --sa-nav-text: #4b5563;
-  --sa-nav-text-active: #0369a1;
+  --sa-nav-bg: linear-gradient(135deg, rgba(248, 250, 251, 0.96), rgba(238, 243, 246, 0.93));
+  --sa-nav-glass: rgba(245, 248, 249, 0.9);
+  --sa-nav-glass-border: #cdd6dc;
+  --sa-nav-text: #44535f;
+  --sa-nav-text-active: #075f82;
 
-  --sa-surface-border: rgba(15, 23, 42, 0.12);
-  --sa-section-divider: rgba(15, 23, 42, 0.1);
+  --sa-surface-border: #d3dce2;
+  --sa-section-divider: #d8e0e5;
   --sa-section-gap: clamp(1.5rem, 3vh, 2.5rem);
 
   /* Premium Light Glassmorphism — transparent frosted, fog shows through */
-  --sa-glass-fill: rgba(255, 255, 255, 0.22);
-  --sa-glass-fill-elevated: rgba(255, 255, 255, 0.32);
+  --sa-glass-fill: rgba(247, 249, 250, 0.88);
+  --sa-glass-fill-elevated: rgba(251, 252, 252, 0.94);
   --sa-glass-aurora:
     radial-gradient(ellipse 90% 60% at 8% -5%, rgba(255, 255, 255, 0.30), transparent 55%),
     radial-gradient(ellipse 75% 55% at 92% 10%, rgba(255, 246, 236, 0.20), transparent 52%);
   --sa-glass-blur: blur(26px) saturate(1.6);
-  --sa-glass-border: rgba(255, 255, 255, 0.55);
+  --sa-glass-border: rgba(175, 188, 197, 0.72);
   --sa-glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.65);
   --sa-glass-shadow:
     0 8px 32px rgba(15, 23, 42, 0.10),
@@ -137,8 +208,8 @@
     0 14px 40px rgba(15, 23, 42, 0.14),
     0 4px 12px rgba(15, 23, 42, 0.07),
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  --sa-glass-input-fill: rgba(255, 255, 255, 0.28);
-  --sa-glass-input-border: rgba(255, 255, 255, 0.6);
+  --sa-glass-input-fill: rgba(249, 251, 252, 0.94);
+  --sa-glass-input-border: rgba(159, 174, 184, 0.82);
 
   --sa-home-veil: radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.08) 0%, rgba(232, 241, 250, 0.48) 100%);
   --sa-home-vignette: radial-gradient(ellipse at center, transparent 48%, rgba(215, 228, 241, 0.7) 100%);
@@ -146,14 +217,14 @@
   --sa-home-panel: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(238, 246, 255, 0.64));
 
   /* Legacy aliases */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fb;
-  --bg-card: #ffffff;
-  --border-color: rgba(15, 23, 42, 0.1);
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --accent-blue: #0369a1;
-  --accent-gold: #b45309;
+  --bg-primary: var(--sa-bg);
+  --bg-secondary: var(--sa-bg-subtle);
+  --bg-card: var(--sa-bg-card-solid);
+  --border-color: var(--sa-border-default);
+  --text-primary: var(--sa-text);
+  --text-secondary: var(--sa-text-secondary);
+  --accent-blue: var(--sa-info);
+  --accent-gold: var(--sa-accent);
 }
 
 .dark {

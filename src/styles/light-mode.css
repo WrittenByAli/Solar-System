@@ -1,0 +1,444 @@
+/* Central light-mode finishing layer. Dark mode remains owned by component CSS. */
+html.light,
+.light {
+  color-scheme: light;
+}
+
+.light ::selection {
+  color: var(--sa-selection-text);
+  background: var(--sa-selection-bg);
+}
+
+.light :is(a, button, input, select, textarea, [role='button'], [role='tab']):focus-visible {
+  outline: 2px solid var(--sa-focus) !important;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px var(--sa-focus-ring) !important;
+}
+
+.light main a[href]:not([class]) {
+  color: var(--sa-link);
+  text-decoration-color: color-mix(in srgb, var(--sa-link) 45%, transparent);
+  text-underline-offset: 0.18em;
+}
+
+.light main a[href]:not([class]):hover {
+  color: var(--sa-link-hover);
+  text-decoration-color: currentColor;
+}
+
+.light :is(input, select, textarea):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']) {
+  color: var(--sa-text) !important;
+  background-color: var(--sa-input-bg) !important;
+  border: 1px solid var(--sa-input-border) !important;
+  box-shadow: var(--sa-shadow-sm) !important;
+}
+
+.light :is(input, select, textarea):not(:disabled):hover {
+  border-color: var(--sa-input-border-hover) !important;
+}
+
+.light :is(input, textarea)::placeholder {
+  color: var(--sa-text-muted) !important;
+  opacity: 1 !important;
+}
+
+.light :is(input, select, textarea):disabled {
+  color: var(--sa-btn-disabled-text) !important;
+  background: var(--sa-btn-disabled-bg) !important;
+  opacity: 1;
+}
+
+.light select option {
+  color: var(--sa-text);
+  background: var(--sa-bg-elevated);
+}
+
+.light :is(
+  [class$='-card'], [class*='-card '], [class$='__card'], [class*='__card '],
+  [class$='-panel'], [class*='-panel '], [class$='__panel'], [class*='__panel '],
+  [role='dialog'], [role='menu'], [role='listbox']
+) {
+  color: var(--sa-text);
+  border-color: var(--sa-border-subtle) !important;
+}
+
+/* Primary actions: warm solar amber with white text at AA contrast. */
+.light :is(button, a):is(
+  [class*='btn-primary'], [class*='btn--primary'], [class*='button--primary'],
+  [class*='submit-btn'], [class*='deploy-btn'], [class*='primary-action'],
+  .snav-cta, .sj-submit, .sa-submit-btn, .rq-submit, .rv-btn--primary,
+  .dh-btn--primary, .ssp-btn--primary, .scroll-story__btn--solid,
+  .solar-map__go-btn, .sp-cta, .sp-namebtn--save
+) {
+  color: var(--sa-btn-solid-text) !important;
+  -webkit-text-fill-color: currentColor !important;
+  background: var(--sa-btn-solid-bg) !important;
+  border: 1px solid var(--sa-btn-solid-bg) !important;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--sa-btn-solid-bg) 22%, transparent) !important;
+}
+
+.light :is(button, a):is(
+  [class*='btn-primary'], [class*='btn--primary'], [class*='button--primary'],
+  [class*='submit-btn'], [class*='deploy-btn'], [class*='primary-action'],
+  .snav-cta, .sj-submit, .sa-submit-btn, .rq-submit, .rv-btn--primary,
+  .dh-btn--primary, .ssp-btn--primary, .scroll-story__btn--solid,
+  .solar-map__go-btn, .sp-cta, .sp-namebtn--save
+):hover:not(:disabled) {
+  background: var(--sa-btn-solid-hover) !important;
+  border-color: var(--sa-btn-solid-hover) !important;
+}
+
+/* Secondary actions retain a clear filled hierarchy without competing with CTAs. */
+.light :is(button, a):is(
+  [class*='btn-secondary'], [class*='btn--secondary'], [class*='button--secondary'],
+  .sa-btn-secondary, .sj-social__btn, .obs-refresh-btn, .rq-empty__action
+) {
+  color: var(--sa-btn-secondary-text) !important;
+  -webkit-text-fill-color: currentColor !important;
+  background: var(--sa-btn-secondary-bg) !important;
+  border: 1px solid var(--sa-border-default) !important;
+  box-shadow: var(--sa-shadow-sm) !important;
+}
+
+.light :is(button, a):is(
+  [class*='btn-secondary'], [class*='btn--secondary'], [class*='button--secondary'],
+  .sa-btn-secondary, .sj-social__btn, .obs-refresh-btn, .rq-empty__action
+):hover:not(:disabled) {
+  color: var(--sa-btn-secondary-text) !important;
+  background: var(--sa-btn-secondary-hover) !important;
+  border-color: var(--sa-border-strong) !important;
+}
+
+/* Outline and ghost actions remain obviously interactive in light mode. */
+.light :is(button, a):is(
+  [class*='btn-outline'], [class*='btn--outline'], [class*='button--outline'],
+  .dh-btn--ghost, .rv-btn--ghost, .ssp-btn--ghost, .scroll-story__btn--ghost
+) {
+  color: var(--sa-btn-outline-text) !important;
+  -webkit-text-fill-color: currentColor !important;
+  background: var(--sa-btn-outline-bg) !important;
+  border: 1px solid var(--sa-btn-outline-border) !important;
+  box-shadow: none !important;
+}
+
+.light :is(button, a):is(
+  [class*='btn-outline'], [class*='btn--outline'], [class*='button--outline'],
+  .dh-btn--ghost, .rv-btn--ghost, .ssp-btn--ghost, .scroll-story__btn--ghost
+):hover:not(:disabled) {
+  background: var(--sa-btn-outline-hover) !important;
+  border-color: var(--sa-accent) !important;
+}
+
+.light :is(button, a):is(
+  [class*='btn-ghost'], [class*='button--ghost'], .sj-link-btn, .sj-back,
+  .snav-icon-btn, .archive-hud-tool-btn, .archive-pan-btn, .archive-recenter-btn
+) {
+  color: var(--sa-btn-ghost-text) !important;
+  -webkit-text-fill-color: currentColor !important;
+  background: transparent !important;
+}
+
+.light :is(button, a):is(
+  [class*='btn-ghost'], [class*='button--ghost'], .sj-link-btn, .sj-back,
+  .snav-icon-btn, .archive-hud-tool-btn, .archive-pan-btn, .archive-recenter-btn
+):hover:not(:disabled) {
+  color: var(--sa-text) !important;
+  background: var(--sa-btn-ghost-hover) !important;
+}
+
+.light :is(button, a):is([class*='danger'], [class*='delete'], [class*='reject'], [class*='destructive']) {
+  color: #fff !important;
+  background: var(--sa-danger) !important;
+  border-color: var(--sa-danger) !important;
+}
+
+.light :is(button, a):is([class*='danger'], [class*='delete'], [class*='reject'], [class*='destructive']):hover:not(:disabled) {
+  background: var(--sa-danger-strong) !important;
+  border-color: var(--sa-danger-strong) !important;
+}
+
+.light :is(button, a):is([class*='approve'], [class*='success']) {
+  color: #fff !important;
+  background: var(--sa-success) !important;
+  border-color: var(--sa-success) !important;
+}
+
+.light :is(button, a):disabled,
+.light :is(button, a)[aria-disabled='true'] {
+  color: var(--sa-btn-disabled-text) !important;
+  -webkit-text-fill-color: currentColor !important;
+  background: var(--sa-btn-disabled-bg) !important;
+  border-color: var(--sa-border-subtle) !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+
+/* Common semantic feedback surfaces. */
+.light :is([class*='error'], [class*='danger'], [role='alert']) {
+  --state-color: var(--sa-danger);
+}
+
+.light :is([class*='success'], [class*='approved'], [class*='verified']) {
+  --state-color: var(--sa-success);
+}
+
+.light :is([class*='warning'], [class*='pending']) {
+  --state-color: var(--sa-warning);
+}
+
+.light :is([class*='tooltip'], [role='tooltip']) {
+  color: var(--sa-bg-elevated) !important;
+  background: #263540 !important;
+  border-color: #263540 !important;
+  box-shadow: var(--sa-shadow-md) !important;
+}
+
+/* Page palettes map to the shared light contract. */
+.light .sj-page {
+  --sj-ink: var(--sa-text);
+  --sj-ink-2: var(--sa-text-secondary);
+  --sj-ink-3: var(--sa-text-muted);
+  --sj-bg: var(--sa-bg);
+  --sj-surface: var(--sa-surface-raised);
+  --sj-border: var(--sa-border-subtle);
+  --sj-border-soft: var(--sa-border-subtle);
+  --sj-accent: var(--sa-link);
+  --sj-accent-ring: var(--sa-focus-ring);
+  --sj-danger: var(--sa-danger);
+  --sj-ok: var(--sa-success);
+  background:
+    radial-gradient(900px 560px at 72% -10%, var(--sa-surface-raised), transparent 62%),
+    radial-gradient(760px 620px at 8% 108%, var(--sa-bg-subtle), transparent 58%),
+    var(--sj-bg);
+}
+
+.light :is(.sa-submit-page--light, .sa-submit-page) {
+  --sa-surface: var(--sa-bg-card);
+  --sa-card: var(--sa-bg-card-solid);
+  --sa-hairline: var(--sa-border-subtle);
+  --sa-hairline-strong: var(--sa-border-default);
+  --sa-text-2: var(--sa-text-secondary);
+  --sa-text-3: var(--sa-text-muted);
+  --sa-amber-border: var(--sa-accent-border);
+}
+
+.light .sa-deploy-page--light {
+  --deploy-ink: var(--sa-text);
+  --deploy-body: var(--sa-text-secondary);
+  --deploy-muted: var(--sa-text-muted);
+  --deploy-faint: var(--sa-text-faint);
+  --deploy-primary: var(--sa-accent);
+  --deploy-glow: var(--sa-accent-hover);
+  --deploy-success: var(--sa-success);
+  --deploy-danger: var(--sa-danger);
+  --deploy-glass: var(--sa-bg-card);
+  --deploy-glass-elevated: var(--sa-bg-card-solid);
+  --deploy-border: var(--sa-border-subtle);
+  --deploy-border-strong: var(--sa-border-default);
+  --deploy-kicker: var(--sa-info);
+}
+
+.light .rv-page--light {
+  --rv-ink: var(--sa-text);
+  --rv-body: var(--sa-text-secondary);
+  --rv-muted: var(--sa-text-muted);
+  --rv-glass: var(--sa-bg-card);
+  --rv-glass-elevated: var(--sa-bg-card-solid);
+  --rv-glass-border: var(--sa-border-subtle);
+}
+
+.light .rq-page--light {
+  --rq-ink: var(--sa-text);
+  --rq-body: var(--sa-text-secondary);
+  --rq-muted: var(--sa-text-muted);
+  --rq-faint: var(--sa-text-faint);
+  --rq-gold: var(--sa-accent);
+  --rq-green: var(--sa-success);
+  --rq-red: var(--sa-danger);
+  --rq-hairline: var(--sa-border-subtle);
+  --rq-hairline-strong: var(--sa-border-default);
+  --rq-sheet-bg: var(--sa-bg-card-solid);
+}
+
+.light .obs-page--light {
+  --obs-text: var(--sa-text);
+  --obs-text-secondary: var(--sa-text-secondary);
+  --obs-text-muted: var(--sa-text-muted);
+  --obs-accent: var(--sa-accent);
+  --obs-lb-row-bg: var(--sa-bg-card);
+  --obs-lb-row-border: 1px solid var(--sa-border-subtle);
+  --obs-lb-row-selected-border: var(--sa-accent);
+}
+
+.light .solar-map--light {
+  --home-text: var(--sa-text);
+  --home-text-secondary: var(--sa-text-secondary);
+  --home-kicker-color: var(--sa-text-secondary);
+  --home-muted-color: var(--sa-text-muted);
+  --map-label-fill: var(--sa-text);
+  color: var(--sa-text);
+}
+
+.light :is(.rv-page--light, .rq-page--light) {
+  --sa-frost-fill: linear-gradient(155deg, rgba(250, 251, 251, 0.94), rgba(241, 245, 247, 0.88));
+  --sa-frost-sheen: radial-gradient(ellipse 110% 70% at 12% -15%, rgba(255, 255, 255, 0.72), transparent 58%);
+  --sa-frost-border: var(--sa-border-default);
+  --sa-frost-border-hover: var(--sa-border-strong);
+  --sa-frost-shadow: var(--sa-shadow-md);
+  --sa-frost-shadow-hover: var(--sa-shadow-lg);
+  --sa-frost-rim: linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(184, 196, 204, 0.2) 45%, rgba(255, 255, 255, 0.38));
+}
+
+/* Navigation and overlays use readable raised surfaces rather than white haze. */
+.light .solar-navbar {
+  --nav-ink: var(--sa-text);
+  --nav-ink-2: var(--sa-text-secondary);
+  --nav-ink-3: var(--sa-text-muted);
+  --nav-surface: rgba(247, 249, 250, 0.94);
+  --nav-glass: rgba(241, 245, 247, 0.9);
+  --nav-border: var(--sa-nav-glass-border);
+  --nav-hover: var(--sa-btn-ghost-hover);
+  --nav-accent: var(--sa-link);
+  --nav-cta-bg: var(--sa-btn-solid-bg);
+  --nav-cta-ink: var(--sa-btn-solid-text);
+  --nav-danger: var(--sa-danger);
+}
+
+.light :is(.snav-menu, .snav-sheet, .sn-panel, .solar-map__suggestions, .solar-map__info-window) {
+  color: var(--sa-text) !important;
+  background-color: var(--sa-surface-raised) !important;
+  border-color: var(--sa-border-default) !important;
+  box-shadow: var(--sa-shadow-lg) !important;
+}
+
+.light .solar-navbar .snav-menu,
+.light .solar-navbar .snav-sheet {
+  background-color: var(--sa-surface-raised) !important;
+  border-color: var(--sa-border-default) !important;
+}
+
+.light .sn-panel {
+  --sn-bg: var(--sa-surface-raised);
+  --sn-bg-solid: var(--sa-surface-raised);
+  --sn-border: var(--sa-border-default);
+  --sn-hair: var(--sa-border-subtle);
+  --sn-ink: var(--sa-text);
+  --sn-ink-2: var(--sa-text-secondary);
+  --sn-ink-3: var(--sa-text-muted);
+  --sn-ink-read: var(--sa-text-secondary);
+  --sn-hover: var(--sa-btn-ghost-hover);
+  --sn-active: var(--sa-info-bg);
+  --sn-blue: var(--sa-info);
+  --sn-success: var(--sa-success);
+  --sn-warn: var(--sa-warning);
+  --sn-error: var(--sa-danger);
+}
+
+/* Profile retains its editorial layout while joining the shared palette. */
+.light .sp-page :is(.sp-sectitle, .sp-name, .sp-ach__title, .sp-planet__name, .sp-hero-stat__num, .sp-ringnum) {
+  color: var(--sa-title-color);
+}
+
+.light .sp-page :is(.sp-eyebrow, .sp-secmeta, .sp-meta-line, .sp-ach__desc, .sp-ach__meta, .sp-planet__count, .sp-infolabel) {
+  color: var(--sa-text-muted);
+}
+
+.light .sp-page :is(.sp-glass, .sp-ach, .sp-tl__card, .sp-planet) {
+  background: var(--sa-bg-card) !important;
+  border: 1px solid var(--sa-border-subtle) !important;
+  box-shadow: var(--sa-shadow-md) !important;
+}
+
+.light .sp-page :is(.sp-ach, .sp-tl__card, .sp-planet):hover {
+  background: var(--sa-surface-raised) !important;
+}
+
+.light .sp-page :is(.sp-sechead, .sp-hero-stats, .sp-hero-stat) {
+  border-color: var(--sa-border-subtle) !important;
+}
+
+/* Archive light surfaces keep visible coordinate lines and restrained contrast. */
+.light .archive-root {
+  color: var(--sa-text);
+  background: var(--sa-bg);
+}
+
+.light :is(.archive-controls-overlay, .archive-nav-overlay, .archive-lens-picker, .archive-search-hud__input) {
+  color: var(--sa-text) !important;
+  background-color: color-mix(in srgb, var(--sa-surface-raised) 92%, transparent) !important;
+  border-color: var(--sa-border-default) !important;
+}
+
+.light .archive-root :is(.archive-lens-select, .archive-search-hud__input) {
+  color: var(--sa-text) !important;
+  background-color: var(--sa-input-bg) !important;
+  border: 1px solid var(--sa-input-border) !important;
+}
+
+.light .archive-root .archive-lens-select option {
+  color: var(--sa-text);
+  background: var(--sa-bg-elevated);
+}
+
+.light .archive-layer-tab[aria-selected='true'] {
+  color: var(--sa-link) !important;
+  background: var(--sa-info-bg) !important;
+}
+
+.periodic-table--light {
+  --pt-ink: var(--sa-text);
+  --pt-muted: var(--sa-text-muted);
+  --pt-panel: rgba(248, 250, 251, 0.97);
+  --pt-line: rgba(7, 95, 130, 0.2);
+  background:
+    radial-gradient(circle at 18% 15%, var(--sa-info-bg), transparent 28%),
+    linear-gradient(135deg, #f5f8f9 0%, #e8f0f2 58%, #f7f9fa 100%);
+}
+
+.light .sa-submit-page :is(input, textarea, select):focus {
+  color: var(--sa-text) !important;
+  background-color: var(--sa-input-bg) !important;
+  border-color: var(--sa-focus) !important;
+}
+
+.light .sa-submit-page option {
+  color: var(--sa-text);
+  background: var(--sa-bg-elevated);
+}
+
+.light .sa-footer {
+  --footer-text: var(--sa-text);
+  --footer-body: var(--sa-text-secondary);
+  --footer-muted: var(--sa-text-muted);
+  --footer-label: var(--sa-info);
+  --footer-link: var(--sa-text-secondary);
+  --footer-link-hover: var(--sa-link);
+  --footer-divider: var(--sa-border-default);
+  --footer-tag-bg: var(--sa-bg-subtle);
+  --footer-tag-border: var(--sa-border-subtle);
+  --footer-tag-text: var(--sa-text-secondary);
+}
+
+/* Tables, pills and badges retain visible boundaries without visual noise. */
+.light :is(table, [role='grid']) {
+  color: var(--sa-text);
+  border-color: var(--sa-border-default);
+}
+
+.light :is(th, [role='columnheader']) {
+  color: var(--sa-text-secondary);
+  background: var(--sa-bg-subtle);
+}
+
+.light :is([class*='badge'], [class*='pill'], [class*='chip']):not(.sn-badge) {
+  border-color: var(--sa-border-subtle) !important;
+}
+
+@media (prefers-contrast: more) {
+  .light {
+    --sa-border-subtle: #aebbc4;
+    --sa-border-default: #83939f;
+    --sa-text-muted: #4e5d69;
+  }
+}

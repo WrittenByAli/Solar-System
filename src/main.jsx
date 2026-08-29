@@ -7,6 +7,7 @@ import E2eAuthProvider from './e2e/E2eAuthProvider.jsx'
 import './index.css'
 import './styles/glass-surfaces.css'
 import './styles/sa-frost-card.css'
+import './styles/light-mode.css'
 
 const E2E_MODE = import.meta.env.VITE_E2E === 'true'
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY

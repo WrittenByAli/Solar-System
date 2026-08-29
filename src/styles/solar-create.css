@@ -27,8 +27,8 @@
 
 .light .sa-create-page {
   background:
-    radial-gradient(ellipse 72% 44% at 50% -15%, rgba(2, 132, 199, 0.1), transparent 62%),
-    linear-gradient(180deg, #f8fafc 0%, #eef6ff 54%, #f8fafc 100%);
+    radial-gradient(ellipse 72% 44% at 50% -15%, var(--sa-info-bg), transparent 62%),
+    linear-gradient(180deg, var(--sa-bg-elevated) 0%, var(--sa-bg) 54%, var(--sa-bg-elevated) 100%);
 }
 
 /* Requested contrast rule: white in dark mode, black in light mode. */
@@ -38,9 +38,8 @@
   -webkit-text-fill-color: currentColor;
 }
 
-.light .sa-create-page,
-.light .sa-create-page * {
-  color: #000000 !important;
+.light .sa-create-page {
+  color: var(--sa-text) !important;
   -webkit-text-fill-color: currentColor;
 }
 
@@ -58,7 +57,7 @@
 .light .sa-create-page input,
 .light .sa-create-page select,
 .light .sa-create-page textarea {
-  color: #0f172a !important;
+  color: var(--sa-text) !important;
   background: var(--sa-glass-input-fill) !important;
   border-color: var(--sa-glass-input-border) !important;
   backdrop-filter: blur(16px) saturate(1.75) !important;
@@ -72,8 +71,8 @@
 }
 
 .light .sa-create-page option {
-  color: #000000;
-  background: #ffffff;
+  color: var(--sa-text);
+  background: var(--sa-bg-elevated);
 }
 
 .sa-create-page input::placeholder,
