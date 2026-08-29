@@ -7,7 +7,7 @@ export default [
     { ignores: ['dist/**', 'node_modules/**', 'public/**'] },
     js.configs.recommended,
     {
-        files: ['src/**/*.{js,jsx}', 'e2e/**/*.js', '*.js', '*.mjs'],
+        files: ['src/**/*.{js,jsx}', 'api/**/*.js', 'e2e/**/*.js', '*.js', '*.mjs'],
         plugins: { react, 'react-hooks': reactHooks },
         languageOptions: {
             ecmaVersion: 'latest',

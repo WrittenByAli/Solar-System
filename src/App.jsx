@@ -8,6 +8,7 @@ import StarField from './components/StarField.jsx'
 import FoundationArchiveStar from './components/FoundationArchiveStar.jsx'
 import FoundationLogo from './components/FoundationLogo.jsx'
 import GuestGate from './components/GuestGate.jsx'
+import ArchiveAssistant from './components/ArchiveAssistant.jsx'
 
 // Route-level code splitting: each page (and everything only it imports —
 // notably three.js/vanta, which only Home touches) loads on first
@@ -216,6 +217,7 @@ function AppShell() {
             {!hideStarField && <StarField theme={theme} />}
             <Navbar />
             <FoundationArchiveStar />
+            <ArchiveAssistant />
             <main id="main-content" tabIndex={-1}>
                 <AnimatedRoutes />
             </main>

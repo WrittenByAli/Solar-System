@@ -18,7 +18,7 @@ export default function FoundationArchiveStar() {
             aria-label="Home shortcut"
             style={{
                 bottom: 'max(20px, env(safe-area-inset-bottom, 0px))',
-                right: 'max(20px, env(safe-area-inset-right, 0px))',
+                right: 'max(90px, calc(env(safe-area-inset-right, 0px) + 90px))',
             }}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}

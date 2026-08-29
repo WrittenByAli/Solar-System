@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "dev:e2e": "cross-env VITE_E2E=true vite --host 127.0.0.1 --port 5199 --strictPort",
@@ -11,16 +14,20 @@
     "test": "node --test src/utils/communityReviewHelpers.test.js",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "lint": "eslint src e2e"
+    "lint": "eslint src api e2e vite.config.js"
   },
   "dependencies": {
+    "@ai-sdk/groq": "^4.0.34",
     "@clerk/clerk-react": "^5.61.8",
     "@supabase/supabase-js": "^2.110.0",
+    "ai": "^7.0.84",
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.344.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^6.22.0",
+    "remark-gfm": "^4.0.1",
     "three": "^0.184.0",
     "vanta": "^0.5.24"
   },
